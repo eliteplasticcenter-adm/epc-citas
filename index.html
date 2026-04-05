@@ -690,19 +690,28 @@ function setSyncStatus(status, msg) {
 async function apiCall(action, body = {}) {
   setSyncStatus('syncing');
   try {
-    const url = `${API_URL}?action=${action}`;
+    // Apps Script requiere GET con datos en URL para evitar CORS
+    const payload = encodeURIComponent(JSON.stringify(body));
+    const url = `${API_URL}?action=${action}&data=${payload}`;
     const res = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' }
+      method: 'GET',
+      redirect: 'follow'
     });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Error desconocido');
+    const text = await res.text();
+    // Apps Script a veces devuelve HTML en redirects, intentar parsear JSON
+    let data;
+    try { data = JSON.parse(text); } catch(e) {
+      // Buscar JSON dentro del texto si viene envuelto
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) data = JSON.parse(match[0]);
+      else throw new Error('Respuesta no es JSON válido');
+    }
+    if (!data.success) throw new Error(data.error || 'Error en servidor');
     setSyncStatus('ok');
     return data.data;
   } catch(e) {
     setSyncStatus('error', '✗ Sin conexión — datos guardados localmente');
-    console.warn('API error:', e);
+    console.warn('API error:', e.message);
     return null;
   }
 }
