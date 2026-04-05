@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPC — Sistema de Citas</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* Paleta Flowww+Holded: fondo muy claro, sidebar oscuro, acentos azul-petróleo y verde */
+  --sidebar: #0f1c2e;
+  --sidebar2: #172335;
+  --sidebar3: #1e2e42;
+  --accent: #2563eb;
+  --accent2: #1d4ed8;
+  --accent-light: #eff6ff;
+  --teal: #0d9488;
+  --teal-light: #f0fdfa;
+  --bg: #f1f5f9;
+  --bg2: #e8edf3;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --green: #16a34a; --green-bg: #f0fdf4; --green-border: #86efac;
+  --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fcd34d;
+  --red: #dc2626;   --red-bg: #fef2f2;   --red-border: #fca5a5;
+  --blue: #2563eb;  --blue-bg: #eff6ff;  --blue-border: #93c5fd;
+  --purple: #7c3aed; --purple-bg: #f5f3ff; --purple-border: #c4b5fd;
+  --pink: #db2777;   --pink-bg: #fdf2f8;  --pink-border: #f9a8d4;
+  --radius: 8px; --radius-lg: 12px; --radius-xl: 20px;
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow: 0 4px 16px rgba(15,23,42,0.08);
+  --shadow-lg: 0 8px 30px rgba(15,23,42,0.12);
+}
+
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; display: flex; flex-direction: column; }
+
+/* ── HEADER ── */
+header {
+  background: var(--sidebar);
+  height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem; position: sticky; top: 0; z-index: 300;
+  border-bottom: 1px solid var(--sidebar3);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: white; letter-spacing: -0.5px;
+}
+.brand-name { font-size: 14px; font-weight: 700; color: white; letter-spacing: 0.02em; }
+.brand-sub { font-size: 10px; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.header-date { font-size: 12px; color: #64748b; margin-right: 4px; }
+
+/* ── NAV TABS ── */
+.nav-tabs {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex; gap: 0; overflow-x: auto;
+}
+.nav-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--text3);
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+  display: flex; align-items: center; gap: 6px; transition: color 0.15s;
+}
+.nav-tab:hover { color: var(--text2); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-badge { background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; }
+
+/* ── MAIN ── */
+.main { flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; padding: 1.5rem 1.5rem; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── STAT CARDS ── */
+.stats { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 1.5rem; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+}
+.stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.stat-card.blue::before  { background: var(--accent); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.amber::before { background: var(--amber); }
+.stat-card.red::before   { background: var(--red); }
+.stat-card.teal::before  { background: var(--teal); }
+.stat-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.stat-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-value.blue  { color: var(--accent); }
+.stat-value.green { color: var(--green); }
+.stat-value.amber { color: var(--amber); }
+.stat-value.red   { color: var(--red); }
+.stat-value.teal  { color: var(--teal); }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.25rem;
+  margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.card-subtitle { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+/* ── GRIDS ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+
+/* ── FORM ── */
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+input[type=text], input[type=date], input[type=time], input[type=number],
+input[type=email], input[type=tel], select, textarea {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 9px 11px; font-size: 13px;
+  color: var(--text); outline: none; width: 100%; font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+/* ── BUTTONS ── */
+.btn { background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius); padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text2); font-family: inherit; white-space: nowrap; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: white; }
+.btn-teal { background: var(--teal); color: white; border-color: var(--teal); }
+.btn-teal:hover { opacity: 0.9; color: white; }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.btn-xs { padding: 3px 8px; font-size: 11px; }
+.btn-green  { background: var(--green-bg);  color: var(--green);  border-color: var(--green-border); }
+.btn-red    { background: var(--red-bg);    color: var(--red);    border-color: var(--red-border); }
+.btn-amber  { background: var(--amber-bg);  color: var(--amber);  border-color: var(--amber-border); }
+.btn-blue   { background: var(--blue-bg);   color: var(--blue);   border-color: var(--blue-border); }
+.btn-ghost  { background: none; border-color: transparent; color: var(--text3); }
+.btn-ghost:hover { background: var(--bg); color: var(--text); border-color: var(--border); }
+
+/* ── BADGES ── */
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.badge-pendiente { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.badge-pendiente::before { background: var(--amber); }
+.badge-confirmada { background: var(--blue-bg);   color: var(--blue);  border: 1px solid var(--blue-border); }
+.badge-confirmada::before { background: var(--blue); }
+.badge-completada { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-border); }
+.badge-completada::before { background: var(--green); }
+.badge-cancelada  { background: var(--red-bg);    color: var(--red);   border: 1px solid var(--red-border); }
+.badge-cancelada::before  { background: var(--red); }
+.badge-pagado     { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-border); }
+.badge-pagado::before { background: var(--green); }
+.badge-deuda      { background: var(--red-bg);    color: var(--red);   border: 1px solid var(--red-border); }
+.badge-deuda::before { background: var(--red); }
+.badge-cobro-pend { background: var(--amber-bg);  color: var(--amber); border: 1px solid var(--amber-border); }
+.badge-cobro-pend::before { background: var(--amber); }
+
+/* ── TIPO PILLS ── */
+.tipo-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.tp-vf  { background: #eff6ff; color: #1d4ed8; }
+.tp-vc  { background: #f0fdfa; color: #0f766e; }
+.tp-cf  { background: #f5f3ff; color: #6d28d9; }
+.tp-cc  { background: #fdf2f8; color: #9d174d; }
+.tp-re  { background: #fffbeb; color: #b45309; }
+.tp-es  { background: #f0fdf4; color: #15803d; }
+.tp-tx  { background: #fdf4ff; color: #7e22ce; }
+.tp-cp  { background: #f8fafc; color: #475569; }
+
+/* ── CALENDARIO ── */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.cal-month-label { font-size: 17px; font-weight: 700; color: var(--text); }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.cal-dn { background: var(--sidebar); color: #64748b; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 8px; text-align: center; }
+.cal-cell { background: var(--surface); min-height: 88px; padding: 7px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; position: relative; }
+.cal-cell:hover { background: var(--accent-light); }
+.cal-cell.empty { background: var(--bg); cursor: default; }
+.cal-cell.today { background: #eff6ff; }
+.cal-cell.today .cal-num { color: var(--accent); font-weight: 700; background: var(--accent); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cal-cell.selected { background: var(--accent-light); outline: 2px solid var(--accent); outline-offset: -1px; }
+.cal-num { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+.cal-pill { font-size: 9px; font-weight: 600; background: var(--accent); color: white; border-radius: 3px; padding: 1px 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.cal-pill.teal { background: var(--teal); }
+.cal-pill.purple { background: var(--purple); }
+
+/* ── DAY PANEL ── */
+.layout-cal { display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: start; }
+.day-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow-sm); position: sticky; top: 80px; }
+.day-panel-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 1rem; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+/* ── CITA ITEM ── */
+.cita-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 6px; cursor: pointer; transition: all 0.12s; background: var(--surface); }
+.cita-row:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.06); }
+.cita-time { font-size: 13px; font-weight: 700; color: var(--text); min-width: 46px; }
+.cita-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cita-body { flex: 1; min-width: 0; }
+.cita-pac-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cita-tipo-label { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* ── TABLA ── */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; text-align: left; background: var(--bg); border-bottom: 1px solid var(--border); }
+td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg); }
+
+/* ── PACIENTE CARD ── */
+.pac-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 8px; overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.15s; }
+.pac-card:hover { box-shadow: var(--shadow); }
+.pac-summary { padding: 14px 1.25rem; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.pac-summary:hover { background: var(--bg); }
+.pac-avatar { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--teal)); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+.pac-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.pac-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.pac-chevron { font-size: 10px; color: var(--text3); margin-left: auto; transition: transform 0.2s; }
+.pac-card.open .pac-chevron { transform: rotate(90deg); }
+.pac-detail { display: none; border-top: 1px solid var(--border); }
+.pac-card.open .pac-detail { display: block; }
+
+/* Tabs internas del paciente */
+.pac-tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 1.25rem; background: var(--bg); }
+.pac-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 9px 14px; font-size: 12px; font-weight: 600; color: var(--text3); cursor: pointer; font-family: inherit; }
+.pac-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.pac-tab-content { display: none; }
+.pac-tab-content.active { display: block; }
+
+/* Historia clínica grid */
+.hc-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.hc-cell { padding: 10px 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.hc-cell:nth-child(even) { border-right: none; }
+.hc-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+.hc-value { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+/* Anotaciones del doctor */
+.anotacion-item { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.anotacion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.anotacion-fecha { font-size: 11px; font-weight: 600; color: var(--text3); }
+.anotacion-texto { font-size: 13px; color: var(--text); line-height: 1.6; white-space: pre-wrap; }
+.nueva-anotacion { padding: 14px 16px; background: var(--bg); border-top: 1px solid var(--border); }
+
+/* ── RECORDATORIOS ── */
+.rec-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow-sm); }
+.wa-box { background: #dcf8c6; border-radius: var(--radius); padding: 14px; font-size: 12.5px; line-height: 1.7; white-space: pre-wrap; color: #1a3a1a; font-family: 'Courier New', monospace; margin: 12px 0; border: 1px solid #b7e4a0; }
+
+/* ── MISC ── */
+.empty { text-align: center; padding: 3rem; color: var(--text3); }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-size: 14px; }
+.divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid var(--border); margin-top: 1rem; }
+.section-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin: 1.25rem 0 0.75rem; }
+.edit-banner { background: var(--amber-bg); border: 1px solid var(--amber-border); border-radius: var(--radius-lg); padding: 10px 1.25rem; margin-bottom: 1rem; display: none; align-items: center; justify-content: space-between; gap: 10px; }
+.edit-banner.visible { display: flex; }
+.edit-banner-text { font-size: 13px; color: var(--amber); font-weight: 600; }
+.search-row { display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.tag { display: inline-block; font-size: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; color: var(--text3); }
+.alert { padding: 10px 14px; border-radius: var(--radius); font-size: 12px; line-height: 1.5; }
+.alert-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+.alert-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+
+@media (max-width: 900px) {
+  .layout-cal { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .g2, .g3, .g4 { grid-template-columns: 1fr; }
+  .main { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">
+    <div class="brand-logo">EP</div>
+    <div>
+      <div class="brand-name">ELITE PLASTIC CENTER</div>
+      <div class="brand-sub">Caracas, Venezuela</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="header-date" id="header-date"></span>
+    <button class="btn btn-sm" style="background:var(--sidebar3);color:#94a3b8;border-color:var(--sidebar3);" onclick="exportarExcel()">↓ Excel</button>
+    <button class="btn btn-sm" style="background:var(--sidebar3);color:#94a3b8;border-color:var(--sidebar3);" onclick="cargarDesdeSheeets()" title="Sincronizar con Google Sheets">⟳ Sync</button>
+    <span id="sync-status" style="font-size:11px;color:#94a3b8;white-space:nowrap;">○ Cargando...</span>
+    <button class="btn btn-sm btn-primary" onclick="nuevaCita()">+ Nueva cita</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showTab('calendario')">📅 Calendario</button>
+  <button class="nav-tab" onclick="showTab('citas')">📋 Citas</button>
+  <button class="nav-tab" onclick="showTab('nueva')">➕ Nueva cita</button>
+  <button class="nav-tab" onclick="showTab('pacientes')">👤 Pacientes</button>
+  <button class="nav-tab" onclick="showTab('recordatorios')">💬 Recordatorios <span class="nav-badge" id="rec-badge">0</span></button>
+  <button class="nav-tab" onclick="showTab('caja')">💰 Caja diaria</button>
+</div>
+
+<div class="main">
+
+  <!-- ══════════ CALENDARIO ══════════ -->
+  <div class="section active" id="tab-calendario">
+    <div class="layout-cal">
+      <div class="card" style="padding:1.25rem;">
+        <div class="cal-nav">
+          <button class="btn btn-sm" onclick="cambiarMes(-1)">← Anterior</button>
+          <div class="cal-month-label" id="cal-title"></div>
+          <button class="btn btn-sm" onclick="cambiarMes(1)">Siguiente →</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+
+      <div class="day-panel">
+        <div class="day-panel-title" id="day-panel-title">Selecciona un día</div>
+        <div id="day-citas">
+          <div class="empty" style="padding:1.5rem 0;">
+            <div class="empty-icon">📅</div>
+            <div class="empty-text">Haz clic en un día para ver las citas</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:1rem;display:none;" id="btn-nueva-dia" onclick="nuevaCitaDia()">+ Agendar en este día</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TODAS LAS CITAS ══════════ -->
+  <div class="section" id="tab-citas">
+    <div class="stats" id="stats-citas"></div>
+    <div class="card">
+      <div class="search-row">
+        <input type="text" id="filtro-buscar" placeholder="🔍 Buscar paciente..." style="flex:1;min-width:160px;" oninput="renderCitasList()">
+        <select id="filtro-estado" onchange="renderCitasList()" style="width:150px;">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmada">Confirmada</option>
+          <option value="completada">Completada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+        <select id="filtro-tipo" onchange="renderCitasList()" style="width:190px;">
+          <option value="">Todos los tipos</option>
+          <option value="Valoración Facial">Valoración Facial</option>
+          <option value="Valoración Corporal">Valoración Corporal</option>
+          <option value="Cirugía Facial">Cirugía Facial</option>
+          <option value="Cirugía Corporal">Cirugía Corporal</option>
+          <option value="Rellenos">Rellenos</option>
+          <option value="Estimuladores">Estimuladores</option>
+          <option value="Toxina Botulínica">Toxina Botulínica</option>
+          <option value="Control Postoperatorio">Control Postoperatorio</option>
+        </select>
+      </div>
+      <div id="citas-list"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ NUEVA CITA ══════════ -->
+  <div class="section" id="tab-nueva">
+    <div class="edit-banner" id="edit-banner">
+      <span class="edit-banner-text" id="edit-banner-text">Editando cita</span>
+      <button class="btn btn-sm" onclick="cancelarEdicion()">Cancelar</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Datos de la cita</div></div></div>
+
+      <div class="g3" style="margin-bottom:12px;">
+        <div class="field">
+          <label>Paciente *</label>
+          <select id="cita-pac" onchange="onPacChange()">
+            <option value="">-- Seleccionar paciente --</option>
+            <option value="__nuevo__">✚ Registrar nuevo paciente</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tipo de cita *</label>
+          <select id="cita-tipo">
+            <option value="">-- Seleccionar --</option>
+            <optgroup label="Valoraciones">
+              <option value="Valoración Facial">Valoración Facial</option>
+              <option value="Valoración Corporal">Valoración Corporal</option>
+            </optgroup>
+            <optgroup label="Cirugías">
+              <option value="Cirugía Facial">Cirugía Facial</option>
+              <option value="Cirugía Corporal">Cirugía Corporal</option>
+            </optgroup>
+            <optgroup label="Tratamientos">
+              <option value="Rellenos">Rellenos</option>
+              <option value="Estimuladores">Estimuladores</option>
+              <option value="Toxina Botulínica">Toxina Botulínica</option>
+            </optgroup>
+            <optgroup label="Seguimiento">
+              <option value="Control Postoperatorio">Control Postoperatorio</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="field">
+          <label>Modalidad</label>
+          <select id="cita-modalidad">
+            <option value="Presencial">Presencial</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="g3" style="margin-bottom:12px;">
+        <div class="field"><label>Fecha *</label><input type="date" id="cita-fecha"></div>
+        <div class="field"><label>Hora *</label><input type="time" id="cita-hora" value="09:00"></div>
+        <div class="field"><label>Monto a cobrar ($)</label><input type="number" id="cita-monto" placeholder="0.00" step="0.01" min="0"></div>
+      </div>
+
+      <div class="g3">
+        <div class="field">
+          <label>Estado de la cita</label>
+          <select id="cita-estado">
+            <option value="pendiente">Pendiente</option>
+            <option value="confirmada">Confirmada</option>
+            <option value="completada">Completada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Estado de pago</label>
+          <select id="cita-pago">
+            <option value="pendiente">Pendiente de pago</option>
+            <option value="pagado">Pagado</option>
+            <option value="deuda">Tiene deuda</option>
+          </select>
+        </div>
+        <div class="field"><label>Doctor asignado</label>
+          <select id="cita-doctor">
+            <option value="Dr. Deivys Higuerey">Dr. Deivys Higuerey</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>Notas de la cita</label>
+        <textarea id="cita-notas" placeholder="Interés del paciente, observaciones, zona a tratar, etc."></textarea>
+      </div>
+    </div>
+
+    <!-- NUEVO PACIENTE -->
+    <div id="nuevo-pac-section" style="display:none;">
+      <div class="section-label">Datos personales del nuevo paciente</div>
+      <div class="card">
+        <div class="g3" style="margin-bottom:12px;">
+          <div class="field"><label>Nombre completo *</label><input type="text" id="pac-nombre" placeholder="Nombre y apellidos"></div>
+          <div class="field"><label>Cédula / Pasaporte</label><input type="text" id="pac-cedula" placeholder="V-12345678"></div>
+          <div class="field"><label>Fecha de nacimiento</label><input type="date" id="pac-nacimiento"></div>
+        </div>
+        <div class="g3" style="margin-bottom:12px;">
+          <div class="field"><label>Teléfono / WhatsApp *</label><input type="tel" id="pac-tel" placeholder="+58 414 000 0000"></div>
+          <div class="field"><label>Email</label><input type="email" id="pac-email" placeholder="correo@ejemplo.com"></div>
+          <div class="field"><label>Ciudad / Estado</label><input type="text" id="pac-ciudad" placeholder="Ej: Caracas, Miranda"></div>
+        </div>
+        <div class="g3">
+          <div class="field"><label>Género</label>
+            <select id="pac-genero"><option value="Femenino">Femenino</option><option value="Masculino">Masculino</option><option value="Otro">Otro</option></select>
+          </div>
+          <div class="field"><label>Zona de interés principal</label>
+            <select id="pac-zona">
+              <option value="">-- Seleccionar --</option>
+              <option value="Abdomen">Abdomen</option><option value="Brazos">Brazos</option>
+              <option value="Busto">Busto</option><option value="Cara">Cara</option>
+              <option value="Glúteos">Glúteos</option><option value="Muslos">Muslos</option>
+              <option value="Nariz">Nariz</option><option value="Papada">Papada</option>
+              <option value="Múltiples zonas">Múltiples zonas</option>
+            </select>
+          </div>
+          <div class="field"><label>¿Cómo nos conoció?</label>
+            <select id="pac-referido"><option value="">--</option><option value="Instagram">Instagram</option><option value="WhatsApp">WhatsApp</option><option value="Referido">Referido</option><option value="Google">Google</option><option value="TikTok">TikTok</option><option value="Otro">Otro</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Historia clínica</div>
+      <div class="card">
+        <div class="g2" style="margin-bottom:12px;">
+          <div class="field"><label>Enfermedades crónicas</label><textarea id="pac-enfermedades" placeholder="Diabetes, hipertensión, hipotiroidismo, etc."></textarea></div>
+          <div class="field"><label>Medicamentos actuales</label><textarea id="pac-medicamentos" placeholder="Nombre y dosis de medicamentos"></textarea></div>
+        </div>
+        <div class="g2" style="margin-bottom:12px;">
+          <div class="field"><label>Cirugías previas</label><textarea id="pac-cirugias-prev" placeholder="Intervenciones quirúrgicas anteriores"></textarea></div>
+          <div class="field"><label>Alergias</label><textarea id="pac-alergias" placeholder="Alergias a medicamentos, materiales, anestesia"></textarea></div>
+        </div>
+        <div class="g3">
+          <div class="field"><label>¿Fumador/a?</label>
+            <select id="pac-fumador"><option value="No">No</option><option value="Sí">Sí</option><option value="Ex-fumador/a">Ex-fumador/a</option></select>
+          </div>
+          <div class="field"><label>Grupo sanguíneo</label>
+            <select id="pac-sangre"><option value="">Desconocido</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option><option value="O+">O+</option><option value="O-">O-</option></select>
+          </div>
+          <div class="field"><label>Peso aproximado (kg)</label><input type="number" id="pac-peso" placeholder="Ej: 65"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" onclick="cancelarEdicion()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-cita" onclick="guardarCita()">Guardar cita</button>
+    </div>
+  </div>
+
+  <!-- ══════════ PACIENTES ══════════ -->
+  <div class="section" id="tab-pacientes">
+    <div class="search-row">
+      <input type="text" id="pac-buscar" placeholder="🔍 Buscar por nombre o cédula..." style="flex:1;" oninput="renderPacientes()">
+      <button class="btn btn-primary" onclick="nuevoPaciente()">+ Nuevo paciente</button>
+    </div>
+    <div id="pacientes-list"></div>
+  </div>
+
+  <!-- ══════════ RECORDATORIOS ══════════ -->
+  <div class="section" id="tab-recordatorios">
+    <div class="alert alert-blue" style="margin-bottom:1.25rem;">Mensajes de recordatorio para las citas de <strong>hoy y mañana</strong>. Copia el mensaje y envíalo directamente por WhatsApp.</div>
+    <div id="recordatorios-list"></div>
+  </div>
+
+  <!-- ══════════ CAJA DIARIA ══════════ -->
+  <div class="section" id="tab-caja">
+
+    <!-- Selector de fecha + tasa -->
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="min-width:160px;">
+          <label>Fecha de caja</label>
+          <input type="date" id="caja-fecha">
+        </div>
+        <div class="field" style="min-width:160px;">
+          <label>Tasa BCV Bs/USD</label>
+          <input type="number" id="caja-tasa" placeholder="Ej: 36.50" step="0.01" min="0">
+        </div>
+        <div class="field" style="min-width:130px;">
+          <label>Tasa EUR/USD</label>
+          <input type="number" id="caja-tasa-eur" placeholder="Ej: 1.08" step="0.01" min="0">
+        </div>
+        <button class="btn btn-primary" onclick="saveTasa()">Guardar tasa del día</button>
+        <button class="btn btn-teal" onclick="renderCaja()">Ver caja de este día</button>
+      </div>
+    </div>
+
+    <!-- Métricas del día -->
+    <div id="caja-stats" style="margin-bottom:1rem;"></div>
+
+    <!-- Dos columnas: Nuevo movimiento + Resumen -->
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:1.25rem;align-items:start;">
+
+      <!-- Movimientos del día -->
+      <div>
+        <!-- Formulario nuevo movimiento -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-header" style="margin-bottom:1rem;">
+            <div class="card-title">Registrar movimiento</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm btn-green" id="btn-tipo-ingreso" onclick="setTipoMov('ingreso')">+ Ingreso</button>
+              <button class="btn btn-sm btn-red" id="btn-tipo-egreso" onclick="setTipoMov('egreso')">− Egreso</button>
+            </div>
+          </div>
+          <input type="hidden" id="mov-tipo" value="ingreso">
+
+          <div class="g2" style="margin-bottom:10px;">
+            <div class="field">
+              <label>Concepto *</label>
+              <input type="text" id="mov-concepto" placeholder="Ej: Valoración facial, Pago honorario...">
+            </div>
+            <div class="field">
+              <label>Paciente (opcional)</label>
+              <select id="mov-pac">
+                <option value="">— Sin paciente —</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="g3" style="margin-bottom:10px;">
+            <div class="field">
+              <label>Moneda</label>
+              <select id="mov-moneda" onchange="onMonedaChange()">
+                <option value="USD">🇺🇸 Dólares (USD)</option>
+                <option value="BS">🇻🇪 Bolívares (Bs)</option>
+                <option value="EUR">🇪🇺 Euros (EUR)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Monto *</label>
+              <input type="number" id="mov-monto" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>Método de pago</label>
+              <select id="mov-metodo">
+                <option value="Zelle USD">Zelle (USD)</option>
+                <option value="Efectivo USD">Efectivo USD</option>
+                <option value="Efectivo EUR">Efectivo EUR</option>
+                <option value="Efectivo Bs">Efectivo Bs</option>
+                <option value="Pago Móvil Bs">Pago Móvil (Bs)</option>
+                <option value="Transferencia Bs">Transferencia Nacional (Bs)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:10px;">
+            <label>Notas</label>
+            <input type="text" id="mov-notas" placeholder="Observaciones adicionales...">
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="btn btn-primary" onclick="guardarMovimiento()">Registrar</button>
+          </div>
+        </div>
+
+        <!-- Lista de movimientos -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom:1rem;">
+            <div class="card-title">Movimientos del día</div>
+            <button class="btn btn-sm" onclick="exportarCajaExcel()">↓ Excel</button>
+          </div>
+          <div id="caja-movimientos"></div>
+        </div>
+      </div>
+
+      <!-- Panel resumen -->
+      <div>
+        <!-- Arqueo -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title" style="margin-bottom:1rem;">Arqueo del día</div>
+          <div id="caja-arqueo"></div>
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+            <div class="field" style="margin-bottom:8px;">
+              <label>Cierre de caja — notas</label>
+              <textarea id="caja-cierre-notas" placeholder="Observaciones del cierre del día..." style="min-height:60px;"></textarea>
+            </div>
+            <button class="btn btn-primary" style="width:100%;" onclick="cerrarCaja()">Cerrar caja del día</button>
+          </div>
+        </div>
+
+        <!-- Historial de cierres -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1rem;">Últimos cierres</div>
+          <div id="caja-cierres"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── CONFIGURACIÓN GOOGLE SHEETS ──────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbzXWIhMZv_On9CCrfo60Tqb8xfwy2mZYlbpMx_GHVWyh6EKZULh7zeHFTt9g5Dfs9TLlw/exec';
+
+let syncStatus = 'idle'; // idle | syncing | error | ok
+
+// ── DATOS (caché local) ───────────────────────────────────────
+let citas = [];
+let pacientes = [];
+let movimientos = [];
+let cierresCaja = [];
+let tasas = {};
+
+// Cargar caché local mientras llega el servidor
+try { citas        = JSON.parse(localStorage.getItem('epc_citas_v2')       || '[]'); } catch(e) {}
+try { pacientes    = JSON.parse(localStorage.getItem('epc_pacientes_v2')   || '[]'); } catch(e) {}
+try { movimientos  = JSON.parse(localStorage.getItem('epc_movimientos_v1') || '[]'); } catch(e) {}
+try { cierresCaja  = JSON.parse(localStorage.getItem('epc_cierres_v1')     || '[]'); } catch(e) {}
+try { tasas        = JSON.parse(localStorage.getItem('epc_tasas_v1')       || '{}'); } catch(e) {}
+
+let editandoCitaId = null;
+let calFecha = new Date();
+let diaSeleccionado = null;
+
+// ── SYNC CON GOOGLE SHEETS ────────────────────────────────────
+function setSyncStatus(status, msg) {
+  syncStatus = status;
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const colors = { syncing:'#d97706', ok:'#16a34a', error:'#dc2626', idle:'#94a3b8' };
+  const labels = { syncing:'⟳ Sincronizando...', ok:'✓ Sincronizado', error:'✗ Error de conexión', idle:'○ Local' };
+  el.textContent = msg || labels[status];
+  el.style.color = colors[status];
+}
+
+async function apiCall(action, body = {}) {
+  setSyncStatus('syncing');
+  try {
+    const url = `${API_URL}?action=${action}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Error desconocido');
+    setSyncStatus('ok');
+    return data.data;
+  } catch(e) {
+    setSyncStatus('error', '✗ Sin conexión — datos guardados localmente');
+    console.warn('API error:', e);
+    return null;
+  }
+}
+
+async function cargarDesdeSheeets() {
+  setSyncStatus('syncing');
+  const data = await apiCall('getAll');
+  if (!data) { setSyncStatus('error'); return; }
+
+  if (Array.isArray(data.citas))       citas        = data.citas.map(normalizarCita);
+  if (Array.isArray(data.pacientes))   pacientes    = data.pacientes.map(normalizarPaciente);
+  if (Array.isArray(data.movimientos)) movimientos  = data.movimientos;
+  if (Array.isArray(data.cierres))     cierresCaja  = data.cierres;
+  if (Array.isArray(data.tasas)) {
+    tasas = {};
+    data.tasas.forEach(t => { if(t.fecha) tasas[t.fecha] = { bcv: parseFloat(t.bcv)||0, eur: parseFloat(t.eur)||0 }; });
+  }
+
+  // Guardar en caché local
+  saveLocal();
+  setSyncStatus('ok');
+
+  // Refrescar UI
+  const tabActiva = document.querySelector('.nav-tab.active');
+  if (tabActiva) tabActiva.click();
+  renderCalendario();
+  actualizarBadge();
+}
+
+function normalizarCita(c) {
+  if (typeof c.recordatorios === 'string' && c.recordatorios) {
+    try { c.recordatorios = JSON.parse(c.recordatorios); } catch(e) { c.recordatorios = {}; }
+  }
+  if (!c.recordatorios) c.recordatorios = { r7d:false, r24h:false, r2h:false };
+  c.id = parseInt(c.id) || c.id;
+  c.pacienteId = parseInt(c.pacienteId) || c.pacienteId;
+  c.monto = parseFloat(c.monto) || 0;
+  return c;
+}
+
+function normalizarPaciente(p) {
+  p.id = parseInt(p.id) || p.id;
+  if (typeof p.anotaciones === 'string' && p.anotaciones) {
+    try { p.anotaciones = JSON.parse(p.anotaciones); } catch(e) { p.anotaciones = []; }
+  }
+  if (!Array.isArray(p.anotaciones)) p.anotaciones = [];
+  // Reconstruir objeto hc desde columnas aplanadas
+  if (!p.hc) {
+    p.hc = {
+      enfermedades: p.hc_enfermedades || '',
+      medicamentos: p.hc_medicamentos || '',
+      cirugiasPrev: p.hc_cirugiasPrev || '',
+      alergias:     p.hc_alergias     || '',
+      fumador:      p.hc_fumador      || 'No',
+      sangre:       p.hc_sangre       || '',
+      peso:         p.hc_peso         || ''
+    };
+  }
+  return p;
+}
+
+// ── SAVE — guarda local Y sincroniza con Sheets ───────────────
+function saveLocal() {
+  localStorage.setItem('epc_citas_v2',       JSON.stringify(citas));
+  localStorage.setItem('epc_pacientes_v2',   JSON.stringify(pacientes));
+  localStorage.setItem('epc_movimientos_v1', JSON.stringify(movimientos));
+  localStorage.setItem('epc_cierres_v1',     JSON.stringify(cierresCaja));
+  localStorage.setItem('epc_tasas_v1',       JSON.stringify(tasas));
+  actualizarBadge();
+}
+
+function save() {
+  saveLocal();
+  // La sincronización con Sheets se hace en cada función específica
+}
+
+const TIPO_CLASS = {
+  'Valoración Facial':      'tp-vf',
+  'Valoración Corporal':    'tp-vc',
+  'Cirugía Facial':         'tp-cf',
+  'Cirugía Corporal':       'tp-cc',
+  'Rellenos':               'tp-re',
+  'Estimuladores':          'tp-es',
+  'Toxina Botulínica':      'tp-tx',
+  'Control Postoperatorio': 'tp-cp'
+};
+
+const TIPO_COLOR = {
+  'Valoración Facial':      '#2563eb',
+  'Valoración Corporal':    '#0d9488',
+  'Cirugía Facial':         '#7c3aed',
+  'Cirugía Corporal':       '#db2777',
+  'Rellenos':               '#d97706',
+  'Estimuladores':          '#16a34a',
+  'Toxina Botulínica':      '#9333ea',
+  'Control Postoperatorio': '#64748b'
+};
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function save() {
+  localStorage.setItem('epc_citas_v2', JSON.stringify(citas));
+  localStorage.setItem('epc_pacientes_v2', JSON.stringify(pacientes));
+  localStorage.setItem('epc_movimientos_v1', JSON.stringify(movimientos));
+  localStorage.setItem('epc_cierres_v1', JSON.stringify(cierresCaja));
+  localStorage.setItem('epc_tasas_v1', JSON.stringify(tasas));
+  actualizarBadge();
+}
+
+function actualizarBadge() {
+  const ahora = new Date();
+  const en8d  = new Date(Date.now()+8*24*3600000);
+  let pend = 0;
+  citas.forEach(c=>{
+    if(c.estado==='cancelada'||c.estado==='completada'||!c.fecha) return;
+    const [y,mo,d]=c.fecha.split('-');const[h,mi]=(c.hora||'09:00').split(':');
+    const dt=new Date(parseInt(y),parseInt(mo)-1,parseInt(d),parseInt(h),parseInt(mi||0));
+    if(dt<ahora||dt>en8d) return;
+    const r=getRecs(c);
+    if(!r.r7d) pend++; if(!r.r24h) pend++; if(!r.r2h) pend++;
+  });
+  const badge = document.getElementById('rec-badge');
+  if(badge){ badge.textContent=pend; badge.style.display=pend>0?'inline':'none'; }
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function showTab(tab) {
+  const tabs = ['calendario','citas','nueva','pacientes','recordatorios','caja'];
+  document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.section').forEach((s,i) => s.classList.toggle('active', tabs[i]===tab));
+  if (tab==='calendario')    renderCalendario();
+  if (tab==='citas')         { renderStats(); renderCitasList(); }
+  if (tab==='pacientes')     renderPacientes();
+  if (tab==='recordatorios') renderRecordatorios();
+  if (tab==='nueva')         poblarSelectPacientes();
+  if (tab==='caja')          initCaja();
+}
+
+// ── HEADER FECHA ─────────────────────────────────────────────
+function setHeaderDate() {
+  const hoy=new Date();
+  document.getElementById('header-date').textContent=`${DIAS[hoy.getDay()]} ${hoy.getDate()} ${MESES[hoy.getMonth()]} ${hoy.getFullYear()}`;
+}
+
+// ── CALENDARIO ───────────────────────────────────────────────
+function cambiarMes(d) { calFecha.setMonth(calFecha.getMonth()+d); renderCalendario(); }
+
+function renderCalendario() {
+  const y=calFecha.getFullYear(), m=calFecha.getMonth();
+  document.getElementById('cal-title').textContent=`${MESES[m]} ${y}`;
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML=DIAS.map(d=>`<div class="cal-dn">${d}</div>`).join('');
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const today=new Date(); today.setHours(0,0,0,0);
+  for(let i=0;i<first;i++) grid.innerHTML+=`<div class="cal-cell empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const fecha=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dc=citas.filter(c=>c.fecha===fecha&&c.estado!=='cancelada');
+    const isToday=new Date(y,m,d).getTime()===today.getTime();
+    const isSel=diaSeleccionado===fecha;
+    grid.innerHTML+=`<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selDia('${fecha}')">
+      <div class="cal-num">${d}</div>
+      ${dc.slice(0,3).map(c=>{
+        const col=TIPO_COLOR[c.tipo]||'#2563eb';
+        return `<span class="cal-pill" style="background:${col};">${c.hora||''} ${getPacNombre(c.pacienteId).split(' ')[0]}</span>`;
+      }).join('')}
+      ${dc.length>3?`<span style="font-size:9px;color:var(--text3);">+${dc.length-3} más</span>`:''}
+    </div>`;
+  }
+}
+
+function selDia(fecha) {
+  diaSeleccionado=fecha; renderCalendario();
+  const[y,m,d]=fecha.split('-');
+  document.getElementById('day-panel-title').textContent=`${parseInt(d)} ${MESES[parseInt(m)-1]} ${y}`;
+  document.getElementById('btn-nueva-dia').style.display='block';
+  const dc=citas.filter(c=>c.fecha===fecha).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const cont=document.getElementById('day-citas');
+  if(!dc.length){cont.innerHTML=`<div class="empty" style="padding:1.5rem 0;"><div class="empty-icon">📅</div><div class="empty-text">Sin citas este día</div></div>`;return;}
+  cont.innerHTML=dc.map(c=>`
+    <div class="cita-row" onclick="editarCita(${c.id})">
+      <div class="cita-time">${c.hora||'--'}</div>
+      <div class="cita-dot" style="background:${TIPO_COLOR[c.tipo]||'#64748b'};"></div>
+      <div class="cita-body">
+        <div class="cita-pac-name">${getPacNombre(c.pacienteId)}</div>
+        <div class="cita-tipo-label">${c.tipo}</div>
+      </div>
+      <span class="badge badge-${c.estado}">${cap(c.estado)}</span>
+    </div>`).join('');
+}
+
+function nuevaCitaDia(){if(diaSeleccionado)document.getElementById('cita-fecha').value=diaSeleccionado;nuevaCita();}
+
+// ── STATS ─────────────────────────────────────────────────────
+function renderStats() {
+  const hoy=fmtISO(new Date());
+  const hoyN=citas.filter(c=>c.fecha===hoy&&c.estado!=='cancelada').length;
+  const pendPago=citas.filter(c=>c.pago==='pendiente'||c.pago==='deuda').length;
+  const confirmadas=citas.filter(c=>c.estado==='confirmada').length;
+  const ingresos=citas.filter(c=>c.pago==='pagado').reduce((s,c)=>s+(parseFloat(c.monto)||0),0);
+  document.getElementById('stats-citas').innerHTML=`
+    <div class="stat-card blue"><div class="stat-label">Total citas</div><div class="stat-value blue">${citas.length}</div><div class="stat-sub">${pacientes.length} pacientes</div></div>
+    <div class="stat-card teal"><div class="stat-label">Citas hoy</div><div class="stat-value teal">${hoyN}</div><div class="stat-sub">programadas</div></div>
+    <div class="stat-card blue"><div class="stat-label">Confirmadas</div><div class="stat-value">${confirmadas}</div></div>
+    <div class="stat-card amber"><div class="stat-label">Cobros pendientes</div><div class="stat-value amber">${pendPago}</div></div>
+    <div class="stat-card green"><div class="stat-label">Ingresos cobrados</div><div class="stat-value green">$${ingresos.toFixed(0)}</div></div>`;
+}
+
+// ── LISTA CITAS ───────────────────────────────────────────────
+function renderCitasList() {
+  const buscar=(document.getElementById('filtro-buscar')?.value||'').toLowerCase();
+  const estado=document.getElementById('filtro-estado')?.value||'';
+  const tipo=document.getElementById('filtro-tipo')?.value||'';
+  let lista=[...citas];
+  if(buscar) lista=lista.filter(c=>getPacNombre(c.pacienteId).toLowerCase().includes(buscar));
+  if(estado) lista=lista.filter(c=>c.estado===estado);
+  if(tipo)   lista=lista.filter(c=>c.tipo===tipo);
+  lista.sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.hora||'').localeCompare(a.hora||''));
+  const cont=document.getElementById('citas-list');
+  if(!lista.length){cont.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">No hay citas con esos filtros</div></div>`;return;}
+  cont.innerHTML=`<table>
+    <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Modalidad</th><th>Monto</th><th>Pago</th><th>Estado</th><th>Acciones</th></tr></thead>
+    <tbody>${lista.map(c=>`<tr>
+      <td style="font-weight:600;">${fmtDate(c.fecha)}</td>
+      <td style="color:var(--text2);">${c.hora||'--'}</td>
+      <td style="font-weight:600;">${getPacNombre(c.pacienteId)}</td>
+      <td><span class="tipo-pill ${TIPO_CLASS[c.tipo]||''}">${c.tipo}</span></td>
+      <td style="color:var(--text2);">${c.modalidad||'Presencial'}</td>
+      <td style="font-weight:600;">${c.monto?'$'+parseFloat(c.monto).toFixed(0):'—'}</td>
+      <td><span class="badge badge-${c.pago==='pagado'?'pagado':c.pago==='deuda'?'deuda':'cobro-pend'}">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Pendiente'}</span></td>
+      <td><span class="badge badge-${c.estado}">${cap(c.estado)}</span></td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="btn btn-xs btn-blue" onclick="editarCita(${c.id})">Editar</button>
+        <button class="btn btn-xs btn-green" onclick="cambiarEstado(${c.id},'completada')" title="Marcar completada">✓</button>
+        <button class="btn btn-xs btn-red" onclick="eliminarCita(${c.id})">✕</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── NUEVA / EDITAR CITA ───────────────────────────────────────
+function nuevaCita(){
+  editandoCitaId=null; clearCitaForm();
+  document.getElementById('edit-banner').classList.remove('visible');
+  document.getElementById('btn-guardar-cita').textContent='Guardar cita';
+  showTab('nueva');
+}
+function cancelarEdicion(){nuevaCita();}
+
+function poblarSelectPacientes(){
+  const sel=document.getElementById('cita-pac');
+  const val=sel?.value;
+  if(!sel)return;
+  sel.innerHTML='<option value="">-- Seleccionar paciente --</option><option value="__nuevo__">✚ Registrar nuevo paciente</option>'+
+    [...pacientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=>`<option value="${p.id}">${p.nombre}${p.cedula?' · '+p.cedula:''}</option>`).join('');
+  if(val)sel.value=val;
+}
+
+function onPacChange(){
+  const val=document.getElementById('cita-pac').value;
+  document.getElementById('nuevo-pac-section').style.display=val==='__nuevo__'?'block':'none';
+}
+
+function editarCita(id){
+  const c=citas.find(x=>x.id===id);if(!c)return;
+  editandoCitaId=id; poblarSelectPacientes();
+  document.getElementById('cita-pac').value=c.pacienteId||'';
+  document.getElementById('cita-tipo').value=c.tipo||'';
+  document.getElementById('cita-modalidad').value=c.modalidad||'Presencial';
+  document.getElementById('cita-fecha').value=c.fecha||'';
+  document.getElementById('cita-hora').value=c.hora||'';
+  document.getElementById('cita-monto').value=c.monto||'';
+  document.getElementById('cita-estado').value=c.estado||'pendiente';
+  document.getElementById('cita-pago').value=c.pago||'pendiente';
+  document.getElementById('cita-doctor').value=c.doctor||'Dr. Deivys Higuerey';
+  document.getElementById('cita-notas').value=c.notas||'';
+  document.getElementById('nuevo-pac-section').style.display='none';
+  document.getElementById('edit-banner-text').textContent=`Editando cita — ${getPacNombre(c.pacienteId)}, ${fmtDate(c.fecha)}`;
+  document.getElementById('edit-banner').classList.add('visible');
+  document.getElementById('btn-guardar-cita').textContent='Guardar cambios';
+  showTab('nueva'); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function guardarCita(){
+  const pacId=document.getElementById('cita-pac').value;
+  const tipo=document.getElementById('cita-tipo').value;
+  const fecha=document.getElementById('cita-fecha').value;
+  const hora=document.getElementById('cita-hora').value;
+  if(!tipo||!fecha||!hora){alert('Completa tipo, fecha y hora.');return;}
+
+  let finalPacId=pacId;
+  if(pacId==='__nuevo__'){
+    const nombre=document.getElementById('pac-nombre').value.trim();
+    const tel=document.getElementById('pac-tel').value.trim();
+    if(!nombre||!tel){alert('El nuevo paciente necesita nombre y teléfono.');return;}
+    const np={
+      id:Date.now(), nombre, cedula:document.getElementById('pac-cedula').value.trim(),
+      nacimiento:document.getElementById('pac-nacimiento').value,
+      telefono:tel, email:document.getElementById('pac-email').value.trim(),
+      ciudad:document.getElementById('pac-ciudad').value.trim(),
+      genero:document.getElementById('pac-genero').value,
+      zona:document.getElementById('pac-zona').value,
+      referido:document.getElementById('pac-referido').value,
+      hc:{
+        enfermedades:document.getElementById('pac-enfermedades').value.trim(),
+        medicamentos:document.getElementById('pac-medicamentos').value.trim(),
+        cirugiasPrev:document.getElementById('pac-cirugias-prev').value.trim(),
+        alergias:document.getElementById('pac-alergias').value.trim(),
+        fumador:document.getElementById('pac-fumador').value,
+        sangre:document.getElementById('pac-sangre').value,
+        peso:document.getElementById('pac-peso').value
+      },
+      anotaciones:[],
+      creadoEn:new Date().toISOString()
+    };
+    pacientes.push(np); finalPacId=np.id;
+  } else if(!pacId){alert('Selecciona un paciente.');return;}
+
+  const cita={
+    id:editandoCitaId||Date.now()+Math.random(),
+    pacienteId:finalPacId, tipo,
+    modalidad:document.getElementById('cita-modalidad').value,
+    fecha, hora,
+    monto:parseFloat(document.getElementById('cita-monto').value)||0,
+    estado:document.getElementById('cita-estado').value,
+    pago:document.getElementById('cita-pago').value,
+    doctor:document.getElementById('cita-doctor').value,
+    notas:document.getElementById('cita-notas').value.trim(),
+    creadaEn:new Date().toISOString()
+  };
+
+  if (editandoCitaId!==null){const idx=citas.findIndex(x=>x.id===editandoCitaId);if(idx!==-1)citas[idx]={...citas[idx],...cita};}
+  else citas.push(cita);
+
+  // Si es paciente nuevo, sincronizar también el paciente
+  if(pacId==='__nuevo__') {
+    const newPac = pacientes[pacientes.length-1];
+    apiCall('savePaciente', newPac);
+  }
+
+  save();
+  nuevaCita();
+  showTab('citas');
+  // Sincronizar con Sheets
+  apiCall('saveCita', cita);
+}
+
+function cambiarEstado(id,estado){const c=citas.find(x=>x.id===id);if(c){c.estado=estado;save();renderCitasList();}}
+function eliminarCita(id){if(confirm('¿Eliminar esta cita?')){citas=citas.filter(x=>x.id!==id);save();renderCitasList();apiCall('deleteCita',{id});}}
+
+function clearCitaForm(){
+  ['cita-tipo','cita-modalidad','cita-estado','cita-pago'].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
+  ['cita-fecha','cita-hora','cita-monto','cita-notas',
+   'pac-nombre','pac-cedula','pac-nacimiento','pac-tel','pac-email','pac-ciudad',
+   'pac-enfermedades','pac-medicamentos','pac-cirugias-prev','pac-alergias','pac-peso'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cita-hora').value='09:00';
+  document.getElementById('nuevo-pac-section').style.display='none';
+  poblarSelectPacientes();
+  if(document.getElementById('cita-pac'))document.getElementById('cita-pac').value='';
+}
+
+// ── PACIENTES ─────────────────────────────────────────────────
+function renderPacientes(){
+  const buscar=(document.getElementById('pac-buscar')?.value||'').toLowerCase();
+  let lista=[...pacientes];
+  if(buscar)lista=lista.filter(p=>p.nombre.toLowerCase().includes(buscar)||(p.cedula||'').toLowerCase().includes(buscar));
+  lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const cont=document.getElementById('pacientes-list');
+  if(!lista.length){cont.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-text">No hay pacientes registrados</div></div>`;return;}
+  cont.innerHTML=lista.map(p=>{
+    const ini=p.nombre.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+    const cp=citas.filter(c=>c.pacienteId===p.id);
+    const ult=cp.sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+    const edad=p.nacimiento?calcEdad(p.nacimiento):null;
+    const anots=(p.anotaciones||[]);
+    return `<div class="pac-card" id="pc-${p.id}">
+      <div class="pac-summary" onclick="togglePac(${p.id})">
+        <div class="pac-avatar">${ini}</div>
+        <div style="flex:1;">
+          <div class="pac-name">${p.nombre}</div>
+          <div class="pac-meta">${edad?edad+' años · ':''}${p.telefono||''}${p.zona?' · '+p.zona:''}</div>
+          <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">
+            ${cp.length?`<span class="tag">${cp.length} cita${cp.length>1?'s':''}</span>`:''}
+            ${ult?`<span class="tag">Última: ${fmtDate(ult.fecha)}</span>`:''}
+            ${anots.length?`<span class="tag">${anots.length} anotación${anots.length>1?'es':''}</span>`:''}
+          </div>
+        </div>
+        <span class="pac-chevron">▶</span>
+      </div>
+      <div class="pac-detail">
+        <!-- Tabs internas -->
+        <div class="pac-tabs">
+          <button class="pac-tab active" onclick="switchPacTab(${p.id},'datos',this)">Datos personales</button>
+          <button class="pac-tab" onclick="switchPacTab(${p.id},'hc',this)">Historia clínica</button>
+          <button class="pac-tab" onclick="switchPacTab(${p.id},'anot',this)">Anotaciones Dr.</button>
+          <button class="pac-tab" onclick="switchPacTab(${p.id},'hist',this)">Historial citas</button>
+        </div>
+
+        <!-- Datos personales -->
+        <div class="pac-tab-content active" id="pct-${p.id}-datos">
+          <div class="hc-grid">
+            <div class="hc-cell"><div class="hc-label">Cédula / Pasaporte</div><div class="hc-value">${p.cedula||'—'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Email</div><div class="hc-value">${p.email||'—'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Ciudad</div><div class="hc-value">${p.ciudad||'—'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Género</div><div class="hc-value">${p.genero||'—'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Zona de interés</div><div class="hc-value">${p.zona||'—'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Referido por</div><div class="hc-value">${p.referido||'—'}</div></div>
+          </div>
+        </div>
+
+        <!-- Historia clínica -->
+        <div class="pac-tab-content" id="pct-${p.id}-hc">
+          <div class="hc-grid">
+            <div class="hc-cell"><div class="hc-label">Enfermedades</div><div class="hc-value">${p.hc?.enfermedades||'Ninguna'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Medicamentos</div><div class="hc-value">${p.hc?.medicamentos||'Ninguno'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Cirugías previas</div><div class="hc-value">${p.hc?.cirugiasPrev||'Ninguna'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Alergias</div><div class="hc-value">${p.hc?.alergias||'Ninguna'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Fumador/a</div><div class="hc-value">${p.hc?.fumador||'No'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Grupo sanguíneo</div><div class="hc-value">${p.hc?.sangre||'Desconocido'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Peso aprox.</div><div class="hc-value">${p.hc?.peso?p.hc.peso+' kg':'—'}</div></div>
+            <div class="hc-cell"><div class="hc-label">Edad</div><div class="hc-value">${edad?edad+' años':'—'}</div></div>
+          </div>
+        </div>
+
+        <!-- Anotaciones del doctor -->
+        <div class="pac-tab-content" id="pct-${p.id}-anot">
+          ${anots.length?anots.slice().reverse().map((a,i)=>`
+            <div class="anotacion-item">
+              <div class="anotacion-header">
+                <span class="anotacion-fecha">📋 ${a.fecha} · ${a.doctor||'Dr. Higuerey'}</span>
+                <button class="btn btn-xs btn-red" onclick="eliminarAnotacion(${p.id},${anots.length-1-i})">✕</button>
+              </div>
+              <div class="anotacion-texto">${a.texto}</div>
+            </div>`).join(''):`<div class="empty" style="padding:1.5rem;"><div class="empty-icon">📋</div><div class="empty-text">Sin anotaciones clínicas aún</div></div>`}
+          <div class="nueva-anotacion">
+            <div class="field" style="margin-bottom:8px;">
+              <label>Nueva anotación clínica</label>
+              <textarea id="anot-texto-${p.id}" placeholder="Observaciones del Dr. Higuerey, evaluación pre/postoperatoria, indicaciones, seguimiento..." style="min-height:90px;"></textarea>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="guardarAnotacion(${p.id})">Guardar anotación</button>
+          </div>
+        </div>
+
+        <!-- Historial de citas -->
+        <div class="pac-tab-content" id="pct-${p.id}-hist">
+          ${cp.length?`<table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Doctor</th><th>Monto</th><th>Estado</th></tr></thead>
+            <tbody>${cp.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(c=>`<tr>
+              <td style="font-weight:600;">${fmtDate(c.fecha)} ${c.hora?'· '+c.hora:''}</td>
+              <td><span class="tipo-pill ${TIPO_CLASS[c.tipo]||''}">${c.tipo}</span></td>
+              <td style="color:var(--text2);">${c.doctor||'—'}</td>
+              <td style="font-weight:600;">${c.monto?'$'+parseFloat(c.monto).toFixed(0):'—'}</td>
+              <td><span class="badge badge-${c.estado}">${cap(c.estado)}</span></td>
+            </tr>`).join('')}</tbody>
+          </table>`:`<div class="empty" style="padding:1.5rem;"><div class="empty-icon">📅</div><div class="empty-text">Sin citas registradas</div></div>`}
+        </div>
+
+        <!-- Acciones -->
+        <div style="padding:12px 1.25rem;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg);">
+          <button class="btn btn-sm btn-primary" onclick="nuevaCitaPara(${p.id})">+ Nueva cita</button>
+          <button class="btn btn-sm btn-red" onclick="eliminarPaciente(${p.id})">Eliminar paciente</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function switchPacTab(pacId,tab,btn){
+  const tabs=['datos','hc','anot','hist'];
+  const card=document.getElementById('pc-'+pacId);
+  if(!card)return;
+  card.querySelectorAll('.pac-tab').forEach(t=>t.classList.remove('active'));
+  tabs.forEach(t=>{const el=document.getElementById(`pct-${pacId}-${t}`);if(el)el.classList.remove('active');});
+  btn.classList.add('active');
+  const ct=document.getElementById(`pct-${pacId}-${tab}`);
+  if(ct)ct.classList.add('active');
+}
+
+function togglePac(id){document.getElementById('pc-'+id)?.classList.toggle('open');}
+
+function guardarAnotacion(pacId){
+  const ta=document.getElementById(`anot-texto-${pacId}`);
+  if(!ta||!ta.value.trim()){alert('Escribe la anotación antes de guardar.');return;}
+  const pac=pacientes.find(p=>p.id===pacId);
+  if(!pac)return;
+  if(!pac.anotaciones)pac.anotaciones=[];
+  pac.anotaciones.push({
+    fecha:new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    doctor:'Dr. Deivys Higuerey',
+    texto:ta.value.trim(),
+    ts:Date.now()
+  });
+  ta.value='';
+  save(); renderPacientes();
+  apiCall('savePaciente', pac);
+}
+
+function eliminarAnotacion(pacId,idx){
+  if(!confirm('¿Eliminar esta anotación?'))return;
+  const pac=pacientes.find(p=>p.id===pacId);
+  if(!pac)return;
+  pac.anotaciones.splice(idx,1);
+  save(); renderPacientes();
+  apiCall('savePaciente', pac);
+}
+
+function nuevoPaciente(){showTab('nueva');setTimeout(()=>{poblarSelectPacientes();document.getElementById('cita-pac').value='__nuevo__';onPacChange();},50);}
+function nuevaCitaPara(pacId){showTab('nueva');setTimeout(()=>{poblarSelectPacientes();document.getElementById('cita-pac').value=pacId;},50);}
+function eliminarPaciente(id){
+  const p=pacientes.find(x=>x.id===id);
+  if(!p||!confirm(`¿Eliminar a ${p.nombre} y todas sus citas?`))return;
+  pacientes=pacientes.filter(x=>x.id!==id);
+  citas=citas.filter(c=>c.pacienteId!==id);
+  save(); renderPacientes();
+  apiCall('deletePaciente',{id});
+}
+
+// ── RECORDATORIOS — 3 por cita: 7 días, 24h, 2h ──────────────
+// Cada cita tiene: recordatorios: { r7d: bool, r24h: bool, r2h: bool }
+
+function getRecs(c) {
+  if (!c.recordatorios) c.recordatorios = { r7d: false, r24h: false, r2h: false };
+  return c.recordatorios;
+}
+
+// Calcula qué recordatorios deben mostrarse AHORA para una cita
+function recsPendientesParaCita(c) {
+  if (!c.fecha || !c.hora) return [];
+  const ahora = new Date();
+  const [y,mo,d] = c.fecha.split('-');
+  const [h,min] = (c.hora||'09:00').split(':');
+  const citaDt = new Date(parseInt(y), parseInt(mo)-1, parseInt(d), parseInt(h), parseInt(min||0));
+  const diffMs = citaDt - ahora;
+  const diffH  = diffMs / 3600000; // horas hasta la cita
+  const recs   = getRecs(c);
+  const result = [];
+
+  // 7 días antes: ventana entre 8 días y 6 días antes
+  if (diffH <= 8*24 && diffH > 6*24 && !recs.r7d) result.push('r7d');
+  // 24 horas antes: ventana entre 26h y 20h antes
+  if (diffH <= 26 && diffH > 20 && !recs.r24h) result.push('r24h');
+  // 2 horas antes: ventana entre 3h y 1h antes
+  if (diffH <= 3 && diffH > 0 && !recs.r2h) result.push('r2h');
+
+  return result;
+}
+
+// Para mostrar en la UI: todos los recordatorios de los próximos 8 días
+function citasConRecordatoriosPendientes(soloActivos) {
+  const ahora = new Date();
+  const en8d  = new Date(Date.now() + 8*24*3600000);
+  return citas
+    .filter(c => {
+      if (c.estado==='cancelada'||c.estado==='completada') return false;
+      if (!c.fecha) return false;
+      const [y,mo,d] = c.fecha.split('-');
+      const [h,min]  = (c.hora||'09:00').split(':');
+      const citaDt   = new Date(parseInt(y),parseInt(mo)-1,parseInt(d),parseInt(h),parseInt(min||0));
+      return citaDt >= ahora && citaDt <= en8d;
+    })
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||'').localeCompare(b.hora||''));
+}
+
+function renderRecordatorios() {
+  const soloActivos = document.getElementById('rec-solo-activos')?.checked ?? false;
+  const cont = document.getElementById('recordatorios-list');
+
+  // Estadísticas
+  const ahora = new Date();
+  const en8d  = new Date(Date.now()+8*24*3600000);
+  const citasProx = citas.filter(c=>{
+    if(c.estado==='cancelada'||c.estado==='completada'||!c.fecha) return false;
+    const [y,mo,d]=c.fecha.split('-');const[h,mi]=(c.hora||'09:00').split(':');
+    const dt=new Date(parseInt(y),parseInt(mo)-1,parseInt(d),parseInt(h),parseInt(mi||0));
+    return dt>=ahora&&dt<=en8d;
+  });
+  const totalRecs = citasProx.length * 3;
+  const enviados  = citasProx.reduce((s,c)=>{const r=getRecs(c);return s+(r.r7d?1:0)+(r.r24h?1:0)+(r.r2h?1:0);},0);
+  const pendCount = totalRecs - enviados;
+
+  const statsHtml = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem;">
+      <div class="stat-card blue"><div class="stat-label">Citas próximas (8 días)</div><div class="stat-value blue">${citasProx.length}</div></div>
+      <div class="stat-card amber"><div class="stat-label">Recordatorios pendientes</div><div class="stat-value amber">${pendCount}</div></div>
+      <div class="stat-card green"><div class="stat-label">Recordatorios enviados</div><div class="stat-value green">${enviados}</div></div>
+    </div>`;
+
+  const filtrosHtml = `
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+          <input type="checkbox" id="rec-solo-activos" onchange="renderRecordatorios()" ${soloActivos?'checked':''} style="width:14px;height:14px;accent-color:var(--accent);">
+          Mostrar solo los que toca enviar ahora
+        </label>
+        <div style="font-size:12px;color:var(--text3);">El sistema detecta automáticamente qué recordatorio corresponde enviar según la proximidad de la cita.</div>
+      </div>
+    </div>`;
+
+  const lista = citasConRecordatoriosPendientes();
+
+  if (!lista.length) {
+    cont.innerHTML = statsHtml + filtrosHtml + `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No hay citas en los próximos 8 días</div></div>`;
+    return;
+  }
+
+  const TIPOS_REC = [
+    { key:'r7d',  etiqueta:'7 días antes',  color:'#7c3aed', desc:'Aviso con una semana de anticipación' },
+    { key:'r24h', etiqueta:'24 horas antes', color:'#d97706', desc:'Confirmación de asistencia' },
+    { key:'r2h',  etiqueta:'2 horas antes',  color:'#dc2626', desc:'Recordatorio inmediato' }
+  ];
+
+  const citasHtml = lista.map(c => {
+    const pac = pacientes.find(p=>p.id===c.pacienteId)||{nombre:'Paciente',telefono:''};
+    const recs = getRecs(c);
+    const telLimpio = (pac.telefono||'').replace(/\D/g,'');
+    const activos   = recsPendientesParaCita(c);
+
+    // Si soloActivos y no hay ninguno que toque enviar ahora, ocultar
+    if (soloActivos && activos.length===0) return '';
+
+    const recsHtml = TIPOS_REC.map(tr => {
+      const enviado = !!recs[tr.key];
+      const tocaAhora = activos.includes(tr.key);
+      const msgId = `rec-${c.id}-${tr.key}`;
+      const msg = genRecordatorio(c, pac, tr.key);
+
+      return `
+        <div style="border:1.5px solid ${tocaAhora&&!enviado?'#f59e0b':enviado?'#86efac':var_border};border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:${tocaAhora&&!enviado?'#fffbeb':enviado?'#f0fdf4':'var(--bg)'};">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${tr.color};display:inline-block;flex-shrink:0;"></span>
+              <span style="font-size:12px;font-weight:700;color:var(--text);">${tr.etiqueta}</span>
+              ${tocaAhora&&!enviado?`<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-size:10px;">⚡ Enviar ahora</span>`:''}
+              ${enviado?`<span class="badge badge-pagado" style="font-size:10px;">✓ Enviado</span>`:''}
+            </div>
+            <div style="display:flex;gap:5px;">
+              ${!enviado?`<button class="btn btn-xs btn-green" onclick="copyRecKey('${msgId}',${c.id},'${tr.key}',this)">📋 Copiar</button>`:''}
+              ${telLimpio&&!enviado?`<a href="https://wa.me/${telLimpio}" target="_blank" class="btn btn-xs" style="background:#25D366;color:white;border-color:#25D366;text-decoration:none;padding:3px 8px;font-size:11px;">💬 WA</a>`:''}
+              <button class="btn btn-xs btn-ghost" onclick="toggleRecKey(${c.id},'${tr.key}')">${enviado?'Revertir':'Marcar enviado'}</button>
+            </div>
+          </div>
+          ${!enviado?`<div style="padding:10px 12px;"><div class="wa-box" id="${msgId}" style="font-size:11.5px;padding:10px;">${msg}</div></div>`:''}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="rec-card" style="margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-weight:700;font-size:15px;color:var(--text);">${pac.nombre}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:3px;">
+              📅 ${fmtDate(c.fecha)} a las ${c.hora||'--'} ·
+              <span class="tipo-pill ${TIPO_CLASS[c.tipo]||''}">${c.tipo}</span> ·
+              ${c.modalidad||'Presencial'}
+            </div>
+            ${pac.telefono?`<div style="font-size:12px;color:var(--text3);margin-top:3px;">📱 ${pac.telefono}</div>`:''}
+          </div>
+          <span class="badge badge-${c.estado}">${cap(c.estado)}</span>
+        </div>
+        ${recsHtml}
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = statsHtml + filtrosHtml + (citasHtml.trim() || `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">No hay recordatorios que enviar ahora mismo</div></div>`);
+}
+
+const var_border = 'var(--border)';
+
+function copyRecKey(msgId, citaId, key, btn) {
+  const el = document.getElementById(msgId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(()=>{
+    btn.textContent = '¡Copiado!';
+    toggleRecKey(citaId, key);
+    setTimeout(()=>{ btn.textContent='📋 Copiar'; renderRecordatorios(); }, 2000);
+  });
+}
+
+function toggleRecKey(citaId, key) {
+  const c = citas.find(x=>x.id===citaId);
+  if (!c) return;
+  if (!c.recordatorios) c.recordatorios = { r7d:false, r24h:false, r2h:false };
+  c.recordatorios[key] = !c.recordatorios[key];
+  save(); renderRecordatorios();
+}
+
+function genRecordatorio(c, pac, tipo) {
+  const monto  = c.monto ? ` El valor de su consulta es *$${parseFloat(c.monto).toFixed(0)}*.` : '';
+  const nombre = pac.nombre.split(' ')[0];
+  const fecha  = fmtDate(c.fecha);
+  const hora   = c.hora || '--';
+  const modal  = c.modalidad || 'Presencial';
+
+  if (tipo === 'r7d') return `Hola ${nombre} 👋\n\nLe informamos que tiene una cita agendada en *Elite Plastic Center* en *7 días*.\n\n📅 *${fecha}* a las *${hora}*\n📋 *${c.tipo}*\n📍 ${modal}${monto}\n\nRecuerde reservar ese día en su agenda. Si necesita reagendar, puede contactarnos con anticipación.\n\n*Elite Plastic Center*\nC.C. Trinidad Tepuy, Consultorio 1-13, Baruta\n📞 +58 414 907 8009`;
+
+  if (tipo === 'r24h') return `Hola ${nombre} 👋\n\n*Recordatorio de cita — mañana*\n\nTiene su cita en *Elite Plastic Center* mañana a las *${hora}*.\n\n📋 *${c.tipo}*\n📍 ${modal}${monto}\n\nPor favor *confirme su asistencia* respondiendo este mensaje. Si necesita reagendar, contáctenos lo antes posible.\n\n¡Le esperamos! 😊\n\n*Elite Plastic Center*\nC.C. Trinidad Tepuy, Consultorio 1-13, Baruta\n📞 +58 414 907 8009`;
+
+  if (tipo === 'r2h') return `Hola ${nombre} 👋\n\n*Su cita es en 2 horas* ⏰\n\nLe recordamos que hoy a las *${hora}* tiene su cita en *Elite Plastic Center*.\n\n📋 *${c.tipo}*\n📍 ${modal}${monto}\n\nRecuerde llegar con puntualidad. ¡Le esperamos!\n\n*Elite Plastic Center*\nC.C. Trinidad Tepuy, Consultorio 1-13, Baruta\n📞 +58 414 907 8009`;
+
+  return '';
+}
+
+function marcarTodosEnviados(){
+  citas.forEach(c=>{ if(!c.recordatorios) c.recordatorios={r7d:false,r24h:false,r2h:false}; });
+  save(); renderRecordatorios();
+}
+
+// ══════════ CAJA DIARIA ══════════════════════════════════════
+
+const METODO_MONEDA = {
+  'Zelle USD':            'USD',
+  'Efectivo USD':         'USD',
+  'Efectivo EUR':         'EUR',
+  'Efectivo Bs':          'BS',
+  'Pago Móvil Bs':        'BS',
+  'Transferencia Bs':     'BS'
+};
+
+const MONEDA_SYMBOL = { USD:'$', BS:'Bs.', EUR:'€' };
+
+function initCaja() {
+  const hoy = fmtISO(new Date());
+  if (!document.getElementById('caja-fecha').value)
+    document.getElementById('caja-fecha').value = hoy;
+
+  // Cargar tasa guardada del día
+  const t = tasas[hoy] || {};
+  if (t.bcv)  document.getElementById('caja-tasa').value = t.bcv;
+  if (t.eur)  document.getElementById('caja-tasa-eur').value = t.eur;
+
+  // Poblar select de pacientes en movimientos
+  const sel = document.getElementById('mov-pac');
+  sel.innerHTML = '<option value="">— Sin paciente —</option>' +
+    [...pacientes].sort((a,b)=>a.nombre.localeCompare(b.nombre))
+      .map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+
+  setTipoMov('ingreso');
+  renderCaja();
+}
+
+function saveTasa() {
+  const fecha = document.getElementById('caja-fecha').value || fmtISO(new Date());
+  const bcv   = parseFloat(document.getElementById('caja-tasa').value) || 0;
+  const eur   = parseFloat(document.getElementById('caja-tasa-eur').value) || 0;
+  if (!bcv) { alert('Ingresa la tasa BCV del día.'); return; }
+  tasas[fecha] = { bcv, eur };
+  save(); renderCaja();
+  apiCall('saveTasa', { fecha, bcv, eur });
+}
+
+function onMonedaChange() {
+  const moneda  = document.getElementById('mov-moneda').value;
+  const metSel  = document.getElementById('mov-metodo');
+  // Filtrar métodos por moneda
+  const opciones = Object.entries(METODO_MONEDA).filter(([,m])=>m===moneda);
+  metSel.innerHTML = opciones.map(([k])=>`<option value="${k}">${k}</option>`).join('');
+}
+
+function setTipoMov(tipo) {
+  document.getElementById('mov-tipo').value = tipo;
+  document.getElementById('btn-tipo-ingreso').style.fontWeight = tipo==='ingreso'?'700':'400';
+  document.getElementById('btn-tipo-egreso').style.fontWeight  = tipo==='egreso'?'700':'400';
+  document.getElementById('btn-tipo-ingreso').style.opacity = tipo==='ingreso'?'1':'0.55';
+  document.getElementById('btn-tipo-egreso').style.opacity  = tipo==='egreso'?'1':'0.55';
+}
+
+function guardarMovimiento() {
+  const fecha   = document.getElementById('caja-fecha').value || fmtISO(new Date());
+  const tipo    = document.getElementById('mov-tipo').value;
+  const concepto= document.getElementById('mov-concepto').value.trim();
+  const monto   = parseFloat(document.getElementById('mov-monto').value) || 0;
+  const moneda  = document.getElementById('mov-moneda').value;
+  const metodo  = document.getElementById('mov-metodo').value;
+  const pacId   = document.getElementById('mov-pac').value;
+  const notas   = document.getElementById('mov-notas').value.trim();
+
+  if (!concepto) { alert('Escribe el concepto del movimiento.'); return; }
+  if (!monto || monto <= 0) { alert('El monto debe ser mayor a 0.'); return; }
+
+  movimientos.push({
+    id: Date.now(),
+    fecha, tipo, concepto, monto, moneda, metodo,
+    pacienteId: pacId || null,
+    notas,
+    ts: new Date().toISOString()
+  });
+
+  save();
+  apiCall('saveMovimiento', movimientos[movimientos.length-1]);
+
+  // Limpiar form
+  document.getElementById('mov-concepto').value = '';
+  document.getElementById('mov-monto').value    = '';
+  document.getElementById('mov-notas').value    = '';
+  document.getElementById('mov-pac').value      = '';
+
+  renderCaja();
+}
+
+function eliminarMovimiento(id) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  movimientos = movimientos.filter(m => m.id !== id);
+  save(); renderCaja();
+  apiCall('deleteMovimiento', {id});
+}
+
+function toUSD(monto, moneda, fecha) {
+  const t = tasas[fecha] || {};
+  if (moneda === 'USD') return monto;
+  if (moneda === 'BS')  return t.bcv  ? monto / t.bcv  : null;
+  if (moneda === 'EUR') return t.eur  ? monto * t.eur   : null;
+  return null;
+}
+
+function renderCaja() {
+  const fecha = document.getElementById('caja-fecha').value || fmtISO(new Date());
+  const movsDia = movimientos.filter(m => m.fecha === fecha);
+  const ingresos = movsDia.filter(m => m.tipo === 'ingreso');
+  const egresos  = movsDia.filter(m => m.tipo === 'egreso');
+  const t = tasas[fecha] || {};
+
+  // ── Stats ──
+  const totIngUSD = ingresos.reduce((s,m)=>{ const v=toUSD(m.monto,m.moneda,fecha); return s+(v||0); },0);
+  const totEgrUSD = egresos.reduce((s,m)=>{ const v=toUSD(m.monto,m.moneda,fecha); return s+(v||0); },0);
+  const netUSD    = totIngUSD - totEgrUSD;
+
+  document.getElementById('caja-stats').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div class="stat-card green">
+        <div class="stat-label">Ingresos del día</div>
+        <div class="stat-value green">$${totIngUSD.toFixed(2)}</div>
+        <div class="stat-sub">${ingresos.length} movimiento${ingresos.length!==1?'s':''}</div>
+      </div>
+      <div class="stat-card" style="border-top-color:var(--red);">
+        <div class="stat-label">Egresos del día</div>
+        <div class="stat-value" style="color:var(--red);">$${totEgrUSD.toFixed(2)}</div>
+        <div class="stat-sub">${egresos.length} movimiento${egresos.length!==1?'s':''}</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Neto del día</div>
+        <div class="stat-value ${netUSD>=0?'blue':''}\" style="${netUSD<0?'color:var(--red)':''}">$${netUSD.toFixed(2)}</div>
+      </div>
+      <div class="stat-card" style="border-top-color:var(--amber);">
+        <div class="stat-label">Tasa BCV del día</div>
+        <div class="stat-value amber">${t.bcv?'Bs '+t.bcv:'—'}</div>
+        <div class="stat-sub">${t.eur?'EUR/USD: '+t.eur:''}</div>
+      </div>
+    </div>`;
+
+  // ── Lista movimientos ──
+  const cont = document.getElementById('caja-movimientos');
+  if (!movsDia.length) {
+    cont.innerHTML = `<div class="empty" style="padding:2rem;"><div class="empty-icon">📭</div><div class="empty-text">Sin movimientos registrados</div></div>`;
+  } else {
+    const sorted = [...movsDia].sort((a,b)=>a.ts.localeCompare(b.ts));
+    cont.innerHTML = `<table>
+      <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Paciente</th><th>Método</th><th>Monto</th><th>≈ USD</th><th></th></tr></thead>
+      <tbody>${sorted.map(m=>{
+        const hora = m.ts ? new Date(m.ts).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}) : '--';
+        const usd  = toUSD(m.monto, m.moneda, fecha);
+        const esIng= m.tipo==='ingreso';
+        const pac  = m.pacienteId ? getPacNombre(m.pacienteId) : '—';
+        return `<tr>
+          <td style="color:var(--text3);font-size:12px;">${hora}</td>
+          <td><span class="badge ${esIng?'badge-pagado':'badge-deuda'}">${esIng?'Ingreso':'Egreso'}</span></td>
+          <td style="font-weight:600;">${m.concepto}${m.notas?`<br><span style="font-size:11px;color:var(--text3);font-weight:400;">${m.notas}</span>`:''}</td>
+          <td style="color:var(--text2);font-size:12px;">${pac}</td>
+          <td style="font-size:12px;color:var(--text2);">${m.metodo}</td>
+          <td style="font-weight:700;color:${esIng?'var(--green)':'var(--red)'};">${esIng?'+':'-'}${MONEDA_SYMBOL[m.moneda]}${m.monto.toFixed(2)}</td>
+          <td style="font-size:12px;color:var(--text3);">${usd!==null?'$'+usd.toFixed(2):'—'}</td>
+          <td><button class="btn btn-xs btn-red" onclick="eliminarMovimiento(${m.id})">✕</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+
+  // ── Arqueo por moneda y método ──
+  const monedas = ['USD','BS','EUR'];
+  const arqMoneda = {};
+  monedas.forEach(mon=>{
+    const ing = ingresos.filter(m=>m.moneda===mon).reduce((s,m)=>s+m.monto,0);
+    const egr = egresos.filter(m=>m.moneda===mon).reduce((s,m)=>s+m.monto,0);
+    arqMoneda[mon] = { ing, egr, net: ing-egr };
+  });
+
+  const metodosUsados = [...new Set(movsDia.map(m=>m.metodo))];
+  const arqMetodo = metodosUsados.map(met=>{
+    const ing = ingresos.filter(m=>m.metodo===met).reduce((s,m)=>s+m.monto,0);
+    const egr = egresos.filter(m=>m.metodo===met).reduce((s,m)=>s+m.monto,0);
+    const mon = METODO_MONEDA[met] || 'USD';
+    return { met, ing, egr, net:ing-egr, mon };
+  });
+
+  document.getElementById('caja-arqueo').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Por moneda</div>
+      ${monedas.map(mon=>{
+        const d=arqMoneda[mon];
+        if(!d.ing&&!d.egr) return '';
+        const sym=MONEDA_SYMBOL[mon];
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:13px;font-weight:600;">${mon==='BS'?'Bolívares':mon==='EUR'?'Euros':'Dólares'}</span>
+          <div style="display:flex;gap:12px;font-size:12px;">
+            <span style="color:var(--green);">↑${sym}${d.ing.toFixed(2)}</span>
+            <span style="color:var(--red);">↓${sym}${d.egr.toFixed(2)}</span>
+            <span style="font-weight:700;color:${d.net>=0?'var(--green)':'var(--red)'};">${d.net>=0?'+':''}${sym}${d.net.toFixed(2)}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Por método de pago</div>
+      ${arqMetodo.length ? arqMetodo.map(d=>{
+        const sym=MONEDA_SYMBOL[d.mon];
+        return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+          <span style="color:var(--text2);">${d.met}</span>
+          <span style="font-weight:700;color:${d.net>=0?'var(--green)':'var(--red)'};">${d.net>=0?'+':''}${sym}${d.net.toFixed(2)}</span>
+        </div>`;
+      }).join('') : '<div style="color:var(--text3);font-size:13px;">Sin movimientos</div>'}
+    </div>
+    <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">TOTAL NETO (≈ USD)</span>
+      <span style="font-size:18px;font-weight:700;color:${netUSD>=0?'var(--green)':'var(--red)'};">$${netUSD.toFixed(2)}</span>
+    </div>`;
+
+  // ── Últimos cierres ──
+  const ultCierres = [...cierresCaja].sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,5);
+  const contCierres = document.getElementById('caja-cierres');
+  if (!ultCierres.length) {
+    contCierres.innerHTML = `<div style="color:var(--text3);font-size:13px;">No hay cierres registrados aún.</div>`;
+  } else {
+    contCierres.innerHTML = ultCierres.map(c=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:13px;font-weight:600;">${fmtDate(c.fecha)}</div>
+          ${c.notas?`<div style="font-size:11px;color:var(--text3);">${c.notas}</div>`:''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:700;color:${c.neto>=0?'var(--green)':'var(--red)'};">$${c.neto.toFixed(2)}</div>
+          <div style="font-size:11px;color:var(--text3);">${c.movimientos} movimientos</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function cerrarCaja() {
+  const fecha = document.getElementById('caja-fecha').value || fmtISO(new Date());
+  const notas = document.getElementById('caja-cierre-notas').value.trim();
+  const movsDia = movimientos.filter(m=>m.fecha===fecha);
+  if (!movsDia.length) { alert('No hay movimientos para cerrar.'); return; }
+  if (!confirm(`¿Cerrar la caja del ${fmtDate(fecha)}? Esto registra el arqueo final del día.`)) return;
+
+  const ingresos = movsDia.filter(m=>m.tipo==='ingreso');
+  const egresos  = movsDia.filter(m=>m.tipo==='egreso');
+  const totIngUSD = ingresos.reduce((s,m)=>{ const v=toUSD(m.monto,m.moneda,fecha); return s+(v||0); },0);
+  const totEgrUSD = egresos.reduce((s,m)=>{ const v=toUSD(m.monto,m.moneda,fecha); return s+(v||0); },0);
+
+  // Actualizar cierre existente o crear nuevo
+  const idx = cierresCaja.findIndex(c=>c.fecha===fecha);
+  const cierre = { fecha, notas, neto: totIngUSD-totEgrUSD, ingresos: totIngUSD, egresos: totEgrUSD, movimientos: movsDia.length, ts: new Date().toISOString() };
+  if (idx!==-1) cierresCaja[idx]=cierre; else cierresCaja.push(cierre);
+  document.getElementById('caja-cierre-notas').value='';
+  save(); renderCaja();
+  apiCall('saveCierre', cierre);
+  alert(`Caja del ${fmtDate(fecha)} cerrada correctamente. Neto: $${cierre.neto.toFixed(2)}`);
+}
+
+function exportarCajaExcel() {
+  const fecha = document.getElementById('caja-fecha').value || fmtISO(new Date());
+  const movsDia = movimientos.filter(m=>m.fecha===fecha);
+  if (!movsDia.length) { alert('No hay movimientos para exportar.'); return; }
+  const rows = movsDia.map(m=>({
+    'Hora': m.ts?new Date(m.ts).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}):'',
+    'Tipo': m.tipo==='ingreso'?'Ingreso':'Egreso',
+    'Concepto': m.concepto,
+    'Paciente': m.pacienteId?getPacNombre(m.pacienteId):'',
+    'Método': m.metodo,
+    'Moneda': m.moneda,
+    'Monto': m.monto,
+    '≈ USD': toUSD(m.monto,m.moneda,fecha)?.toFixed(2)||'',
+    'Notas': m.notas||''
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,`Caja ${fecha}`);
+  XLSX.writeFile(wb,`EPC_Caja_${fecha}.xlsx`);
+}
+function exportarExcel(){
+  if(!citas.length){alert('No hay citas para exportar.');return;}
+  const rows=citas.map(c=>{
+    const pac=pacientes.find(p=>p.id===c.pacienteId)||{};
+    return{'Fecha':c.fecha,'Hora':c.hora,'Paciente':pac.nombre||'','Cédula':pac.cedula||'','Teléfono':pac.telefono||'','Tipo':c.tipo,'Modalidad':c.modalidad||'','Doctor':c.doctor||'','Monto ($)':c.monto||0,'Estado':c.estado,'Pago':c.pago,'Notas':c.notas||''};
+  });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Citas');
+  XLSX.writeFile(wb,`EPC_Citas_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function getPacNombre(id){const p=pacientes.find(x=>x.id===id);return p?p.nombre:'—';}
+function fmtDate(str){if(!str)return'';const[y,m,d]=str.split('-');return`${d}/${m}/${y}`;}
+function fmtISO(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+function calcEdad(nac){if(!nac)return null;const hoy=new Date(),n=new Date(nac);let e=hoy.getFullYear()-n.getFullYear();if(hoy<new Date(hoy.getFullYear(),n.getMonth(),n.getDate()))e--;return e;}
+
+// ── INIT ──────────────────────────────────────────────────────
+setHeaderDate();
+renderCalendario();
+actualizarBadge();
+poblarSelectPacientes();
+// Inicializar hojas y cargar datos desde Google Sheets
+apiCall('init').then(()=> cargarDesdeSheeets());
+</script>
+</body>
+</html>
