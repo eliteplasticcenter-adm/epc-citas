@@ -1,1441 +1,332 @@
-<!DOCTYPE html>
+// ============================================================
+// EPC — SISTEMA DE CITAS — APPS SCRIPT v3
+// Fix definitivo: horas y fechas no se convierten por Sheets
+// ============================================================
 
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EPC — Elite Plastic Center</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --navy:#0f1c2e;--accent:#2563eb;--accent2:#1d4ed8;--accent-light:#eff6ff;
-  --teal:#0d9488;--bg:#f1f5f9;--surface:#fff;--surface2:#f8fafc;
-  --border:#e2e8f0;--border2:#cbd5e1;
-  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
-  --green:#16a34a;--green-bg:#f0fdf4;--green-b:#86efac;
-  --amber:#d97706;--amber-bg:#fffbeb;--amber-b:#fcd34d;
-  --red:#dc2626;--red-bg:#fef2f2;--red-b:#fca5a5;
-  --blue:#2563eb;--blue-bg:#eff6ff;--blue-b:#93c5fd;
-  --r:8px;--rlg:12px;--rxl:20px;
-  --sh:0 1px 3px rgba(15,23,42,.06);--sh2:0 4px 16px rgba(15,23,42,.08);--sh3:0 8px 30px rgba(15,23,42,.14);
-}
-*{box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
-/* HEADER */
-header{background:var(--navy);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;position:sticky;top:0;z-index:300;}
-.brand{display:flex;align-items:center;gap:10px;}
-.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;}
-.brand-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:.02em;}
-.brand-sub{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;}
-.hdr-r{display:flex;align-items:center;gap:8px;}
-.sdot{width:7px;height:7px;border-radius:50%;background:#64748b;}
-.sdot.ok{background:var(--green);}
-.sdot.err{background:var(--red);}
-.sdot.busy{background:var(--amber);animation:blink .8s infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-#slbl{font-size:11px;color:#64748b;}
-/* NAV */
-.nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 1.5rem;gap:2px;overflow-x:auto;}
-.nb{background:none;border:none;border-bottom:2px solid transparent;padding:12px 16px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;white-space:nowrap;font-family:inherit;transition:color .15s;}
-.nb:hover{color:var(--text2);}
-.nb.on{color:var(--accent);border-bottom-color:var(--accent);}
-/* PAGES */
-.pg{display:none;height:calc(100vh - 98px);overflow:hidden;}
-.pg.on{display:flex;}
-/* COLS */
-.cl{width:340px;min-width:280px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;}
-.clh{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2);}
-.clb{flex:1;overflow-y:auto;}
-.cr{flex:1;overflow-y:auto;background:var(--bg);padding:1.25rem;}
-/* DATE NAV */
-.dnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
-.dlbl{font-size:15px;font-weight:700;color:var(--text);text-align:center;flex:1;}
-.dsub{font-size:11px;color:var(--text3);text-align:center;margin-top:1px;}
-/* CITA ITEM */
-.ci{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .1s;}
-.ci:hover{background:var(--accent-light);}
-.ci.sel{background:var(--accent-light);border-left:3px solid var(--accent);}
-.ci.canc{opacity:.5;}
-.ci.comp{opacity:.7;}
-.ctb{min-width:42px;text-align:center;}
-.chh{font-size:14px;font-weight:700;}
-.cmr{font-size:10px;color:var(--text3);}
-.cdiv{width:1px;height:34px;background:var(--border);flex-shrink:0;}
-.cb{flex:1;min-width:0;}
-.cpac{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ctipo{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-/* FICHA */
-.ficha{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);box-shadow:var(--sh2);overflow:hidden;}
-.fh{padding:1.25rem;border-bottom:1px solid var(--border);background:var(--surface2);}
-.fpac{font-size:20px;font-weight:700;}
-.fmeta{font-size:12px;color:var(--text2);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
-.ftabs{display:flex;border-bottom:1px solid var(--border);padding:0 1.25rem;}
-.ft{background:none;border:none;border-bottom:2px solid transparent;padding:9px 14px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;}
-.ft.on{color:var(--accent);border-bottom-color:var(--accent);}
-.fb{padding:1.25rem;}
-.ftp{display:none;}
-.ftp.on{display:block;}
-/* CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--sh);}
-.ctit{font-size:13px;font-weight:700;margin-bottom:1rem;}
-.chdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
-/* MODAL */
-.mo{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
-.mo.on{display:flex;}
-.md{background:var(--surface);border-radius:var(--rxl);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;box-shadow:var(--sh3);}
-.mh{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:10;}
-.mt{font-size:16px;font-weight:700;}
-.mx{background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;line-height:1;}
-.mb{padding:1.5rem;}
-.mf{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--surface2);}
-/* FORM */
-.f{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
-.f label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;}
-input,select,textarea{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:9px 11px;font-size:13px;color:var(--text);outline:none;width:100%;font-family:inherit;transition:border-color .15s;}
-input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
-textarea{resize:vertical;min-height:80px;line-height:1.6;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-/* CHIPS */
-.chips{display:flex;flex-wrap:wrap;gap:6px;}
-.chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);background:var(--surface2);transition:all .15s;user-select:none;}
-.chip.on{border-color:var(--accent);background:var(--accent-light);color:var(--accent);font-weight:600;}
-/* BTN */
-.btn{background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;transition:all .15s;}
-.btn:hover{border-color:var(--accent);color:var(--accent);}
-.btn.p{background:var(--accent);color:#fff;border-color:var(--accent);}
-.btn.p:hover{background:var(--accent2);}
-.btn.sm{padding:5px 11px;font-size:12px;}
-.btn.xs{padding:3px 8px;font-size:11px;border-radius:6px;}
-.btn.g{background:var(--green-bg);color:var(--green);border-color:var(--green-b);}
-.btn.r{background:var(--red-bg);color:var(--red);border-color:var(--red-b);}
-.btn.a{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b);}
-.btn.b{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-b);}
-.btn.t{background:var(--teal);color:#fff;border-color:var(--teal);}
-.btn.gh{background:none;border-color:transparent;color:var(--text3);}
-/* BADGES */
-.bx{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;gap:3px;}
-.bx::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-.bp{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b);}
-.bp::before{background:var(--amber);}
-.bc{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);}
-.bc::before{background:var(--blue);}
-.bco{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b);}
-.bco::before{background:var(--green);}
-.bca{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b);}
-.bca::before{background:var(--red);}
-.bpg{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b);}
-.bpg::before{background:var(--green);}
-.bpb{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b);}
-.bpb::before{background:var(--amber);}
-.bpd{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b);}
-.bpd::before{background:var(--red);}
-/* TIPO PILLS */
-.tp{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;margin:1px;}
-.tp1{background:#eff6ff;color:#1d4ed8;}
-.tp2{background:#f0fdfa;color:#0f766e;}
-.tp3{background:#f5f3ff;color:#6d28d9;}
-.tp4{background:#fdf2f8;color:#9d174d;}
-.tp5{background:#fffbeb;color:#b45309;}
-.tp6{background:#f0fdf4;color:#15803d;}
-.tp7{background:#fdf4ff;color:#7e22ce;}
-.tp8{background:#f8fafc;color:#475569;}
-/* STATS */
-.sg{display:grid;gap:10px;margin-bottom:1.25rem;}
-.s4{grid-template-columns:repeat(4,1fr);}
-.s3{grid-template-columns:repeat(3,1fr);}
-.s2{grid-template-columns:repeat(2,1fr);}
-.st{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:1rem;box-shadow:var(--sh);position:relative;overflow:hidden;}
-.st::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stb::before{background:var(--accent);}
-.stg::before{background:var(--green);}
-.sta::before{background:var(--amber);}
-.str::before{background:var(--red);}
-.stt::before{background:var(--teal);}
-.slbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
-.sval{font-size:24px;font-weight:700;line-height:1;}
-.ssub{font-size:11px;color:var(--text3);margin-top:3px;}
-/* TABLA */
-table{width:100%;border-collapse:collapse;font-size:13px;}
-th{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);}
-td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
-tr:last-child td{border-bottom:none;}
-tbody tr:hover td{background:var(--surface2);}
-/* PAC */
-.pc{border:1px solid var(--border);border-radius:var(--rlg);margin-bottom:8px;overflow:hidden;box-shadow:var(--sh);background:var(--surface);}
-.ps{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
-.ps:hover{background:var(--surface2);}
-.pav{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
-.pnm{font-size:13px;font-weight:700;}
-.pmt{font-size:11px;color:var(--text3);margin-top:1px;}
-.pch{font-size:10px;color:var(--text3);margin-left:auto;transition:transform .2s;}
-.pc.op .pch{transform:rotate(90deg);}
-.pd{display:none;border-top:1px solid var(--border);}
-.pc.op .pd{display:block;}
-.pit-nav{display:flex;border-bottom:1px solid var(--border);padding:0 14px;background:var(--surface2);}
-.pit{background:none;border:none;border-bottom:2px solid transparent;padding:8px 11px;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;}
-.pit.on{color:var(--accent);border-bottom-color:var(--accent);}
-.pct{display:none;}
-.pct.on{display:block;}
-.hcg{display:grid;grid-template-columns:1fr 1fr;}
-.hcc{padding:9px 14px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
-.hcc:nth-child(even){border-right:none;}
-.hcl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
-.hcv{font-size:12px;color:var(--text);line-height:1.5;}
-/* ANOTACIONES */
-.anot{padding:10px 14px;border-bottom:1px solid var(--border);}
-.anoth{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
-.anotf{font-size:10px;font-weight:700;color:var(--text3);}
-.anott{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap;}
-.anotn{padding:12px 14px;background:var(--surface2);border-top:1px solid var(--border);}
-/* CAJA */
-.cjl{display:grid;grid-template-columns:1fr 300px;gap:1.25rem;align-items:start;}
-.tg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
-.ti{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;}
-.tl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
-.tv{font-size:20px;font-weight:700;color:var(--text);}
-.ts{font-size:10px;color:var(--text3);margin-top:2px;}
-.arq{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
-.arq:last-child{border-bottom:none;}
-/* MISC */
-.empty{text-align:center;padding:3rem 1rem;color:var(--text3);}
-.eic{font-size:36px;margin-bottom:8px;}
-.etx{font-size:13px;}
-.tag{display:inline-block;font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--text3);}
-.div{height:1px;background:var(--border);margin:1rem 0;}
-.al{padding:10px 14px;border-radius:var(--r);font-size:12px;margin-bottom:1rem;}
-.al.b{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b);}
-.al.a{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b);}
-/* FILTRO ESTADO AGENDA */
-.fil-est{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
-.fe{padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:11px;font-weight:500;cursor:pointer;color:var(--text3);background:var(--surface);transition:all .15s;}
-.fe.on{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
-@media(max-width:768px){
-  .pg.on{flex-direction:column;}
-  .cl{width:100%;height:260px;min-width:unset;border-right:none;border-bottom:1px solid var(--border);}
-  .cjl{grid-template-columns:1fr;}
-  .g2,.g3{grid-template-columns:1fr;}
-  .sg.s4{grid-template-columns:1fr 1fr;}
-  .tg{grid-template-columns:1fr 1fr;}
-}
-</style>
-</head>
-<body>
+const SHEET_ID = '15c18ptif4YwYLWhqv0-4dZN0F2GDb_hq142lade87XY';
 
-<header>
-  <div class="brand">
-    <div class="logo">EP</div>
-    <div>
-      <div class="brand-name">ELITE PLASTIC CENTER</div>
-      <div class="brand-sub">Caracas, Venezuela</div>
-    </div>
-  </div>
-  <div class="hdr-r">
-    <div class="sdot" id="sdot"></div>
-    <span id="slbl">Conectando...</span>
-    <button class="btn sm gh" onclick="syncNow()">⟳ Sync</button>
-    <button class="btn sm p" onclick="abrirCita()">+ Nueva cita</button>
-  </div>
-</header>
-
-<div class="nav">
-  <button class="nb on" onclick="showPg('agenda')">📅 Agenda</button>
-  <button class="nb" onclick="showPg('pacientes')">👤 Pacientes</button>
-  <button class="nb" onclick="showPg('caja')">💰 Caja</button>
-</div>
-
-<!-- ═══ AGENDA ═══ -->
-
-<div class="pg on" id="pg-agenda">
-  <div class="cl">
-    <div class="clh">
-      <div class="dnav">
-        <button class="btn sm gh" onclick="dDia(-1)">←</button>
-        <div>
-          <div class="dlbl" id="dlbl"></div>
-          <div class="dsub" id="dsub"></div>
-        </div>
-        <button class="btn sm gh" onclick="dDia(1)">→</button>
-      </div>
-      <div style="display:flex;gap:6px;">
-        <input type="date" id="dpk" onchange="goDate()" style="flex:1;padding:5px 8px;font-size:12px;">
-        <button class="btn sm b" onclick="goHoy()">Hoy</button>
-      </div>
-      <div class="fil-est">
-        <span class="fe on" data-est="todos" onclick="setFiltroEst(this)">Todos</span>
-        <span class="fe" data-est="pendiente" onclick="setFiltroEst(this)">Pendientes</span>
-        <span class="fe" data-est="confirmada" onclick="setFiltroEst(this)">Confirmadas</span>
-        <span class="fe" data-est="completada" onclick="setFiltroEst(this)">Completadas</span>
-        <span class="fe" data-est="cancelada" onclick="setFiltroEst(this)">Canceladas</span>
-      </div>
-    </div>
-    <div class="clb" id="ag-lista"></div>
-  </div>
-  <div class="cr" id="ag-ficha">
-    <div class="empty" style="margin-top:4rem;">
-      <div class="eic">📋</div>
-      <div class="etx">Selecciona una cita del panel izquierdo</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ PACIENTES ═══ -->
-
-<div class="pg" id="pg-pacientes">
-  <div style="width:100%;display:flex;flex-direction:column;overflow:hidden;">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;">
-      <input type="text" id="pbuscar" placeholder="🔍 Buscar por nombre, cédula o teléfono..." oninput="renderPacs()" style="flex:1;">
-      <button class="btn sm p" onclick="abrirPac()">+ Nuevo paciente</button>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:12px;max-width:960px;margin:0 auto;width:100%;">
-      <div id="pac-lista"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ CAJA ═══ -->
-
-<div class="pg" id="pg-caja">
-  <div class="cr" style="width:100%;">
-    <div style="max-width:1000px;margin:0 auto;">
-      <!-- Fecha + tasas -->
-      <div class="card">
-        <div class="chdr">
-          <div class="ctit">Caja diaria</div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn sm t" onclick="cargarTasas()">⟳ Tasas automáticas</button>
-            <button class="btn sm" onclick="exportCaja()">↓ Excel</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">
-          <div class="f" style="margin-bottom:0;min-width:150px;">
-            <label>Fecha</label>
-            <input type="date" id="cjfecha" onchange="renderCaja()">
-          </div>
-          <div class="f" style="margin-bottom:0;">
-            <label>BCV Bs/$</label>
-            <input type="number" id="cjtasa" placeholder="0.00" step="0.01" style="width:110px;">
-          </div>
-          <div class="f" style="margin-bottom:0;">
-            <label>EUR/$</label>
-            <input type="number" id="cjteur" placeholder="0.00" step="0.01" style="width:90px;">
-          </div>
-          <button class="btn sm g" onclick="guardarTasa()" style="align-self:flex-end;">Guardar tasa</button>
-        </div>
-        <div class="tg" id="tasa-cards">
-          <div class="ti"><div class="tl">🏛 BCV Oficial</div><div class="tv" id="tv-bcv">—</div><div class="ts" id="ts-bcv"></div></div>
-          <div class="ti"><div class="tl">📊 Paralelo</div><div class="tv" id="tv-par">—</div><div class="ts" id="ts-par"></div></div>
-        </div>
-      </div>
-      <!-- Stats -->
-      <div id="cj-stats"></div>
-      <!-- Layout -->
-      <div class="cjl">
-        <div>
-          <div class="card">
-            <div class="chdr">
-              <div class="ctit">Registrar movimiento</div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn sm g" id="btn-ing" onclick="setTipo('ingreso')">↑ Ingreso</button>
-                <button class="btn sm r" id="btn-egr" onclick="setTipo('egreso')">↓ Egreso</button>
-              </div>
-            </div>
-            <input type="hidden" id="mvtipo" value="ingreso">
-            <div class="g2">
-              <div class="f"><label>Concepto *</label><input type="text" id="mvconc" placeholder="Valoración, honorario..."></div>
-              <div class="f"><label>Paciente</label><select id="mvpac"><option value="">— Sin paciente —</option></select></div>
-            </div>
-            <div class="g3">
-              <div class="f"><label>Moneda</label>
-                <select id="mvmon" onchange="onMoneda()">
-                  <option value="USD">🇺🇸 USD</option>
-                  <option value="BS">🇻🇪 Bolívares</option>
-                  <option value="EUR">🇪🇺 Euros</option>
-                </select>
-              </div>
-              <div class="f"><label>Monto *</label><input type="number" id="mvmonto" placeholder="0.00" step="0.01" min="0"></div>
-              <div class="f"><label>Método</label>
-                <select id="mvmet">
-                  <option value="Zelle USD">Zelle USD</option>
-                  <option value="Efectivo USD">Efectivo USD</option>
-                  <option value="Efectivo EUR">Efectivo EUR</option>
-                  <option value="Efectivo Bs">Efectivo Bs</option>
-                  <option value="Pago Móvil Bs">Pago Móvil Bs</option>
-                  <option value="Transferencia Bs">Transferencia Bs</option>
-                </select>
-              </div>
-            </div>
-            <div class="f"><label>Notas</label><input type="text" id="mvnotas" placeholder="Observaciones..."></div>
-            <div style="display:flex;justify-content:flex-end;">
-              <button class="btn p" onclick="guardarMov()">Registrar</button>
-            </div>
-          </div>
-          <div class="card">
-            <div class="ctit">Movimientos del día</div>
-            <div id="cj-movs"></div>
-          </div>
-        </div>
-        <div>
-          <div class="card">
-            <div class="ctit">Arqueo</div>
-            <div id="cj-arqueo"></div>
-            <div class="div"></div>
-            <div class="f"><label>Notas de cierre</label><textarea id="cj-cnotes" style="min-height:55px;" placeholder="Observaciones..."></textarea></div>
-            <button class="btn p" style="width:100%;" onclick="cerrarCaja()">Cerrar caja del día</button>
-          </div>
-          <div class="card">
-            <div class="ctit" style="margin-bottom:.75rem;">Últimos cierres</div>
-            <div id="cj-cierres"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL CITA ═══ -->
-
-<div class="mo" id="mo-cita">
-  <div class="md">
-    <div class="mh">
-      <div class="mt" id="mo-cita-tit">Nueva cita</div>
-      <button class="mx" onclick="cerrarCita()">×</button>
-    </div>
-    <div class="mb">
-      <div class="f">
-        <label>Paciente *</label>
-        <select id="mc-pac" onchange="onMcPac()">
-          <option value="">— Seleccionar paciente —</option>
-          <option value="__new__">✚ Registrar nuevo paciente ahora</option>
-        </select>
-      </div>
-      <div id="mc-newpac" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Nuevo paciente</div>
-        <div class="g2">
-          <div class="f"><label>Nombre completo *</label><input type="text" id="np-nom" placeholder="Nombre y apellidos"></div>
-          <div class="f"><label>Cédula / Pasaporte</label><input type="text" id="np-ced" placeholder="V-12345678"></div>
-        </div>
-        <div class="g2">
-          <div class="f"><label>WhatsApp *</label><input type="tel" id="np-tel" placeholder="+58 414 000 0000"></div>
-          <div class="f"><label>Email</label><input type="email" id="np-email"></div>
-        </div>
-        <div class="g2">
-          <div class="f"><label>Ciudad</label><input type="text" id="np-ciudad" placeholder="Caracas"></div>
-          <div class="f"><label>¿Cómo nos conoció?</label>
-            <select id="np-ref"><option value="">—</option><option>Instagram</option><option>WhatsApp</option><option>Referido</option><option>Google</option><option>TikTok</option><option>Otro</option></select>
-          </div>
-        </div>
-      </div>
-      <div class="f">
-        <label>Tipo(s) de cita * — selecciona uno o varios</label>
-        <div class="chips" id="mc-chips">
-          <span class="chip" data-v="Valoración Facial" onclick="togChip(this)">Valoración Facial</span>
-          <span class="chip" data-v="Valoración Corporal" onclick="togChip(this)">Valoración Corporal</span>
-          <span class="chip" data-v="Cirugía Facial" onclick="togChip(this)">Cirugía Facial</span>
-          <span class="chip" data-v="Cirugía Corporal" onclick="togChip(this)">Cirugía Corporal</span>
-          <span class="chip" data-v="Rellenos" onclick="togChip(this)">Rellenos</span>
-          <span class="chip" data-v="Estimuladores" onclick="togChip(this)">Estimuladores</span>
-          <span class="chip" data-v="Toxina Botulínica" onclick="togChip(this)">Toxina Botulínica</span>
-          <span class="chip" data-v="Control Postoperatorio" onclick="togChip(this)">Control Postoperatorio</span>
-        </div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Fecha *</label><input type="date" id="mc-fecha"></div>
-        <div class="f"><label>Hora *</label><input type="time" id="mc-hora" value="09:00"></div>
-        <div class="f"><label>Modalidad</label>
-          <select id="mc-mod"><option value="Presencial">Presencial</option><option value="Online">Online</option></select>
-        </div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Monto ($)</label><input type="number" id="mc-monto" placeholder="0.00" step="0.01" min="0"></div>
-        <div class="f"><label>Estado pago</label>
-          <select id="mc-pago"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option><option value="deuda">Deuda</option></select>
-        </div>
-        <div class="f"><label>Estado cita</label>
-          <select id="mc-est"><option value="pendiente">Pendiente</option><option value="confirmada">Confirmada</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option></select>
-        </div>
-      </div>
-      <div class="f"><label>Doctor</label>
-        <select id="mc-doc"><option value="Dr. Deivys Higuerey">Dr. Deivys Higuerey</option><option value="Otro">Otro</option></select>
-      </div>
-      <div class="f"><label>Notas de la cita</label><textarea id="mc-notas" placeholder="Zona a tratar, observaciones, instrucciones..."></textarea></div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="cerrarCita()">Cancelar</button>
-      <button class="btn p" onclick="guardarCita()">Guardar cita</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL PACIENTE ═══ -->
-
-<div class="mo" id="mo-pac">
-  <div class="md">
-    <div class="mh">
-      <div class="mt" id="mo-pac-tit">Nuevo paciente</div>
-      <button class="mx" onclick="cerrarPac()">×</button>
-    </div>
-    <div class="mb">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Datos personales</div>
-      <div class="g2">
-        <div class="f"><label>Nombre completo *</label><input type="text" id="ep-nom"></div>
-        <div class="f"><label>Cédula / Pasaporte</label><input type="text" id="ep-ced" placeholder="V-12345678 / Pasaporte"></div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>WhatsApp *</label><input type="tel" id="ep-tel" placeholder="+58 414 000 0000"></div>
-        <div class="f"><label>Email</label><input type="email" id="ep-email"></div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Ciudad</label><input type="text" id="ep-ciudad" placeholder="Caracas"></div>
-        <div class="f"><label>Nacimiento</label><input type="date" id="ep-nac"></div>
-        <div class="f"><label>Género</label>
-          <select id="ep-gen"><option value="Femenino">Femenino</option><option value="Masculino">Masculino</option><option value="Otro">Otro</option></select>
-        </div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>Zona de interés</label>
-          <select id="ep-zona"><option value="">—</option><option>Abdomen</option><option>Brazos</option><option>Busto</option><option>Cara</option><option>Glúteos</option><option>Muslos</option><option>Nariz</option><option>Papada</option><option>Múltiples zonas</option></select>
-        </div>
-        <div class="f"><label>¿Cómo nos conoció?</label>
-          <select id="ep-ref"><option value="">—</option><option>Instagram</option><option>WhatsApp</option><option>Referido</option><option>Google</option><option>TikTok</option><option>Otro</option></select>
-        </div>
-      </div>
-      <div class="div"></div>
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Historia clínica</div>
-      <div class="g2">
-        <div class="f"><label>Enfermedades crónicas</label><textarea id="ep-enf" placeholder="Ninguna si no aplica"></textarea></div>
-        <div class="f"><label>Medicamentos actuales</label><textarea id="ep-med" placeholder="Nombre y dosis"></textarea></div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>Cirugías previas</label><textarea id="ep-cir" placeholder="Procedimientos anteriores"></textarea></div>
-        <div class="f"><label>Alergias</label><textarea id="ep-alg" placeholder="Medicamentos, materiales..."></textarea></div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>¿Fumador/a?</label>
-          <select id="ep-fum"><option value="No">No</option><option value="Sí">Sí</option><option value="Ex-fumador/a">Ex-fumador/a</option></select>
-        </div>
-        <div class="f"><label>Grupo sanguíneo</label>
-          <select id="ep-sg"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
-        </div>
-        <div class="f"><label>Peso (kg)</label><input type="number" id="ep-peso" placeholder="65"></div>
-      </div>
-    </div>
-    <div class="mf">
-      <button class="btn" onclick="cerrarPac()">Cancelar</button>
-      <button class="btn p" onclick="guardarPac()">Guardar paciente</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-<script>
-// ═══════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════
-const API='https://script.google.com/macros/s/AKfycbzXWIhMZv_On9CCrfo60Tqb8xfwy2mZYlbpMx_GHVWyh6EKZULh7zeHFTt9g5Dfs9TLlw/exec';
-
-// ═══════════════════════════════════════════
-// ESTADO GLOBAL
-// ═══════════════════════════════════════════
-let citas=[],pacs=[],movs=[],cierres=[],tasas={};
-let citaSel=null,editCitaId=null,editPacId=null;
-let tiposSel=[];
-let diaAct=new Date(); diaAct.setHours(0,0,0,0);
-let filtroEst='todos';
-
-// Cargar caché local
-try{citas=JSON.parse(localStorage.getItem('epc_c3')||'[]');}catch(e){}
-try{pacs=JSON.parse(localStorage.getItem('epc_p3')||'[]');}catch(e){}
-try{movs=JSON.parse(localStorage.getItem('epc_m3')||'[]');}catch(e){}
-try{cierres=JSON.parse(localStorage.getItem('epc_cl3')||'[]');}catch(e){}
-try{tasas=JSON.parse(localStorage.getItem('epc_t3')||'{}');}catch(e){}
-
-// Constantes
-const TCLS={'Valoración Facial':'tp1','Valoración Corporal':'tp2','Cirugía Facial':'tp3','Cirugía Corporal':'tp4','Rellenos':'tp5','Estimuladores':'tp6','Toxina Botulínica':'tp7','Control Postoperatorio':'tp8'};
-const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-const MON_MET={'Zelle USD':'USD','Efectivo USD':'USD','Efectivo EUR':'EUR','Efectivo Bs':'BS','Pago Móvil Bs':'BS','Transferencia Bs':'BS'};
-const SYM={USD:'$',BS:'Bs.',EUR:'€'};
-
-// ═══════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════
-const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const fmtD=s=>{if(!s)return'';const[y,m,d]=String(s).split('-');return`${d}/${m}/${y}`;};
-const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):'';
-const uid=()=>String(Date.now()+Math.random().toString(36).slice(2,6));
-const getPac=id=>pacs.find(p=>String(p.id)===String(id))||null;
-const getPacN=id=>{const p=getPac(id);return p?p.nombre:'—';};
-const tipoArr=t=>Array.isArray(t)?t:typeof t==='string'&&t?t.split('|').filter(Boolean):[];
-const badEst=e=>e==='pendiente'?'bp':e==='confirmada'?'bc':e==='completada'?'bco':'bca';
-const badPago=p=>p==='pagado'?'bpg':p==='deuda'?'bpd':'bpb';
-const edad=n=>{if(!n)return null;const h=new Date(),d=new Date(n);let e=h.getFullYear()-d.getFullYear();if(h<new Date(h.getFullYear(),d.getMonth(),d.getDate()))e--;return e;};
-
-// ═══════════════════════════════════════════
-// SYNC
-// ═══════════════════════════════════════════
-function setSt(s,m){
-  const d=document.getElementById('sdot'),l=document.getElementById('slbl');
-  d.className='sdot '+(s==='ok'?'ok':s==='err'?'err':s==='busy'?'busy':'');
-  l.textContent=m||(s==='ok'?'Sincronizado':s==='err'?'Sin conexión':s==='busy'?'Sincronizando...':'—');
-}
-
-async function api(action,body={}){
-  try{
-    const url=`${API}?action=${action}&data=${encodeURIComponent(JSON.stringify(body))}`;
-    const r=await fetch(url,{method:'GET',redirect:'follow'});
-    const txt=await r.text();
-    let d;
-    try{d=JSON.parse(txt);}catch(e){const m=txt.match(/\{[\s\S]*\}/);d=m?JSON.parse(m[0]):null;}
-    if(!d||!d.success)throw new Error((d&&d.error)||'Error');
-    return d.data;
-  }catch(e){console.warn('API:',e.message);return null;}
-}
-
-async function syncNow(){
-  setSt('busy');
-  const data=await api('getAll');
-  if(!data){setSt('err');return;}
-  if(Array.isArray(data.citas))       citas=data.citas.map(nc);
-  if(Array.isArray(data.pacientes))   pacs=data.pacientes.map(np);
-  if(Array.isArray(data.movimientos)) movs=data.movimientos.map(nm);
-  if(Array.isArray(data.cierres))     cierres=data.cierres;
-  if(Array.isArray(data.tasas)){
-    tasas={};
-    data.tasas.forEach(t=>{if(t.fecha)tasas[String(t.fecha)]={bcv:parseFloat(t.bcv)||0,eur:parseFloat(t.eur)||0,par:parseFloat(t.par||t.paralelo)||0};});
-  }
-  guardarLocal();
-  setSt('ok');
-  renderAg();
-  const pg=document.querySelector('.nb.on');
-  if(pg){
-    if(pg.textContent.includes('Pacientes'))renderPacs();
-    if(pg.textContent.includes('Caja'))renderCaja();
-  }
-}
-
-function nc(c){
-  c.id=String(c.id||uid());
-  c.pacienteId=String(c.pacienteId||'');
-  c.tipo=tipoArr(c.tipo);
-  if(typeof c.recordatorios==='string'&&c.recordatorios){try{c.recordatorios=JSON.parse(c.recordatorios);}catch(e){c.recordatorios={};}}
-  if(!c.recordatorios||typeof c.recordatorios!=='object')c.recordatorios={r7d:false,r24h:false,r2h:false};
-  c.monto=parseFloat(c.monto)||0;
-  c.fecha=String(c.fecha||'').trim();
-  c.hora=String(c.hora||'').trim();
-  c.estado=c.estado||'pendiente';
-  c.pago=c.pago||'pendiente';
-  return c;
-}
-function np(p){
-  p.id=String(p.id||uid());
-  if(typeof p.anotaciones==='string'&&p.anotaciones){try{p.anotaciones=JSON.parse(p.anotaciones);}catch(e){p.anotaciones=[];}}
-  if(!Array.isArray(p.anotaciones))p.anotaciones=[];
-  if(!p.hc)p.hc={enfermedades:p.hc_enfermedades||'',medicamentos:p.hc_medicamentos||'',cirugiasPrev:p.hc_cirugiasPrev||'',alergias:p.hc_alergias||'',fumador:p.hc_fumador||'No',sangre:p.hc_sangre||'',peso:p.hc_peso||''};
-  return p;
-}
-function nm(m){
-  m.id=String(m.id||uid());
-  m.monto=parseFloat(m.monto)||0;
-  return m;
-}
-
-function guardarLocal(){
-  localStorage.setItem('epc_c3',JSON.stringify(citas));
-  localStorage.setItem('epc_p3',JSON.stringify(pacs));
-  localStorage.setItem('epc_m3',JSON.stringify(movs));
-  localStorage.setItem('epc_cl3',JSON.stringify(cierres));
-  localStorage.setItem('epc_t3',JSON.stringify(tasas));
-}
-
-// ═══════════════════════════════════════════
-// NAVEGACIÓN
-// ═══════════════════════════════════════════
-function showPg(pg){
-  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('on',['agenda','pacientes','caja'][i]===pg));
-  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',['pg-agenda','pg-pacientes','pg-caja'][i]==='pg-'+pg));
-  if(pg==='pacientes')renderPacs();
-  if(pg==='caja')initCaja();
-}
-
-// ═══════════════════════════════════════════
-// AGENDA
-// ═══════════════════════════════════════════
-function renderFecha(){
-  const hoy=new Date();hoy.setHours(0,0,0,0);
-  const d=Math.round((diaAct-hoy)/86400000);
-  document.getElementById('dlbl').textContent=`${DIAS[diaAct.getDay()]} ${diaAct.getDate()} ${MESES[diaAct.getMonth()]}`;
-  document.getElementById('dsub').textContent=d===0?'Hoy':d===1?'Mañana':d===-1?'Ayer':String(diaAct.getFullYear());
-  document.getElementById('dpk').value=iso(diaAct);
-}
-
-function renderAg(){
-  renderFecha();
-  const fecha=iso(diaAct);
-  // MOSTRAR TODAS LAS CITAS DEL DÍA — filtrar por estado solo si el usuario lo pide
-  let del=citas.filter(c=>c.fecha===fecha);
-  if(filtroEst!=='todos')del=del.filter(c=>c.estado===filtroEst);
-  del.sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
-
-  const el=document.getElementById('ag-lista');
-  if(!del.length){
-    el.innerHTML=`<div class="empty"><div class="eic">📅</div><div class="etx">Sin citas${filtroEst!=='todos'?' con este filtro':''}<br><a href="#" onclick="abrirCita();return false;" style="color:var(--accent);">+ Nueva cita</a></div></div>`;
-    return;
-  }
-  el.innerHTML=del.map(c=>{
-    const pac=getPac(c.pacienteId);
-    const tipos=tipoArr(c.tipo);
-    const sel=citaSel&&String(citaSel.id)===String(c.id);
-    const[hh='09',mm='00']=(c.hora||'09:00').split(':');
-    const h=parseInt(hh)||9;
-    const h12=h%12||12;
-    const mer=h>=12?'PM':'AM';
-    const esCanc=c.estado==='cancelada';
-    const esComp=c.estado==='completada';
-    return`<div class="ci${sel?' sel':''}${esCanc?' canc':''}${esComp?' comp':''}" onclick="selCita('${c.id}')">
-      <div class="ctb"><div class="chh">${h12}:${mm}</div><div class="cmr">${mer}</div></div>
-      <div class="cdiv"></div>
-      <div class="cb">
-        <div class="cpac">${pac?pac.nombre:'Paciente'}</div>
-        <div class="ctipo">${tipos.join(' · ')||'—'}</div>
-      </div>
-      <span class="bx ${badEst(c.estado)}">${cap(c.estado)}</span>
-    </div>`;
-  }).join('');
-}
-
-function selCita(id){
-  citaSel=citas.find(c=>String(c.id)===String(id))||null;
-  renderAg();renderFicha();
-}
-
-function renderFicha(){
-  const el=document.getElementById('ag-ficha');
-  if(!citaSel){
-    el.innerHTML=`<div class="empty" style="margin-top:4rem;"><div class="eic">📋</div><div class="etx">Selecciona una cita</div></div>`;
-    return;
-  }
-  const c=citaSel;
-  const pac=getPac(c.pacienteId);
-  const tipos=tipoArr(c.tipo);
-  el.innerHTML=`<div class="ficha">
-    <div class="fh">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-        <div>
-          <div class="fpac">${pac?pac.nombre:'Paciente'}</div>
-          <div class="fmeta">
-            <span>📅 ${fmtD(c.fecha)} · ${c.hora||'—'}</span>
-            <span>📍 ${c.modalidad||'Presencial'}</span>
-            ${pac&&pac.telefono?`<span>📱 ${pac.telefono}</span>`:''}
-          </div>
-          <div style="margin-top:6px;">${tipos.map(t=>`<span class="tp ${TCLS[t]||'tp8'}">${t}</span>`).join('')}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-          <span class="bx ${badEst(c.estado)}">${cap(c.estado)}</span>
-          <span class="bx ${badPago(c.pago)}">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Por cobrar'}</span>
-          ${c.monto?`<span style="font-size:16px;font-weight:700;color:var(--green);">$${c.monto.toFixed(2)}</span>`:''}
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
-        <button class="btn sm b" onclick="editarCita('${c.id}')">✏️ Editar</button>
-        <button class="btn sm g" onclick="setEst('${c.id}','completada')">✓ Completada</button>
-        <button class="btn sm a" onclick="setEst('${c.id}','confirmada')">Confirmar</button>
-        <button class="btn sm r" onclick="setEst('${c.id}','cancelada')">✕ Cancelar</button>
-        <button class="btn sm" onclick="moverCita('${c.id}')">📅 Mover</button>
-        <button class="btn sm r" onclick="elimCita('${c.id}')">🗑 Eliminar</button>
-      </div>
-    </div>
-    <div class="ftabs">
-      <button class="ft on" onclick="sFTab('det',this)">Detalle</button>
-      <button class="ft" onclick="sFTab('cobro',this)">Cobro</button>
-      ${pac?`<button class="ft" onclick="sFTab('pac',this)">Paciente</button>`:''}
-    </div>
-    <div class="fb">
-      <div class="ftp on" id="ft-det">
-        ${c.notas?`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-size:13px;color:var(--text2);">${c.notas}</div>`:'<p style="color:var(--text3);font-size:13px;">Sin notas de la cita.</p>'}
-        <p style="font-size:12px;color:var(--text3);margin-top:8px;">Doctor: ${c.doctor||'Dr. Deivys Higuerey'}</p>
-      </div>
-      <div class="ftp" id="ft-cobro">
-        <div class="sg s2" style="margin-bottom:1rem;">
-          <div class="st stg"><div class="slbl">Monto</div><div class="sval">${c.monto?'$'+c.monto.toFixed(2):'—'}</div></div>
-          <div class="st ${c.pago==='pagado'?'stg':c.pago==='deuda'?'str':'sta'}"><div class="slbl">Estado pago</div><div class="sval">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Por cobrar'}</div></div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn sm g" onclick="setPago('${c.id}','pagado')">✓ Pagado</button>
-          <button class="btn sm r" onclick="setPago('${c.id}','deuda')">Marcar deuda</button>
-          <button class="btn sm" onclick="setPago('${c.id}','pendiente')">Pendiente</button>
-        </div>
-      </div>
-      ${pac?`<div class="ftp" id="ft-pac">
-        <div class="hcg" style="margin-bottom:10px;">
-          <div class="hcc"><div class="hcl">Documento</div><div class="hcv">${pac.cedula||'—'}</div></div>
-          <div class="hcc"><div class="hcl">Ciudad</div><div class="hcv">${pac.ciudad||'—'}</div></div>
-          <div class="hcc"><div class="hcl">Enfermedades</div><div class="hcv">${pac.hc?.enfermedades||'Ninguna'}</div></div>
-          <div class="hcc"><div class="hcl">Alergias</div><div class="hcv">${pac.hc?.alergias||'Ninguna'}</div></div>
-          <div class="hcc"><div class="hcl">Medicamentos</div><div class="hcv">${pac.hc?.medicamentos||'Ninguno'}</div></div>
-          <div class="hcc"><div class="hcl">Cirugías previas</div><div class="hcv">${pac.hc?.cirugiasPrev||'Ninguna'}</div></div>
-        </div>
-        <button class="btn sm b" onclick="irAPac('${pac.id}')">Ver ficha completa del paciente →</button>
-      </div>`:''}
-    </div>
-  </div>`;
-}
-
-function sFTab(id,btn){
-  document.querySelectorAll('.ft').forEach(b=>b.classList.remove('on'));
-  document.querySelectorAll('.ftp').forEach(p=>p.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('ft-'+id)?.classList.add('on');
-}
-
-function setEst(id,est){
-  const c=citas.find(x=>String(x.id)===String(id));
-  if(!c)return;
-  c.estado=est;
-  guardarLocal();
-  api('saveCita',prepC(c));
-  // Actualizar citaSel si es la misma
-  if(citaSel&&String(citaSel.id)===String(id))citaSel=c;
-  // Re-render SIN perder la cita seleccionada
-  renderAg();
-  renderFicha();
-}
-
-function setPago(id,pago){
-  const c=citas.find(x=>String(x.id)===String(id));
-  if(!c)return;
-  c.pago=pago;
-  guardarLocal();
-  api('saveCita',prepC(c));
-  if(citaSel&&String(citaSel.id)===String(id))citaSel=c;
-  renderFicha();
-}
-
-function elimCita(id){
-  if(!confirm('¿Eliminar esta cita permanentemente?'))return;
-  citas=citas.filter(x=>String(x.id)!==String(id));
-  citaSel=null;
-  guardarLocal();
-  api('deleteCita',{id});
-  renderAg();renderFicha();
-}
-
-function moverCita(id){
-  const nueva=prompt('Nueva fecha (DD/MM/AAAA):');
-  if(!nueva)return;
-  const p=nueva.split('/');if(p.length!==3)return;
-  const f=`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-  const c=citas.find(x=>String(x.id)===String(id));
-  if(c){c.fecha=f;guardarLocal();api('saveCita',prepC(c));if(citaSel&&String(citaSel.id)===String(id))citaSel=c;renderAg();renderFicha();}
-}
-
-function dDia(d){diaAct.setDate(diaAct.getDate()+d);citaSel=null;renderAg();renderFicha();}
-function goHoy(){diaAct=new Date();diaAct.setHours(0,0,0,0);citaSel=null;renderAg();renderFicha();}
-function goDate(){const v=document.getElementById('dpk').value;if(!v)return;const[y,m,d]=v.split('-');diaAct=new Date(+y,+m-1,+d);citaSel=null;renderAg();renderFicha();}
-function setFiltroEst(el){
-  filtroEst=el.dataset.est;
-  document.querySelectorAll('.fe').forEach(e=>e.classList.remove('on'));
-  el.classList.add('on');
-  citaSel=null;renderAg();renderFicha();
-}
-
-// ═══════════════════════════════════════════
-// MODAL CITA
-// ═══════════════════════════════════════════
-function abrirCita(fechaPre){
-  editCitaId=null;tiposSel=[];
-  limpMC();poblarSP();
-  document.getElementById('mc-fecha').value=fechaPre||iso(diaAct);
-  document.getElementById('mo-cita-tit').textContent='Nueva cita';
-  document.getElementById('mo-cita').classList.add('on');
-}
-
-function editarCita(id){
-  const c=citas.find(x=>String(x.id)===String(id));if(!c)return;
-  editCitaId=String(c.id);tiposSel=[];
-  limpMC();poblarSP();
-  // Cargar TODOS los datos sin perderlos
-  document.getElementById('mc-pac').value=c.pacienteId||'';
-  document.getElementById('mc-fecha').value=c.fecha||'';
-  document.getElementById('mc-hora').value=c.hora||'09:00';
-  document.getElementById('mc-mod').value=c.modalidad||'Presencial';
-  document.getElementById('mc-monto').value=c.monto||'';
-  document.getElementById('mc-pago').value=c.pago||'pendiente';
-  document.getElementById('mc-est').value=c.estado||'pendiente';
-  document.getElementById('mc-doc').value=c.doctor||'Dr. Deivys Higuerey';
-  document.getElementById('mc-notas').value=c.notas||'';
-  tiposSel=[...tipoArr(c.tipo)];
-  document.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('on',tiposSel.includes(ch.dataset.v)));
-  document.getElementById('mo-cita-tit').textContent='Editar cita';
-  document.getElementById('mo-cita').classList.add('on');
-}
-
-function cerrarCita(){document.getElementById('mo-cita').classList.remove('on');}
-
-function limpMC(){
-  document.getElementById('mc-fecha').value='';
-  document.getElementById('mc-hora').value='09:00';
-  document.getElementById('mc-monto').value='';
-  document.getElementById('mc-notas').value='';
-  document.getElementById('mc-newpac').style.display='none';
-  ['mc-pac','mc-mod','mc-pago','mc-est','mc-doc'].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
-  document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('on'));
-  tiposSel=[];
-}
-
-function poblarSP(){
-  const s=document.getElementById('mc-pac'),v=s.value;
-  s.innerHTML='<option value="">— Seleccionar —</option><option value="__new__">✚ Nuevo paciente</option>'+
-    [...pacs].sort((a,b)=>a.nombre.localeCompare(b.nombre))
-      .map(p=>`<option value="${p.id}">${p.nombre}${p.cedula?' · '+p.cedula:''}</option>`).join('');
-  if(v)s.value=v;
-}
-
-function onMcPac(){
-  document.getElementById('mc-newpac').style.display=document.getElementById('mc-pac').value==='__new__'?'block':'none';
-}
-
-function togChip(el){
-  const v=el.dataset.v;
-  if(tiposSel.includes(v)){tiposSel=tiposSel.filter(t=>t!==v);el.classList.remove('on');}
-  else{tiposSel.push(v);el.classList.add('on');}
-}
-
-function guardarCita(){
-  const pacId=document.getElementById('mc-pac').value;
-  const fecha=document.getElementById('mc-fecha').value;
-  const hora=document.getElementById('mc-hora').value;
-  if(!fecha||!hora){alert('Completa fecha y hora.');return;}
-  if(!tiposSel.length){alert('Selecciona al menos un tipo de cita.');return;}
-
-  let finalPacId=pacId;
-
-  if(pacId==='__new__'){
-    const nom=document.getElementById('np-nom').value.trim();
-    const tel=document.getElementById('np-tel').value.trim();
-    if(!nom||!tel){alert('Nombre y teléfono obligatorios para el nuevo paciente.');return;}
-    const np={id:uid(),nombre:nom,cedula:document.getElementById('np-ced').value.trim(),
-      telefono:tel,email:document.getElementById('np-email').value.trim(),
-      ciudad:document.getElementById('np-ciudad').value.trim(),
-      genero:'Femenino',zona:'',referido:document.getElementById('np-ref').value,
-      hc:{enfermedades:'',medicamentos:'',cirugiasPrev:'',alergias:'',fumador:'No',sangre:'',peso:''},
-      anotaciones:[],creadoEn:new Date().toISOString()};
-    pacs.push(np);finalPacId=np.id;
-    api('savePaciente',prepP(np));
-  }else if(!pacId){alert('Selecciona un paciente.');return;}
-
-  const cExist=editCitaId?citas.find(x=>String(x.id)===String(editCitaId)):null;
-  const cita={
-    id:editCitaId||uid(),
-    pacienteId:String(finalPacId),
-    pacienteNombre:getPacN(finalPacId),
-    tipo:tiposSel,
-    modalidad:document.getElementById('mc-mod').value,
-    fecha,hora,
-    monto:parseFloat(document.getElementById('mc-monto').value)||0,
-    pago:document.getElementById('mc-pago').value,
-    estado:document.getElementById('mc-est').value,
-    doctor:document.getElementById('mc-doc').value,
-    notas:document.getElementById('mc-notas').value.trim(),
-    recordatorios:cExist?.recordatorios||{r7d:false,r24h:false,r2h:false},
-    creadaEn:cExist?.creadaEn||new Date().toISOString()
-  };
-
-  if(editCitaId){const i=citas.findIndex(x=>String(x.id)===String(editCitaId));if(i!==-1)citas[i]=cita;}
-  else citas.push(cita);
-
-  citaSel=cita;
-  guardarLocal();
-  cerrarCita();
-  api('saveCita',prepC(cita));
-  renderAg();renderFicha();
-}
-
-function prepC(c){
-  return{...c,tipo:Array.isArray(c.tipo)?c.tipo.join('|'):c.tipo,recordatorios:JSON.stringify(c.recordatorios||{})};
-}
-
-// ═══════════════════════════════════════════
-// PACIENTES
-// ═══════════════════════════════════════════
-function renderPacs(){
-  const q=(document.getElementById('pbuscar')?.value||'').toLowerCase().trim();
-  let lista=[...pacs];
-  if(q)lista=lista.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.cedula||'').toLowerCase().includes(q)||(p.telefono||'').includes(q));
-  lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-  const el=document.getElementById('pac-lista');
-  if(!lista.length){
-    el.innerHTML=`<div class="empty"><div class="eic">👤</div><div class="etx">${q?'Sin resultados para "'+q+'"':'No hay pacientes registrados'}</div></div>`;
-    return;
-  }
-  el.innerHTML=lista.map(p=>{
-    const ini=p.nombre.split(' ').slice(0,2).map(n=>n[0]||'').join('').toUpperCase();
-    const cp=citas.filter(c=>String(c.pacienteId)===String(p.id));
-    const ult=cp.sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
-    const anots=p.anotaciones||[];
-    return`<div class="pc" id="pc-${p.id}">
-      <div class="ps" onclick="togPac('${p.id}')">
-        <div class="pav">${ini}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="pnm">${p.nombre}</div>
-          <div class="pmt">${p.telefono||''}${p.cedula?' · '+p.cedula:''}</div>
-          <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">
-            ${cp.length?`<span class="tag">${cp.length} cita${cp.length!==1?'s':''}</span>`:''}
-            ${ult?`<span class="tag">Última: ${fmtD(ult.fecha)}</span>`:''}
-            ${anots.length?`<span class="tag">${anots.length} anotación${anots.length!==1?'es':''}</span>`:''}
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="btn xs b" onclick="event.stopPropagation();editarPac('${p.id}')">Editar</button>
-          <span class="pch">▶</span>
-        </div>
-      </div>
-      <div class="pd">
-        <div class="pit-nav">
-          <button class="pit on" onclick="sPit('${p.id}','dat',this)">Datos</button>
-          <button class="pit" onclick="sPit('${p.id}','hc',this)">Historia clínica</button>
-          <button class="pit" onclick="sPit('${p.id}','anot',this)">Anotaciones Dr.</button>
-          <button class="pit" onclick="sPit('${p.id}','hist',this)">Historial citas</button>
-        </div>
-        <!-- DATOS -->
-        <div class="pct on" id="pct-${p.id}-dat">
-          <div class="hcg">
-            <div class="hcc"><div class="hcl">Documento</div><div class="hcv">${p.cedula||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Email</div><div class="hcv">${p.email||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Ciudad</div><div class="hcv">${p.ciudad||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Género</div><div class="hcv">${p.genero||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Zona de interés</div><div class="hcv">${p.zona||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Edad</div><div class="hcv">${p.nacimiento?edad(p.nacimiento)+' años':'—'}</div></div>
-            <div class="hcc"><div class="hcl">Referido por</div><div class="hcv">${p.referido||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Teléfono</div><div class="hcv">${p.telefono?`<a href="https://wa.me/${(p.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green);">${p.telefono}</a>`:'—'}</div></div>
-          </div>
-        </div>
-        <!-- HC -->
-        <div class="pct" id="pct-${p.id}-hc">
-          <div class="hcg">
-            <div class="hcc"><div class="hcl">Enfermedades crónicas</div><div class="hcv">${p.hc?.enfermedades||'Ninguna'}</div></div>
-            <div class="hcc"><div class="hcl">Medicamentos actuales</div><div class="hcv">${p.hc?.medicamentos||'Ninguno'}</div></div>
-            <div class="hcc"><div class="hcl">Cirugías previas</div><div class="hcv">${p.hc?.cirugiasPrev||'Ninguna'}</div></div>
-            <div class="hcc"><div class="hcl">Alergias</div><div class="hcv">${p.hc?.alergias||'Ninguna'}</div></div>
-            <div class="hcc"><div class="hcl">Fumador/a</div><div class="hcv">${p.hc?.fumador||'No'}</div></div>
-            <div class="hcc"><div class="hcl">Grupo sanguíneo</div><div class="hcv">${p.hc?.sangre||'—'}</div></div>
-            <div class="hcc"><div class="hcl">Peso</div><div class="hcv">${p.hc?.peso?p.hc.peso+' kg':'—'}</div></div>
-          </div>
-        </div>
-        <!-- ANOTACIONES -->
-        <div class="pct" id="pct-${p.id}-anot">
-          ${anots.length?anots.slice().reverse().map((a,ri)=>`
-            <div class="anot">
-              <div class="anoth">
-                <span class="anotf">📋 ${a.fecha} · ${a.doctor||'Dr. Higuerey'}</span>
-                <button class="btn xs r" onclick="elimAnot('${p.id}',${anots.length-1-ri})">✕</button>
-              </div>
-              <div class="anott">${a.texto}</div>
-            </div>`).join(''):`<div class="empty" style="padding:1.5rem;"><div class="eic" style="font-size:24px;">📋</div><div class="etx">Sin anotaciones aún</div></div>`}
-          <div class="anotn">
-            <div class="f" style="margin-bottom:8px;"><label>Nueva anotación del Dr. Higuerey</label>
-              <textarea id="at-${p.id}" placeholder="Observaciones clínicas, evaluación, plan de tratamiento..." style="min-height:90px;"></textarea>
-
-```
-        </div>
-        <button class="btn p sm" onclick="guardarAnot('${p.id}')">💾 Guardar anotación</button>
-      </div>
-    </div>
-    <!-- HISTORIAL -->
-    <div class="pct" id="pct-${p.id}-hist">
-      ${cp.length?`<table>
-        <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Estado</th><th>Pago</th></tr></thead>
-        <tbody>${cp.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(c=>{
-          const tipos=tipoArr(c.tipo);
-          return`<tr>
-            <td style="font-weight:600;white-space:nowrap;">${fmtD(c.fecha)} ${c.hora?'<span style="color:var(--text3);">'+c.hora+'</span>':''}</td>
-            <td>${tipos.map(t=>`<span class="tp ${TCLS[t]||'tp8'}">${t}</span>`).join(' ')}</td>
-            <td style="font-weight:600;">${c.monto?'$'+c.monto.toFixed(0):'—'}</td>
-            <td><span class="bx ${badEst(c.estado)}">${cap(c.estado)}</span></td>
-            <td><span class="bx ${badPago(c.pago)}">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Pend.'}</span></td>
-          </tr>`;}).join('')}
-        </tbody></table>`:`<div class="empty" style="padding:1.5rem;"><div class="eic" style="font-size:24px;">📅</div><div class="etx">Sin citas registradas</div></div>`}
-    </div>
-    <!-- ACCIONES -->
-    <div style="padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2);display:flex;gap:6px;">
-      <button class="btn sm p" onclick="abrirCitaParaPac('${p.id}')">+ Nueva cita</button>
-      <button class="btn sm r" onclick="elimPac('${p.id}')">Eliminar paciente</button>
-    </div>
-  </div>
-</div>`;
-```
-
-}).join(’’);
-}
-
-function togPac(id){document.getElementById(‘pc-’+id)?.classList.toggle(‘op’);}
-function sPit(pid,tab,btn){
-const card=document.getElementById(‘pc-’+pid);if(!card)return;
-card.querySelectorAll(’.pit’).forEach(b=>b.classList.remove(‘on’));
-card.querySelectorAll(’.pct’).forEach(c=>c.classList.remove(‘on’));
-btn.classList.add(‘on’);
-document.getElementById(`pct-${pid}-${tab}`)?.classList.add(‘on’);
-}
-
-function irAPac(id){
-showPg(‘pacientes’);
-setTimeout(()=>{
-const p=getPac(id);if(!p)return;
-document.getElementById(‘pbuscar’).value=p.nombre;
-renderPacs();
-setTimeout(()=>{
-const el=document.getElementById(‘pc-’+id);
-if(el){el.classList.add(‘op’);el.scrollIntoView({behavior:‘smooth’,block:‘start’});}
-},100);
-},100);
-}
-
-function abrirCitaParaPac(pacId){
-abrirCita();
-setTimeout(()=>{poblarSP();document.getElementById(‘mc-pac’).value=pacId;},50);
-}
-
-// MODAL PACIENTE
-function abrirPac(){
-editPacId=null;
-[‘ep-nom’,‘ep-ced’,‘ep-tel’,‘ep-email’,‘ep-ciudad’,‘ep-nac’,‘ep-peso’].forEach(id=>{const el=document.getElementById(id);if(el)el.value=’’;});
-[‘ep-gen’,‘ep-zona’,‘ep-ref’,‘ep-fum’,‘ep-sg’].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
-[‘ep-enf’,‘ep-med’,‘ep-cir’,‘ep-alg’].forEach(id=>{const el=document.getElementById(id);if(el)el.value=’’;});
-document.getElementById(‘mo-pac-tit’).textContent=‘Nuevo paciente’;
-document.getElementById(‘mo-pac’).classList.add(‘on’);
-}
-
-function editarPac(id){
-const p=pacs.find(x=>String(x.id)===String(id));if(!p)return;
-editPacId=String(p.id);
-document.getElementById(‘ep-nom’).value=p.nombre||’’;
-document.getElementById(‘ep-ced’).value=p.cedula||’’;
-document.getElementById(‘ep-tel’).value=p.telefono||’’;
-document.getElementById(‘ep-email’).value=p.email||’’;
-document.getElementById(‘ep-ciudad’).value=p.ciudad||’’;
-document.getElementById(‘ep-nac’).value=p.nacimiento||’’;
-document.getElementById(‘ep-gen’).value=p.genero||‘Femenino’;
-document.getElementById(‘ep-zona’).value=p.zona||’’;
-document.getElementById(‘ep-ref’).value=p.referido||’’;
-document.getElementById(‘ep-enf’).value=p.hc?.enfermedades||’’;
-document.getElementById(‘ep-med’).value=p.hc?.medicamentos||’’;
-document.getElementById(‘ep-cir’).value=p.hc?.cirugiasPrev||’’;
-document.getElementById(‘ep-alg’).value=p.hc?.alergias||’’;
-document.getElementById(‘ep-fum’).value=p.hc?.fumador||‘No’;
-document.getElementById(‘ep-sg’).value=p.hc?.sangre||’’;
-document.getElementById(‘ep-peso’).value=p.hc?.peso||’’;
-document.getElementById(‘mo-pac-tit’).textContent=‘Editar paciente’;
-document.getElementById(‘mo-pac’).classList.add(‘on’);
-}
-
-function cerrarPac(){document.getElementById(‘mo-pac’).classList.remove(‘on’);}
-
-function guardarPac(){
-const nom=document.getElementById(‘ep-nom’).value.trim();
-const tel=document.getElementById(‘ep-tel’).value.trim();
-if(!nom||!tel){alert(‘Nombre y teléfono son obligatorios.’);return;}
-const pExist=editPacId?pacs.find(x=>String(x.id)===String(editPacId)):null;
-const p={
-id:editPacId||uid(),nombre:nom,
-cedula:document.getElementById(‘ep-ced’).value.trim(),
-telefono:tel,
-email:document.getElementById(‘ep-email’).value.trim(),
-ciudad:document.getElementById(‘ep-ciudad’).value.trim(),
-nacimiento:document.getElementById(‘ep-nac’).value,
-genero:document.getElementById(‘ep-gen’).value,
-zona:document.getElementById(‘ep-zona’).value,
-referido:document.getElementById(‘ep-ref’).value,
-hc:{
-enfermedades:document.getElementById(‘ep-enf’).value.trim(),
-medicamentos:document.getElementById(‘ep-med’).value.trim(),
-cirugiasPrev:document.getElementById(‘ep-cir’).value.trim(),
-alergias:document.getElementById(‘ep-alg’).value.trim(),
-fumador:document.getElementById(‘ep-fum’).value,
-sangre:document.getElementById(‘ep-sg’).value,
-peso:document.getElementById(‘ep-peso’).value
-},
-anotaciones:pExist?.anotaciones||[],
-creadoEn:pExist?.creadoEn||new Date().toISOString()
+const HOJAS = {
+  citas:       'Citas',
+  pacientes:   'Pacientes',
+  movimientos: 'Movimientos',
+  cierres:     'Cierres',
+  tasas:       'Tasas'
 };
-if(editPacId){const i=pacs.findIndex(x=>String(x.id)===String(editPacId));if(i!==-1)pacs[i]=p;}
-else pacs.push(p);
-guardarLocal();cerrarPac();renderPacs();
-api(‘savePaciente’,prepP(p));
+
+const HEADERS = {
+  citas:       ['id','pacienteId','pacienteNombre','tipo','modalidad','fecha','hora','monto','estado','pago','doctor','notas','recordatorios','creadaEn'],
+  pacientes:   ['id','nombre','cedula','nacimiento','telefono','email','ciudad','genero','zona','referido','hc_enfermedades','hc_medicamentos','hc_cirugiasPrev','hc_alergias','hc_fumador','hc_sangre','hc_peso','anotaciones','creadoEn'],
+  movimientos: ['id','fecha','tipo','concepto','monto','moneda','metodo','pacienteId','notas','ts'],
+  cierres:     ['fecha','notas','neto','ingresos','egresos','movimientos','ts'],
+  tasas:       ['fecha','bcv','eur']
+};
+
+// Columnas que SIEMPRE deben tratarse como texto puro (nunca como fecha/hora)
+const TEXTO_PURO = {
+  citas: ['id','pacienteId','hora','fecha','recordatorios','creadaEn','tipo'],
+  pacientes: ['id','nacimiento','creadoEn','anotaciones'],
+  movimientos: ['id','fecha','ts'],
+  cierres: ['fecha','ts'],
+  tasas: ['fecha']
+};
+
+// ── CORS + JSONP ──────────────────────────────────────────────
+function corsResponse(data, callback) {
+  const json = JSON.stringify(data);
+  // Si viene parámetro callback, responder como JSONP
+  if (callback) {
+    return ContentService
+      .createTextOutput(`${callback}(${json})`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-function prepP(p){
-return{…p,
-hc_enfermedades:p.hc?.enfermedades||’’,hc_medicamentos:p.hc?.medicamentos||’’,
-hc_cirugiasPrev:p.hc?.cirugiasPrev||’’,hc_alergias:p.hc?.alergias||’’,
-hc_fumador:p.hc?.fumador||‘No’,hc_sangre:p.hc?.sangre||’’,hc_peso:p.hc?.peso||’’,
-anotaciones:JSON.stringify(p.anotaciones||[])};
+// ── ENTRY POINTS ─────────────────────────────────────────────
+function doGet(e) {
+  const params = e.parameter || {};
+  const action = params.action || '';
+  const callback = params.callback || null; // JSONP callback
+  let body = {};
+  if (params.data) {
+    try { body = JSON.parse(decodeURIComponent(params.data)); } catch(err) {}
+  }
+  try {
+    let result;
+    switch(action) {
+      case 'init':             initSheets(); result = { ok: true }; break;
+      case 'getAll':           result = getAllData(); break;
+      case 'saveCita':         result = saveCita(body); break;
+      case 'deleteCita':       result = deleteRow('citas', body.id); break;
+      case 'savePaciente':     result = savePaciente(body); break;
+      case 'deletePaciente':   result = deletePaciente(body.id); break;
+      case 'saveMovimiento':   result = saveMovimiento(body); break;
+      case 'deleteMovimiento': result = deleteRow('movimientos', body.id); break;
+      case 'saveCierre':       result = saveCierre(body); break;
+      case 'saveTasa':         result = saveTasa(body); break;
+      default:                 result = { error: 'Acción desconocida: ' + action };
+    }
+    return corsResponse({ success: true, data: result }, callback);
+  } catch(err) {
+    return corsResponse({ success: false, error: err.toString() }, callback);
+  }
 }
 
-function guardarAnot(pacId){
-const ta=document.getElementById(‘at-’+pacId);
-if(!ta||!ta.value.trim()){alert(‘Escribe la anotación.’);return;}
-const p=pacs.find(x=>String(x.id)===String(pacId));if(!p)return;
-if(!p.anotaciones)p.anotaciones=[];
-p.anotaciones.push({
-fecha:new Date().toLocaleDateString(‘es-VE’,{day:‘2-digit’,month:‘2-digit’,year:‘numeric’}),
-doctor:‘Dr. Deivys Higuerey’,
-texto:ta.value.trim(),
-ts:Date.now()
-});
-ta.value=’’;guardarLocal();renderPacs();
-api(‘savePaciente’,prepP(p));
+function doPost(e) { return doGet(e); }
+
+// ── INICIALIZAR HOJAS ────────────────────────────────────────
+function initSheets() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  Object.entries(HOJAS).forEach(([key, name]) => {
+    let sheet = ss.getSheetByName(name);
+    if (!sheet) {
+      sheet = ss.insertSheet(name);
+      const headers = HEADERS[key];
+      sheet.appendRow(headers);
+      sheet.setFrozenRows(1);
+      // Formato cabecera
+      sheet.getRange(1,1,1,headers.length)
+        .setBackground('#0f1c2e')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold');
+    }
+    // Forzar formato texto en columnas críticas para evitar conversión automática
+    forcarTextoEnHoja(sheet, key);
+  });
+  return { ok: true };
 }
 
-function elimAnot(pacId,idx){
-if(!confirm(’¿Eliminar esta anotación?’))return;
-const p=pacs.find(x=>String(x.id)===String(pacId));if(!p)return;
-p.anotaciones.splice(idx,1);guardarLocal();renderPacs();
-api(‘savePaciente’,prepP(p));
+function forcarTextoEnHoja(sheet, key) {
+  const cols = TEXTO_PURO[key] || [];
+  const headers = HEADERS[key];
+  const lastRow = Math.max(sheet.getLastRow(), 2);
+  cols.forEach(col => {
+    const idx = headers.indexOf(col);
+    if (idx >= 0) {
+      sheet.getRange(1, idx+1, lastRow, 1).setNumberFormat('@');
+    }
+  });
 }
 
-function elimPac(id){
-const p=pacs.find(x=>String(x.id)===String(id));
-if(!p||!confirm(`¿Eliminar a ${p.nombre} y todas sus citas?`))return;
-pacs=pacs.filter(x=>String(x.id)!==String(id));
-citas=citas.filter(c=>String(c.pacienteId)!==String(id));
-guardarLocal();renderPacs();
-api(‘deletePaciente’,{id});
+// ── GET ALL — usa getDisplayValues para evitar conversión de Sheets ──
+function getAllData() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const result = {};
+
+  Object.entries(HOJAS).forEach(([key, name]) => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet || sheet.getLastRow() <= 1) { result[key] = []; return; }
+
+    const range = sheet.getDataRange();
+    const headers = range.getValues()[0]; // primera fila = headers
+    const rawValues = range.getValues();   // valores reales (puede convertir fechas)
+    const dispValues = range.getDisplayValues(); // valores como se ven en pantalla
+
+    const textoCols = TEXTO_PURO[key] || [];
+
+    result[key] = [];
+    for (let i = 1; i < rawValues.length; i++) {
+      const obj = {};
+      let tieneId = false;
+
+      headers.forEach((h, ci) => {
+        const raw  = rawValues[i][ci];
+        const disp = dispValues[i][ci];
+
+        let val;
+
+        // Si es columna de texto puro, usar displayValue siempre
+        if (textoCols.includes(h)) {
+          val = disp;
+          // Pero si es hora y viene como fecha de Sheets (objeto Date), extraer HH:MM
+          if (raw instanceof Date && !isNaN(raw) && (h === 'hora')) {
+            const hh = String(raw.getHours()).padStart(2, '0');
+            const mm = String(raw.getMinutes()).padStart(2, '0');
+            val = hh + ':' + mm;
+          }
+          // Si es fecha y viene como Date, formatear como YYYY-MM-DD
+          if (raw instanceof Date && !isNaN(raw) && (h === 'fecha' || h === 'nacimiento')) {
+            val = Utilities.formatDate(raw, 'UTC', 'yyyy-MM-dd');
+          }
+        } else {
+          // Para otras columnas usar raw, convirtiendo Date si aplica
+          if (raw instanceof Date && !isNaN(raw)) {
+            val = Utilities.formatDate(raw, 'UTC', 'yyyy-MM-dd');
+          } else {
+            val = raw;
+          }
+        }
+
+        // Parsear JSON anidado (recordatorios, anotaciones)
+        if (typeof val === 'string' && val && (val.startsWith('{') || val.startsWith('['))) {
+          try { val = JSON.parse(val); } catch(e) {}
+        }
+
+        // Convertir montos y números
+        if (['monto','neto','ingresos','egresos','bcv','eur'].includes(h)) {
+          val = parseFloat(val) || 0;
+        }
+
+        obj[h] = (val === '' || val === null || val === undefined) ? null : val;
+        if (h === 'id' && val) tieneId = true;
+        if (h === 'fecha' && val) tieneId = true; // para cierres y tasas
+      });
+
+      if (tieneId) result[key].push(obj);
+    }
+  });
+
+  return result;
 }
 
-// ═══════════════════════════════════════════
-// CAJA
-// ═══════════════════════════════════════════
-function initCaja(){
-const hoy=iso(new Date());
-const cf=document.getElementById(‘cjfecha’);
-if(!cf.value)cf.value=hoy;
-// Poblar pacientes
-const sm=document.getElementById(‘mvpac’);
-sm.innerHTML=’<option value="">— Sin paciente —</option>’+
-[…pacs].sort((a,b)=>a.nombre.localeCompare(b.nombre))
-.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join(’’);
-// Cargar tasa guardada
-const t=tasas[hoy]||{};
-if(t.bcv){
-document.getElementById(‘cjtasa’).value=t.bcv;
-document.getElementById(‘tv-bcv’).textContent=`Bs. ${parseFloat(t.bcv).toFixed(2)}`;
-document.getElementById(‘ts-bcv’).textContent=‘Guardada’;
-}
-if(t.eur)document.getElementById(‘cjteur’).value=t.eur;
-if(t.par){
-document.getElementById(‘tv-par’).textContent=`Bs. ${parseFloat(t.par).toFixed(2)}`;
-document.getElementById(‘ts-par’).textContent=‘Guardada’;
-}
-if(!t.bcv)cargarTasas();
-setTipo(‘ingreso’);
-renderCaja();
+// ── GUARDAR CITA ─────────────────────────────────────────────
+function saveCita(data) {
+  if (!data || !data.id) return { error: 'Sin id' };
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(HOJAS.citas);
+
+  // Serializar campos JSON
+  if (typeof data.recordatorios === 'object' && data.recordatorios !== null) {
+    data.recordatorios = JSON.stringify(data.recordatorios);
+  }
+  if (Array.isArray(data.tipo)) {
+    data.tipo = data.tipo.join('|');
+  }
+
+  const existing = findRowById(sheet, data.id);
+  const row = HEADERS.citas.map(h => {
+    const v = data[h];
+    return (v !== undefined && v !== null) ? String(v) : '';
+  });
+
+  if (existing > 0) {
+    const range = sheet.getRange(existing, 1, 1, row.length);
+    range.setNumberFormat('@');
+    range.setValues([row]);
+  } else {
+    const newRow = sheet.getLastRow() + 1;
+    sheet.getRange(newRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  }
+  return { ok: true };
 }
 
-async function cargarTasas(){
-document.getElementById(‘tv-bcv’).textContent=’…’;
-document.getElementById(‘tv-par’).textContent=’…’;
-let bcv=0,par=0,eur=1.08;
-// EUR
-try{
-const re=await fetch(‘https://api.exchangerate-api.com/v4/latest/USD’);
-if(re.ok){const d=await re.json();eur=d.rates?.EUR||1.08;}
-}catch(e){}
-// VES
-try{
-const rv=await fetch(‘https://pydolarve.org/api/v1/dollar?page=criptodolar’,{signal:AbortSignal.timeout(6000)});
-if(rv.ok){
-const dv=await rv.json();
-const bcvM=dv?.monitors?.BCV;
-const parM=dv?.monitors?.EnParaleloVzla||dv?.monitors?.Yadio||dv?.monitors?.CriptoDolar;
-if(bcvM?.price){bcv=parseFloat(bcvM.price)||0;document.getElementById(‘tv-bcv’).textContent=`Bs. ${bcv.toFixed(2)}`;document.getElementById(‘ts-bcv’).textContent=bcvM.last_update||’’;}
-if(parM?.price){par=parseFloat(parM.price)||0;document.getElementById(‘tv-par’).textContent=`Bs. ${par.toFixed(2)}`;document.getElementById(‘ts-par’).textContent=parM.last_update||’’;}
-}
-}catch(e){
-try{
-const rv2=await fetch(‘https://ve.dolarapi.com/v1/dolares’,{signal:AbortSignal.timeout(6000)});
-if(rv2.ok){
-const arr=await rv2.json();
-const bO=arr.find(x=>(x.fuente||’’).toLowerCase().includes(‘bcv’));
-const pO=arr.find(x=>(x.fuente||’’).toLowerCase().includes(‘paralelo’));
-if(bO?.promedio){bcv=parseFloat(bO.promedio)||0;document.getElementById(‘tv-bcv’).textContent=`Bs. ${bcv.toFixed(2)}`;}
-if(pO?.promedio){par=parseFloat(pO.promedio)||0;document.getElementById(‘tv-par’).textContent=`Bs. ${par.toFixed(2)}`;}
-}
-}catch(e2){document.getElementById(‘tv-bcv’).textContent=‘No disponible’;document.getElementById(‘tv-par’).textContent=‘No disponible’;}
-}
-// Actualizar inputs y guardar
-if(bcv>0)document.getElementById(‘cjtasa’).value=bcv.toFixed(2);
-document.getElementById(‘cjteur’).value=eur.toFixed(4);
-const fecha=document.getElementById(‘cjfecha’).value||iso(new Date());
-if(bcv>0){tasas[fecha]={bcv,eur,par};guardarLocal();api(‘saveTasa’,{fecha,bcv,eur});}
+// ── GUARDAR PACIENTE ─────────────────────────────────────────
+function savePaciente(data) {
+  if (!data || !data.id) return { error: 'Sin id' };
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(HOJAS.pacientes);
+
+  // Aplanar hc
+  if (data.hc && typeof data.hc === 'object') {
+    Object.keys(data.hc).forEach(k => { data['hc_' + k] = data.hc[k] || ''; });
+  }
+  if (Array.isArray(data.anotaciones)) {
+    data.anotaciones = JSON.stringify(data.anotaciones);
+  }
+
+  const existing = findRowById(sheet, data.id);
+  const row = HEADERS.pacientes.map(h => {
+    const v = data[h];
+    return (v !== undefined && v !== null) ? String(v) : '';
+  });
+
+  if (existing > 0) {
+    sheet.getRange(existing, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  } else {
+    const newRow = sheet.getLastRow() + 1;
+    sheet.getRange(newRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  }
+  return { ok: true };
 }
 
-function guardarTasa(){
-const fecha=document.getElementById(‘cjfecha’).value||iso(new Date());
-const bcv=parseFloat(document.getElementById(‘cjtasa’).value)||0;
-const eur=parseFloat(document.getElementById(‘cjteur’).value)||1.08;
-if(!bcv){alert(‘Ingresa la tasa BCV.’);return;}
-tasas[fecha]={bcv,eur,par:tasas[fecha]?.par||0};
-document.getElementById(‘tv-bcv’).textContent=`Bs. ${bcv.toFixed(2)}`;
-document.getElementById(‘ts-bcv’).textContent=‘Guardada manualmente’;
-guardarLocal();api(‘saveTasa’,{fecha,bcv,eur});
-renderCaja();
+function deletePaciente(id) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const citasSheet = ss.getSheetByName(HOJAS.citas);
+  const data = citasSheet.getDataRange().getDisplayValues();
+  const pacIdCol = HEADERS.citas.indexOf('pacienteId');
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][pacIdCol]) === String(id)) citasSheet.deleteRow(i + 1);
+  }
+  deleteRow('pacientes', id);
+  return { ok: true };
 }
 
-function setTipo(t){
-document.getElementById(‘mvtipo’).value=t;
-document.getElementById(‘btn-ing’).style.opacity=t===‘ingreso’?‘1’:‘0.5’;
-document.getElementById(‘btn-egr’).style.opacity=t===‘egreso’?‘1’:‘0.5’;
+// ── GUARDAR MOVIMIENTO ───────────────────────────────────────
+function saveMovimiento(data) {
+  if (!data || !data.id) return { error: 'Sin id' };
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(HOJAS.movimientos);
+  const existing = findRowById(sheet, data.id);
+  const row = HEADERS.movimientos.map(h => {
+    const v = data[h];
+    return (v !== undefined && v !== null) ? String(v) : '';
+  });
+  if (existing > 0) {
+    sheet.getRange(existing, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  } else {
+    const newRow = sheet.getLastRow() + 1;
+    sheet.getRange(newRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  }
+  return { ok: true };
 }
 
-function onMoneda(){
-const mon=document.getElementById(‘mvmon’).value;
-const met=document.getElementById(‘mvmet’);
-const ops=Object.entries(MON_MET).filter(([,m])=>m===mon);
-met.innerHTML=ops.map(([k])=>`<option value="${k}">${k}</option>`).join(’’);
+// ── GUARDAR CIERRE ───────────────────────────────────────────
+function saveCierre(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(HOJAS.cierres);
+  const rows = sheet.getDataRange().getDisplayValues();
+  let foundRow = -1;
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(data.fecha)) { foundRow = i + 1; break; }
+  }
+  const row = HEADERS.cierres.map(h => {
+    const v = data[h];
+    return (v !== undefined && v !== null) ? String(v) : '';
+  });
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  } else {
+    const newRow = sheet.getLastRow() + 1;
+    sheet.getRange(newRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  }
+  return { ok: true };
 }
 
-function toUSD(monto,moneda,fecha){
-const t=tasas[fecha]||{};
-const bcv=t.bcv||0;const eur=t.eur||1.08;
-if(moneda===‘USD’)return monto;
-if(moneda===‘BS’)return bcv?monto/bcv:null;
-if(moneda===‘EUR’)return monto*eur;
-return null;
+// ── GUARDAR TASA ─────────────────────────────────────────────
+function saveTasa(data) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(HOJAS.tasas);
+  const rows = sheet.getDataRange().getDisplayValues();
+  let foundRow = -1;
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(data.fecha)) { foundRow = i + 1; break; }
+  }
+  const row = [String(data.fecha||''), String(data.bcv||''), String(data.eur||'')];
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  } else {
+    const newRow = sheet.getLastRow() + 1;
+    sheet.getRange(newRow, 1, 1, row.length).setNumberFormat('@').setValues([row]);
+  }
+  return { ok: true };
 }
 
-function guardarMov(){
-const fecha=document.getElementById(‘cjfecha’).value||iso(new Date());
-const tipo=document.getElementById(‘mvtipo’).value;
-const conc=document.getElementById(‘mvconc’).value.trim();
-const monto=parseFloat(document.getElementById(‘mvmonto’).value)||0;
-const moneda=document.getElementById(‘mvmon’).value;
-const metodo=document.getElementById(‘mvmet’).value;
-const pacId=document.getElementById(‘mvpac’).value;
-const notas=document.getElementById(‘mvnotas’).value.trim();
-if(!conc){alert(‘Escribe el concepto.’);return;}
-if(!monto||monto<=0){alert(‘Monto inválido.’);return;}
-const mov={id:uid(),fecha,tipo,concepto:conc,monto,moneda,metodo,
-pacienteId:pacId||null,notas,ts:new Date().toISOString()};
-movs.push(mov);
-guardarLocal();
-// Limpiar form
-document.getElementById(‘mvconc’).value=’’;
-document.getElementById(‘mvmonto’).value=’’;
-document.getElementById(‘mvnotas’).value=’’;
-document.getElementById(‘mvpac’).value=’’;
-// Refrescar INMEDIATAMENTE
-renderCaja();
-// Sync en segundo plano
-api(‘saveMovimiento’,mov);
+// ── HELPERS ──────────────────────────────────────────────────
+function findRowById(sheet, id) {
+  const data = sheet.getDataRange().getDisplayValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) return i + 1;
+  }
+  return -1;
 }
 
-function elimMov(id){
-if(!confirm(’¿Eliminar este movimiento?’))return;
-movs=movs.filter(m=>String(m.id)!==String(id));
-guardarLocal();renderCaja();
-api(‘deleteMovimiento’,{id});
+function deleteRow(entity, id) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(HOJAS[entity]);
+  if (!sheet) return { ok: true };
+  const rowNum = findRowById(sheet, id);
+  if (rowNum > 0) sheet.deleteRow(rowNum);
+  return { ok: true };
 }
-
-function renderCaja(){
-const fecha=document.getElementById(‘cjfecha’)?.value||iso(new Date());
-const del=movs.filter(m=>String(m.fecha)===String(fecha));
-const ing=del.filter(m=>m.tipo===‘ingreso’);
-const egr=del.filter(m=>m.tipo===‘egreso’);
-const tI=ing.reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,fecha);return s+(v||0);},0);
-const tE=egr.reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,fecha);return s+(v||0);},0);
-const net=tI-tE;
-
-// Stats
-const sEl=document.getElementById(‘cj-stats’);
-if(sEl)sEl.innerHTML=`<div class="sg s4" style="margin-bottom:1.25rem;">
-<div class="st stg"><div class="slbl">Ingresos</div><div class="sval" style="color:var(--green);">$${tI.toFixed(2)}</div><div class="ssub">${ing.length} mov.</div></div>
-<div class="st str"><div class="slbl">Egresos</div><div class="sval" style="color:var(--red);">$${tE.toFixed(2)}</div><div class="ssub">${egr.length} mov.</div></div>
-<div class="st stb"><div class="slbl">Neto del día</div><div class="sval" style="color:${net>=0?'var(--green)':'var(--red)'};">$${net.toFixed(2)}</div></div>
-<div class="st sta"><div class="slbl">Movimientos</div><div class="sval" style="color:var(--amber);">${del.length}</div></div>
-
-  </div>`;
-
-// Movimientos
-const mEl=document.getElementById(‘cj-movs’);
-if(mEl){
-if(!del.length){mEl.innerHTML=`<div class="empty" style="padding:2rem;"><div class="eic">📭</div><div class="etx">Sin movimientos para este día</div></div>`;}
-else{
-mEl.innerHTML=`<table> <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Paciente</th><th>Método</th><th>Monto</th><th>≈USD</th><th></th></tr></thead> <tbody>${[...del].sort((a,b)=>(a.ts||'').localeCompare(b.ts||'')).map(m=>{ const hora=m.ts?new Date(m.ts).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}):'—'; const usd=toUSD(m.monto,m.moneda,fecha); const esI=m.tipo==='ingreso'; return`<tr>
-<td style="color:var(--text3);font-size:12px;white-space:nowrap;">${hora}</td>
-<td><span class="bx ${esI?'bco':'bpd'}">${esI?‘Ingreso’:‘Egreso’}</span></td>
-<td style="font-weight:600;">${m.concepto}${m.notas?`<br><span style="font-size:11px;color:var(--text3);">${m.notas}</span>`:’’}</td>
-<td style="font-size:12px;color:var(--text2);">${m.pacienteId?getPacN(m.pacienteId):’—’}</td>
-<td style="font-size:12px;">${m.metodo||’—’}</td>
-<td style="font-weight:700;color:${esI?'var(--green)':'var(--red)'};">${esI?’+’:’-’}${SYM[m.moneda]||’’}${m.monto.toFixed(2)}</td>
-<td style="font-size:12px;color:var(--text3);">${usd!==null?’$’+usd.toFixed(2):’—’}</td>
-<td><button class="btn xs r" onclick="elimMov('${m.id}')">✕</button></td>
-</tr>`;}).join('')} </tbody></table>`;
-}
-}
-
-// Arqueo
-const aEl=document.getElementById(‘cj-arqueo’);
-if(aEl){
-const monedas=[‘USD’,‘BS’,‘EUR’];
-aEl.innerHTML=monedas.map(mon=>{
-const i=ing.filter(m=>m.moneda===mon).reduce((s,m)=>s+m.monto,0);
-const e=egr.filter(m=>m.moneda===mon).reduce((s,m)=>s+m.monto,0);
-if(!i&&!e)return’’;
-const sym=SYM[mon];
-return`<div class="arq"> <span style="font-weight:600;">${mon==='BS'?'Bolívares':mon==='EUR'?'Euros':'Dólares'}</span> <div style="display:flex;gap:10px;font-size:12px;"> <span style="color:var(--green);">↑${sym}${i.toFixed(2)}</span> <span style="color:var(--red);">↓${sym}${e.toFixed(2)}</span> <span style="font-weight:700;color:${(i-e)>=0?'var(--green)':'var(--red)'};">${sym}${(i-e).toFixed(2)}</span> </div> </div>`;
-}).join(’’)+
-`<div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center;"> <span style="font-size:12px;font-weight:700;color:var(--text2);">NETO TOTAL ≈ USD</span> <span style="font-size:20px;font-weight:700;color:${net>=0?'var(--green)':'var(--red)'};">$${net.toFixed(2)}</span> </div>`;
-}
-
-// Cierres
-const cEl=document.getElementById(‘cj-cierres’);
-if(cEl){
-const uc=[…cierres].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).slice(0,6);
-cEl.innerHTML=uc.length?uc.map(c=>` <div style="padding:7px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"> <div> <div style="font-size:13px;font-weight:600;">${fmtD(c.fecha)}</div> ${c.notas?`<div style="font-size:11px;color:var(--text3);">${c.notas}</div>`:''} </div> <div style="text-align:right;"> <div style="font-size:13px;font-weight:700;color:${(parseFloat(c.neto)||0)>=0?'var(--green)':'var(--red)'};">$${(parseFloat(c.neto)||0).toFixed(2)}</div> <div style="font-size:11px;color:var(--text3);">${c.movimientos} mov.</div> </div> </div>`).join(’’):`<p style="font-size:13px;color:var(--text3);">Sin cierres registrados.</p>`;
-}
-}
-
-function cerrarCaja(){
-const fecha=document.getElementById(‘cjfecha’).value||iso(new Date());
-const notas=document.getElementById(‘cj-cnotes’).value.trim();
-const del=movs.filter(m=>String(m.fecha)===String(fecha));
-if(!del.length){alert(‘No hay movimientos para cerrar.’);return;}
-if(!confirm(`¿Cerrar la caja del ${fmtD(fecha)}?`))return;
-const tI=del.filter(m=>m.tipo===‘ingreso’).reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,fecha);return s+(v||0);},0);
-const tE=del.filter(m=>m.tipo===‘egreso’).reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,fecha);return s+(v||0);},0);
-const cierre={fecha,notas,neto:tI-tE,ingresos:tI,egresos:tE,movimientos:del.length,ts:new Date().toISOString()};
-const idx=cierres.findIndex(c=>String(c.fecha)===String(fecha));
-if(idx!==-1)cierres[idx]=cierre;else cierres.push(cierre);
-document.getElementById(‘cj-cnotes’).value=’’;
-guardarLocal();renderCaja();api(‘saveCierre’,cierre);
-alert(`✅ Caja cerrada. Neto: $${cierre.neto.toFixed(2)}`);
-}
-
-function exportCaja(){
-const fecha=document.getElementById(‘cjfecha’)?.value||iso(new Date());
-const del=movs.filter(m=>String(m.fecha)===String(fecha));
-if(!del.length){alert(‘Sin movimientos para exportar.’);return;}
-const ws=XLSX.utils.json_to_sheet(del.map(m=>({
-‘Hora’:m.ts?new Date(m.ts).toLocaleTimeString():’’,
-‘Tipo’:m.tipo,‘Concepto’:m.concepto,
-‘Paciente’:m.pacienteId?getPacN(m.pacienteId):’’,
-‘Método’:m.metodo,‘Moneda’:m.moneda,‘Monto’:m.monto,
-‘≈USD’:toUSD(m.monto,m.moneda,fecha)?.toFixed(2)||’’,‘Notas’:m.notas||’’
-})));
-const wb=XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb,ws,`Caja ${fecha}`);
-XLSX.writeFile(wb,`EPC_Caja_${fecha}.xlsx`);
-}
-
-// ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
-renderAg();
-poblarSP();
-api(‘init’).then(()=>syncNow());
-</script>
-
-</body>
-</html>
