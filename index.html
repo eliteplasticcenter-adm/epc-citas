@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="es">
@@ -1435,8 +1434,6 @@ XLSX.writeFile(wb,`EPC_Caja_${fecha}.xlsx`);
 // ═══════════════════════════════════════════
 renderAg();
 poblarSP();
-// Cargar desde Sheets al abrir
-apiCall=api; // alias por si acaso
 api(‘init’).then(()=>syncNow());
 </script>
 
