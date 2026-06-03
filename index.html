@@ -3,1150 +3,969 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EPC — Elite Plastic Center</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>EPC — Sistema de Gestión</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
+*{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --navy:#0f1c2e;--acc:#2563eb;--acc2:#1d4ed8;--accl:#eff6ff;
-  --teal:#0d9488;--bg:#f1f5f9;--sur:#fff;--sur2:#f8fafc;
-  --bor:#e2e8f0;--bor2:#cbd5e1;
-  --tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;
-  --gr:#16a34a;--grb:#f0fdf4;--grbo:#86efac;
-  --am:#d97706;--amb:#fffbeb;--ambo:#fcd34d;
-  --re:#dc2626;--reb:#fef2f2;--rebo:#fca5a5;
-  --bl:#2563eb;--blb:#eff6ff;--blbo:#93c5fd;
-  --r:8px;--rl:12px;--rx:20px;
-  --s1:0 1px 3px rgba(15,23,42,.08);--s2:0 4px 16px rgba(15,23,42,.1);--s3:0 8px 32px rgba(15,23,42,.15);
+  --gold:#C9A452;--gold2:#a88535;--gold3:#e8c97a;--silver:#B0B8C1;
+  --bg:#0f1923;--bg2:#172231;--bg3:#1e2d3d;--bg4:#243548;
+  --text:#f0f4f8;--text2:#a0b0bc;--text3:#6a7e8c;
+  --border:rgba(176,184,193,0.12);--border2:rgba(201,164,82,0.25);
+  --green:#1D9E75;--blue:#378ADD;--red:#E24B4A;--purple:#7F77DD;
+  --radius:10px;--radius2:16px;
 }
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5;}
-/* HEADER */
-header{background:var(--navy);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:400;}
-.logo{display:flex;align-items:center;gap:10px;}
-.logoi{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--teal));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;}
-.logon{font-size:13px;font-weight:700;color:#fff;}
-.logos{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;}
-.hdr-r{display:flex;align-items:center;gap:8px;}
-.dot{width:7px;height:7px;border-radius:50%;background:#64748b;flex-shrink:0;}
-.dot.ok{background:var(--gr);}
-.dot.err{background:var(--re);}
-.dot.busy{background:var(--am);animation:blink .8s infinite;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-#slbl{font-size:11px;color:#64748b;}
-/* NAV */
-nav{background:var(--sur);border-bottom:1px solid var(--bor);display:flex;padding:0 20px;}
-.nb{background:none;border:none;border-bottom:2px solid transparent;padding:12px 16px;font-size:13px;font-weight:500;color:var(--tx3);cursor:pointer;white-space:nowrap;font-family:inherit;transition:color .15s;}
-.nb:hover{color:var(--tx2);}
-.nb.on{color:var(--acc);border-bottom-color:var(--acc);}
-/* PAGES */
-.pg{display:none;height:calc(100vh - 100px);}
-.pg.on{display:flex;}
-/* SPLIT */
-.left{width:340px;flex-shrink:0;border-right:1px solid var(--bor);background:var(--sur);display:flex;flex-direction:column;overflow:hidden;}
-.lefth{padding:14px 16px;border-bottom:1px solid var(--bor);background:var(--sur2);}
-.leftb{flex:1;overflow-y:auto;}
-.right{flex:1;overflow-y:auto;padding:20px;background:var(--bg);}
-/* DATE NAV */
-.dn{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
-.dnl{font-size:15px;font-weight:700;text-align:center;flex:1;}
-.dns{font-size:11px;color:var(--tx3);text-align:center;margin-top:1px;}
-/* FILTROS */
-.filt{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
-.fp{padding:3px 10px;border-radius:20px;border:1.5px solid var(--bor);font-size:11px;font-weight:500;cursor:pointer;color:var(--tx3);background:var(--sur);user-select:none;}
-.fp.on{border-color:var(--acc);color:var(--acc);background:var(--accl);}
-/* CITA ITEM */
-.ci{padding:10px 14px;border-bottom:1px solid var(--bor);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .1s;}
-.ci:hover{background:var(--accl);}
-.ci.sel{background:var(--accl);border-left:3px solid var(--acc);}
-.ci.dim{opacity:.55;}
-.cit{min-width:42px;text-align:center;}
-.cih{font-size:14px;font-weight:700;}
-.cim{font-size:10px;color:var(--tx3);}
-.cid{width:1px;height:32px;background:var(--bor);flex-shrink:0;}
-.cib{flex:1;min-width:0;}
-.cin{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cit2{font-size:11px;color:var(--tx3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-/* CARD */
-.card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:20px;margin-bottom:16px;box-shadow:var(--s1);}
-.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.ct{font-size:13px;font-weight:700;}
-/* FICHA */
-.fic{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow:hidden;box-shadow:var(--s2);}
-.fich{padding:20px;border-bottom:1px solid var(--bor);background:var(--sur2);}
-.ficn{font-size:20px;font-weight:700;}
-.ficm{font-size:12px;color:var(--tx2);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
-.fict{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
-.fica{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
-.fictt{display:flex;border-bottom:1px solid var(--bor);padding:0 20px;}
-.fictl{background:none;border:none;border-bottom:2px solid transparent;padding:9px 14px;font-size:12px;font-weight:600;color:var(--tx3);cursor:pointer;font-family:inherit;}
-.fictl.on{color:var(--acc);border-bottom-color:var(--acc);}
-.ficb{padding:20px;}
-.ficp{display:none;}
-.ficp.on{display:block;}
-/* MODAL */
-.mo{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
-.mo.on{display:flex;}
-.md{background:var(--sur);border-radius:var(--rx);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;box-shadow:var(--s3);}
-.mdh{padding:20px;border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--sur);z-index:10;}
-.mdt{font-size:16px;font-weight:700;}
-.mdx{background:none;border:none;font-size:22px;color:var(--tx3);cursor:pointer;line-height:1;padding:2px 6px;}
-.mdb{padding:20px;}
-.mdf{padding:14px 20px;border-top:1px solid var(--bor);display:flex;gap:8px;justify-content:flex-end;background:var(--sur2);}
-/* FORM */
-.f{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
-.f label{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;}
-input,select,textarea{background:var(--sur2);border:1.5px solid var(--bor);border-radius:var(--r);padding:9px 11px;font-size:13px;color:var(--tx);outline:none;width:100%;font-family:inherit;transition:border-color .15s,background .15s;}
-input:focus,select:focus,textarea:focus{border-color:var(--acc);background:var(--sur);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
-textarea{resize:vertical;min-height:80px;line-height:1.6;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-/* CHIPS */
-.chips{display:flex;flex-wrap:wrap;gap:6px;}
-.chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--bor);font-size:12px;font-weight:500;cursor:pointer;color:var(--tx2);background:var(--sur2);user-select:none;transition:all .15s;}
-.chip.on{border-color:var(--acc);background:var(--accl);color:var(--acc);font-weight:600;}
-/* BTN */
-.btn{background:var(--sur);border:1.5px solid var(--bor2);border-radius:var(--r);padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;color:var(--tx2);font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;transition:all .15s;}
-.btn:hover{border-color:var(--acc);color:var(--acc);}
-.btn.p{background:var(--acc);color:#fff;border-color:var(--acc);}
-.btn.p:hover{background:var(--acc2);}
-.btn.sm{padding:5px 11px;font-size:12px;}
-.btn.xs{padding:3px 8px;font-size:11px;border-radius:6px;}
-.btn.g{background:var(--grb);color:var(--gr);border-color:var(--grbo);}
-.btn.r{background:var(--reb);color:var(--re);border-color:var(--rebo);}
-.btn.a{background:var(--amb);color:var(--am);border-color:var(--ambo);}
-.btn.b{background:var(--blb);color:var(--bl);border-color:var(--blbo);}
-.btn.t{background:var(--teal);color:#fff;border-color:var(--teal);}
-.btn.gh{background:none;border-color:transparent;color:var(--tx3);}
-/* BADGE */
-.bx{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;gap:3px;white-space:nowrap;}
-.bx::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-.bp{background:var(--amb);color:var(--am);border:1px solid var(--ambo);}
-.bp::before{background:var(--am);}
-.bconf{background:var(--blb);color:var(--bl);border:1px solid var(--blbo);}
-.bconf::before{background:var(--bl);}
-.bcomp{background:var(--grb);color:var(--gr);border:1px solid var(--grbo);}
-.bcomp::before{background:var(--gr);}
-.bcanc{background:var(--reb);color:var(--re);border:1px solid var(--rebo);}
-.bcanc::before{background:var(--re);}
-.bpag{background:var(--grb);color:var(--gr);border:1px solid var(--grbo);}
-.bpag::before{background:var(--gr);}
-.bpend{background:var(--amb);color:var(--am);border:1px solid var(--ambo);}
-.bpend::before{background:var(--am);}
-.bdeu{background:var(--reb);color:var(--re);border:1px solid var(--rebo);}
-.bdeu::before{background:var(--re);}
-/* TIPOS */
-.tp{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;margin:1px;}
-.t1{background:#eff6ff;color:#1d4ed8;}.t2{background:#f0fdfa;color:#0f766e;}
-.t3{background:#f5f3ff;color:#6d28d9;}.t4{background:#fdf2f8;color:#9d174d;}
-.t5{background:#fffbeb;color:#b45309;}.t6{background:#f0fdf4;color:#15803d;}
-.t7{background:#fdf4ff;color:#7e22ce;}.t8{background:#f8fafc;color:#475569;}
-/* STATS */
-.sg{display:grid;gap:10px;margin-bottom:20px;}
-.s2{grid-template-columns:1fr 1fr;}.s3{grid-template-columns:repeat(3,1fr);}.s4{grid-template-columns:repeat(4,1fr);}
-.st{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:14px;box-shadow:var(--s1);position:relative;overflow:hidden;}
-.st::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stb::before{background:var(--acc);}.stg::before{background:var(--gr);}
-.sta::before{background:var(--am);}.str::before{background:var(--re);}
-.stt::before{background:var(--teal);}
-.sl{font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
-.sv{font-size:24px;font-weight:700;line-height:1;}
-.ss{font-size:11px;color:var(--tx3);margin-top:3px;}
-/* PAC */
-.pc{border:1px solid var(--bor);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;background:var(--sur);box-shadow:var(--s1);}
-.pcs{padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
-.pcs:hover{background:var(--sur2);}
-.pca{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--teal));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
-.pcn{font-size:13px;font-weight:700;}
-.pcm{font-size:11px;color:var(--tx3);margin-top:1px;}
-.pcc{font-size:10px;color:var(--tx3);margin-left:auto;transition:transform .2s;}
-.pc.op .pcc{transform:rotate(90deg);}
-.pcd{display:none;border-top:1px solid var(--bor);}
-.pc.op .pcd{display:block;}
-.ptn{display:flex;border-bottom:1px solid var(--bor);padding:0 14px;background:var(--sur2);}
-.pt{background:none;border:none;border-bottom:2px solid transparent;padding:8px 11px;font-size:11px;font-weight:600;color:var(--tx3);cursor:pointer;font-family:inherit;}
-.pt.on{color:var(--acc);border-bottom-color:var(--acc);}
-.ptc{display:none;}
-.ptc.on{display:block;}
-.hg{display:grid;grid-template-columns:1fr 1fr;}
-.hc{padding:9px 14px;border-right:1px solid var(--bor);border-bottom:1px solid var(--bor);}
-.hc:nth-child(even){border-right:none;}
-.hl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
-.hv{font-size:12px;color:var(--tx);line-height:1.5;}
-/* ANOT */
-.an{padding:10px 14px;border-bottom:1px solid var(--bor);}
-.anh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
-.anf{font-size:10px;font-weight:700;color:var(--tx3);}
-.ant{font-size:12px;color:var(--tx);line-height:1.6;white-space:pre-wrap;}
-/* TABLE */
-table{width:100%;border-collapse:collapse;font-size:13px;}
-th{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;text-align:left;background:var(--sur2);border-bottom:1px solid var(--bor);}
-td{padding:9px 12px;border-bottom:1px solid var(--bor);vertical-align:middle;}
-tr:last-child td{border-bottom:none;}
-tbody tr:hover td{background:var(--sur2);}
-/* CAJA */
-.cjl{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;}
-.ti{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:10px 14px;}
-.tl{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
-.tv{font-size:20px;font-weight:700;}
-.ts{font-size:10px;color:var(--tx3);margin-top:2px;}
-.arq{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bor);font-size:13px;}
-.arq:last-child{border-bottom:none;}
-/* MISC */
-.tag{display:inline-block;font-size:10px;background:var(--sur2);border:1px solid var(--bor);border-radius:4px;padding:1px 6px;color:var(--tx3);}
-.div{height:1px;background:var(--bor);margin:14px 0;}
-.empty{text-align:center;padding:3rem 1rem;color:var(--tx3);}
-.ei{font-size:36px;margin-bottom:8px;}
-.et{font-size:13px;}
-@media(max-width:768px){
-  .pg.on{flex-direction:column;}
-  .left{width:100%;height:260px;border-right:none;border-bottom:1px solid var(--bor);}
-  .cjl{grid-template-columns:1fr;}
-  .g2,.g3{grid-template-columns:1fr;}
-  .sg.s4{grid-template-columns:1fr 1fr;}
-}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden}
+#sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.logo-area{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.logo-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);letter-spacing:1px}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+nav{padding:14px 0;flex:1;overflow-y:auto}
+.nav-section{padding:8px 20px 4px;font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;border-left:3px solid transparent;transition:all .2s;font-size:13px;color:var(--text2)}
+.nav-item:hover{background:rgba(201,164,82,0.07);color:var(--text)}
+.nav-item.active{background:rgba(201,164,82,0.1);border-left-color:var(--gold);color:var(--gold);font-weight:500}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--gold);color:#1e2830;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
+.sidebar-footer{padding:14px 20px;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#1e2830;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:var(--text)}
+.user-role{font-size:10px;color:var(--text3)}
+#main{margin-left:220px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.page-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.btn{padding:8px 18px;border-radius:var(--radius);font-size:12px;font-weight:500;font-family:'Montserrat',sans-serif;cursor:pointer;border:none;transition:all .2s}
+.btn-gold{background:var(--gold);color:#1e2830}.btn-gold:hover{background:var(--gold3)}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border);font-family:'Montserrat',sans-serif;cursor:pointer;font-size:12px;font-weight:500;padding:8px 18px;border-radius:var(--radius);transition:all .2s}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.content{padding:22px 28px;flex:1}
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:20px}
+.card-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:18px;position:relative;overflow:hidden}
+.kpi-card::after{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--gold);opacity:.4}
+.kpi-label{font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--text);margin-bottom:3px}
+.kpi-sub{font-size:11px;color:var(--text3)}
+.kpi-trend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;margin-top:5px}
+.kpi-up{background:rgba(29,158,117,.15);color:var(--green)}.kpi-down{background:rgba(226,75,74,.15);color:var(--red)}
+.dashboard-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+.agenda-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.agenda-item:last-child{border-bottom:none}
+.agenda-time{font-size:12px;font-weight:600;color:var(--gold);min-width:46px}
+.agenda-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green)}.dot-gold{background:var(--gold)}.dot-gray{background:var(--text3)}.dot-blue{background:var(--blue)}
+.agenda-name{font-size:13px;font-weight:500;color:var(--text)}
+.agenda-proc{font-size:11px;color:var(--text3)}
+.status-badge{padding:3px 10px;border-radius:6px;font-size:10px;font-weight:500;white-space:nowrap}
+.badge-green{background:rgba(29,158,117,.15);color:var(--green)}.badge-gold{background:rgba(201,164,82,.15);color:var(--gold)}
+.badge-gray{background:rgba(106,126,140,.2);color:var(--text3)}.badge-blue{background:rgba(55,138,221,.15);color:var(--blue)}.badge-red{background:rgba(226,75,74,.15);color:var(--red)}
+.proc-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.proc-item:last-child{border-bottom:none}
+.proc-bar-wrap{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.proc-bar{height:100%;background:var(--gold);border-radius:2px}
+.bcv-strip{background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search-bar{display:flex;gap:10px;margin-bottom:18px}
+.search-input{flex:1;padding:10px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'Montserrat',sans-serif;outline:none}
+.search-input:focus{border-color:var(--gold)}.search-input::placeholder{color:var(--text3)}
+.patients-table{width:100%;border-collapse:collapse}
+.patients-table th{font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-weight:500}
+.patients-table td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.patients-table tr:hover td{background:rgba(201,164,82,.04);cursor:pointer}
+.patient-avatar{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gold);flex-shrink:0}
+.patient-name-cell{display:flex;align-items:center;gap:10px}
+.tag{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
+.tag-vip{background:rgba(201,164,82,.2);color:var(--gold)}.tag-new{background:rgba(29,158,117,.15);color:var(--green)}.tag-surg{background:rgba(55,138,221,.15);color:var(--blue)}.tag-rec{background:rgba(176,184,193,.15);color:var(--silver)}
+.agenda-controls{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.date-display{font-size:14px;font-weight:500;color:var(--text);min-width:180px;text-align:center}
+.doc-chip{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;font-family:'Montserrat',sans-serif}
+.doc-chip.active{background:var(--gold);color:#1e2830;border-color:var(--gold);font-weight:500}
+.calendar-grid{display:grid;grid-template-columns:60px repeat(7,1fr);gap:1px;background:var(--border)}
+.cal-header{background:var(--bg3);padding:10px 8px;text-align:center;font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase}
+.cal-header.today{color:var(--gold)}
+.cal-time{background:var(--bg2);padding:8px;font-size:11px;color:var(--text3);text-align:right}
+.cal-cell{background:var(--bg3);min-height:50px;padding:4px}
+.cal-cell.today-col{background:rgba(201,164,82,.04)}
+.cal-event{background:rgba(201,164,82,.15);border-left:3px solid var(--gold);border-radius:4px;padding:4px 6px;margin-bottom:2px;cursor:pointer}
+.cal-event.green{background:rgba(29,158,117,.15);border-left-color:var(--green)}.cal-event.blue{background:rgba(55,138,221,.15);border-left-color:var(--blue)}
+.cal-event-name{font-size:10px;font-weight:600;color:var(--text)}.cal-event-proc{font-size:10px;color:var(--text3)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);width:680px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:28px}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:18px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-label{font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:500}
+.form-input{padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'Montserrat',sans-serif;outline:none;width:100%}
+.form-input:focus{border-color:var(--gold)}.form-input::placeholder{color:var(--text3)}
+select.form-input option{background:var(--bg2)}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.icon-btn{background:transparent;border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;cursor:pointer;color:var(--text2);font-size:12px;transition:all .2s;font-family:'Montserrat',sans-serif}
+.icon-btn:hover{border-color:var(--gold);color:var(--gold)}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--text)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:14px 20px;font-size:13px;color:var(--text);z-index:500;display:flex;align-items:center;gap:10px;transform:translateY(100px);opacity:0;transition:all .3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.hidden{display:none!important}
+.tab-bar{display:flex;gap:2px;background:var(--bg2);border-radius:var(--radius);padding:4px;margin-bottom:18px}
+.tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-radius:8px;transition:all .2s}
+.tab.active{background:var(--bg3);color:var(--gold);border:1px solid var(--border2)}
+.hc-grid{display:grid;grid-template-columns:270px 1fr;gap:16px}
+.hc-patient-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all .2s;margin-bottom:8px}
+.hc-patient-card:hover,.hc-patient-card.active{border-color:var(--gold);background:rgba(201,164,82,.06)}
+.hc-patient-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.hc-patient-meta{font-size:11px;color:var(--text3)}
+.hc-panel{display:flex;flex-direction:column;gap:14px}
+.hc-section{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:18px}
+.hc-section-title{font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.hc-field{display:flex;gap:8px;margin-bottom:10px}
+.hc-field-label{font-size:11px;color:var(--text3);min-width:120px;padding-top:2px}
+.hc-field-value{font-size:13px;color:var(--text);flex:1}
+.consulta-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.consulta-date{font-size:11px;color:var(--gold);font-weight:600;margin-bottom:6px}
+.consulta-proc{font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px}
+.consulta-note{font-size:12px;color:var(--text2);line-height:1.6}
+.consulta-prods{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.prod-chip{padding:3px 10px;background:rgba(201,164,82,.1);border:1px solid var(--border2);border-radius:6px;font-size:10px;color:var(--gold)}
+.consent-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.consent-item:last-child{border-bottom:none}
+.consent-check{width:20px;height:20px;border-radius:5px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.consent-check.done{background:rgba(29,158,117,.15);border-color:var(--green);color:var(--green)}
+.trat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.trat-cat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;cursor:pointer;transition:all .2s;text-align:center}
+.trat-cat-card:hover,.trat-cat-card.active{border-color:var(--gold);background:rgba(201,164,82,.06)}
+.trat-cat-icon{font-size:20px;margin-bottom:6px}
+.trat-cat-name{font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px}
+.trat-cat-count{font-size:10px;color:var(--text3)}
+.trat-list{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden}
+.trat-list-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.trat-row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .15s}
+.trat-row:last-child{border-bottom:none}.trat-row:hover{background:rgba(201,164,82,.03)}
+.trat-name{font-size:13px;color:var(--text);flex:1}
+.trat-price{font-size:13px;font-weight:500;color:var(--gold);min-width:90px;text-align:right;cursor:pointer;text-decoration:underline dotted}
+.movimiento-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.movimiento-row:last-child{border-bottom:none}.movimiento-row:hover{background:rgba(201,164,82,.03)}
+.mov-tipo{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mov-ingreso{background:var(--green)}.mov-egreso{background:var(--red)}
+.mov-desc{flex:1;color:var(--text)}.mov-meta{font-size:11px;color:var(--text3)}
+.mov-monto-pos{font-weight:600;color:var(--green);min-width:85px;text-align:right}
+.mov-monto-neg{font-weight:600;color:var(--red);min-width:85px;text-align:right}
+.balance-bar{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);padding:18px;margin-bottom:18px}
+.balance-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.balance-row:last-child{border-bottom:none;padding-top:12px}
+.balance-label{font-size:12px;color:var(--text3)}
+.balance-total{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)}
+.periodo-btn{padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;font-family:'Montserrat',sans-serif;transition:all .2s}
+.periodo-btn.active{background:var(--gold);color:#1e2830;border-color:var(--gold);font-weight:500}
+.presup-list{display:flex;flex-direction:column;gap:10px}
+.presup-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s}
+.presup-card:hover{border-color:var(--gold)}
+.presup-preview{background:#fff;color:#1a1a1a;border-radius:var(--radius2);padding:36px;max-width:560px;margin:0 auto;font-family:'Montserrat',sans-serif}
+.presup-preview-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #2C3740}
+.presup-clinic-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#2C3740}
+.presup-clinic-sub{font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.presup-meta{text-align:right;font-size:11px;color:#555;line-height:1.8}
+.presup-patient-info{background:#f8f7f5;border-radius:8px;padding:14px 18px;margin-bottom:20px}
+.presup-item-row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid #eee}
+.presup-item-row:last-child{border-bottom:none}
+.presup-footer-note{font-size:11px;color:#888;line-height:1.7;margin-top:18px;padding-top:14px;border-top:1px solid #eee}
+/* ── REPORTES ── */
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.rep-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:20px}
+.chart-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:4px}
+.chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:16px}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap-sm{position:relative;height:170px}
+.rep-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.rep-kpi{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:16px}
+.rep-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.rep-kpi-value{font-size:24px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--gold)}
+.rep-kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.rep-tabla{width:100%;border-collapse:collapse}
+.rep-tabla th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:500}
+.rep-tabla td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.rep-tabla tr:hover td{background:rgba(201,164,82,.04)}
+.rep-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.rep-tab{padding:7px 16px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;font-family:'Montserrat',sans-serif}
+.rep-tab.active{background:var(--gold);color:#1e2830;border-color:var(--gold);font-weight:500}
+.rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rank-item:last-child{border-bottom:none}
+.rank-num{font-size:12px;font-weight:600;color:var(--gold);min-width:22px}
+.rank-name{font-size:12px;color:var(--text);flex:1}
+.rank-val{font-size:12px;font-weight:600;color:var(--text2);text-align:right}
+.rank-bar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
+.rank-bar{height:100%;background:var(--gold);border-radius:2px}
+/* NOTIF */
+.notif-panel{position:fixed;top:60px;right:0;width:320px;height:calc(100vh - 60px);background:var(--bg2);border-left:1px solid var(--border);z-index:150;padding:20px;overflow-y:auto;transform:translateX(100%);transition:transform .3s}
+.notif-panel.open{transform:translateX(0)}
+.notif-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.notif-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.notif-sub{font-size:11px;color:var(--text3)}
+.notif-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0}
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">
-    <div class="logoi">EP</div>
-    <div><div class="logon">ELITE PLASTIC CENTER</div><div class="logos">Caracas, Venezuela</div></div>
-  </div>
-  <div class="hdr-r">
-    <div class="dot" id="dot"></div>
-    <span id="slbl">Cargando...</span>
-    <button class="btn sm gh" onclick="sync()">⟳ Sync</button>
-    <button class="btn sm p" onclick="abrirCita()">+ Nueva cita</button>
-  </div>
-</header>
 
-<nav>
-  <button class="nb on" onclick="pg('agenda')">📅 Agenda</button>
-  <button class="nb" onclick="pg('pacientes')">👤 Pacientes</button>
-  <button class="nb" onclick="pg('caja')">💰 Caja</button>
-</nav>
-
-<!-- AGENDA -->
-<div class="pg on" id="p-agenda">
-  <div class="left">
-    <div class="lefth">
-      <div class="dn">
-        <button class="btn sm gh" onclick="dia(-1)">←</button>
-        <div><div class="dnl" id="dnl"></div><div class="dns" id="dns"></div></div>
-        <button class="btn sm gh" onclick="dia(1)">→</button>
-      </div>
-      <div style="display:flex;gap:6px;">
-        <input type="date" id="dpk" onchange="goF()" style="flex:1;padding:5px 8px;font-size:12px;">
-        <button class="btn sm b" onclick="hoy()">Hoy</button>
-      </div>
-      <div class="filt">
-        <span class="fp on" data-v="todos" onclick="setFil(this)">Todos</span>
-        <span class="fp" data-v="pendiente" onclick="setFil(this)">Pendientes</span>
-        <span class="fp" data-v="confirmada" onclick="setFil(this)">Confirmadas</span>
-        <span class="fp" data-v="completada" onclick="setFil(this)">Completadas</span>
-        <span class="fp" data-v="cancelada" onclick="setFil(this)">Canceladas</span>
-      </div>
+<aside id="sidebar">
+  <div class="logo-area">
+    <div class="logo-title">EPC</div>
+    <div class="logo-sub">Elite Plastic Center</div>
+  </div>
+  <nav>
+    <div class="nav-section">Principal</div>
+    <div class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">⬛</span> Dashboard</div>
+    <div class="nav-item" onclick="showView('agenda')"><span class="nav-icon">📅</span> Agenda <span class="nav-badge" id="badge-agenda">5</span></div>
+    <div class="nav-item" onclick="showView('pacientes')"><span class="nav-icon">👤</span> Pacientes</div>
+    <div class="nav-section" style="margin-top:8px">Clínica</div>
+    <div class="nav-item" onclick="showView('hc')"><span class="nav-icon">📋</span> Historia Clínica</div>
+    <div class="nav-item" onclick="showView('tratamientos')"><span class="nav-icon">💉</span> Tratamientos</div>
+    <div class="nav-section" style="margin-top:8px">Finanzas</div>
+    <div class="nav-item" onclick="showView('caja')"><span class="nav-icon">💰</span> Caja</div>
+    <div class="nav-item" onclick="showView('presupuestos')"><span class="nav-icon">📄</span> Presupuestos</div>
+    <div class="nav-section" style="margin-top:8px">Análisis</div>
+    <div class="nav-item" onclick="showView('reportes')"><span class="nav-icon">📊</span> Reportes</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar">GS</div>
+      <div><div class="user-name">Gabriel Sierra</div><div class="user-role">Administrador</div></div>
     </div>
-    <div class="leftb" id="ag-l"></div>
   </div>
-  <div class="right" id="ag-f">
-    <div class="empty" style="margin-top:4rem;"><div class="ei">📋</div><div class="et">Selecciona una cita</div></div>
+</aside>
+
+<main id="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <div style="font-size:12px;color:var(--text3)" id="fecha-hoy"></div>
+      <button class="icon-btn btn-sm" onclick="toggleNotif()" title="Alertas" id="notif-btn">🔔 <span id="notif-count" style="color:var(--gold)">3</span></button>
+      <button class="btn btn-gold" id="btn-top" onclick="openNewModal()">+ Nuevo</button>
+    </div>
   </div>
+  <div class="content" id="content-area"></div>
+</main>
+
+<!-- PANEL NOTIFICACIONES -->
+<div class="notif-panel" id="notif-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:14px;font-weight:500;color:var(--text)">Alertas y recordatorios</div>
+    <button class="icon-btn btn-sm" onclick="toggleNotif()">✕</button>
+  </div>
+  <div id="notif-list"></div>
 </div>
 
-<!-- PACIENTES -->
-<div class="pg" id="p-pacientes">
-  <div style="width:100%;display:flex;flex-direction:column;overflow:hidden;">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--bor);background:var(--sur);display:flex;gap:8px;">
-      <input type="text" id="pbq" placeholder="🔍 Buscar por nombre, cédula o teléfono..." oninput="renderPacs()" style="flex:1;">
-      <button class="btn sm p" onclick="abrirPac()">+ Paciente</button>
-    </div>
-    <div style="flex:1;overflow-y:auto;padding:12px;max-width:960px;margin:0 auto;width:100%;"><div id="plist"></div></div>
-  </div>
+<div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target.id==='modal-overlay')closeModal()">
+  <div class="modal" id="modal-content"></div>
 </div>
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
 
-<!-- CAJA -->
-<div class="pg" id="p-caja">
-  <div class="right" style="width:100%;">
-    <div style="max-width:1000px;margin:0 auto;">
-      <div class="card">
-        <div class="ch">
-          <div class="ct">Caja diaria</div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn sm t" onclick="autoTasa()">⟳ Tasas auto</button>
-            <button class="btn sm" onclick="expCaja()">↓ Excel</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">
-          <div class="f" style="margin-bottom:0;"><label>Fecha</label><input type="date" id="cjf" onchange="renderCaja()" style="width:160px;"></div>
-          <div class="f" style="margin-bottom:0;"><label>BCV Bs/$</label><input type="number" id="cjt" placeholder="0.00" step="0.01" style="width:110px;"></div>
-          <div class="f" style="margin-bottom:0;"><label>EUR/$</label><input type="number" id="cje" placeholder="0.00" step="0.01" style="width:90px;"></div>
-          <button class="btn sm g" onclick="saveTasa()" style="align-self:flex-end;">Guardar</button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="ti"><div class="tl">🏛 BCV Oficial</div><div class="tv" id="tv1">—</div><div class="ts" id="ts1"></div></div>
-          <div class="ti"><div class="tl">📊 Paralelo</div><div class="tv" id="tv2">—</div><div class="ts" id="ts2"></div></div>
-        </div>
-      </div>
-      <div id="cj-st"></div>
-      <div class="cjl">
-        <div>
-          <div class="card">
-            <div class="ch">
-              <div class="ct">Registrar movimiento</div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn sm g" id="bi" onclick="setT('ingreso')">↑ Ingreso</button>
-                <button class="btn sm r" id="be" onclick="setT('egreso')">↓ Egreso</button>
-              </div>
-            </div>
-            <input type="hidden" id="mt" value="ingreso">
-            <div class="g2">
-              <div class="f"><label>Concepto *</label><input type="text" id="mc" placeholder="Valoración, honorario..."></div>
-              <div class="f"><label>Paciente</label><select id="mp"><option value="">— Sin paciente —</option></select></div>
-            </div>
-            <div class="g3">
-              <div class="f"><label>Moneda</label>
-                <select id="mm" onchange="onMon()">
-                  <option value="USD">🇺🇸 USD</option><option value="BS">🇻🇪 Bs</option><option value="EUR">🇪🇺 EUR</option>
-                </select>
-              </div>
-              <div class="f"><label>Monto *</label><input type="number" id="mmo" placeholder="0.00" step="0.01" min="0"></div>
-              <div class="f"><label>Método</label>
-                <select id="mmet">
-                  <option>Zelle USD</option><option>Efectivo USD</option><option>Efectivo EUR</option>
-                  <option>Efectivo Bs</option><option>Pago Móvil Bs</option><option>Transferencia Bs</option>
-                </select>
-              </div>
-            </div>
-            <div class="f"><label>Notas</label><input type="text" id="mn" placeholder="Observaciones..."></div>
-            <div style="display:flex;justify-content:flex-end;"><button class="btn p" onclick="saveMov()">Registrar</button></div>
-          </div>
-          <div class="card"><div class="ct">Movimientos del día</div><div id="cj-mv"></div></div>
-        </div>
-        <div>
-          <div class="card">
-            <div class="ct">Arqueo</div><div id="cj-aq"></div>
-            <div class="div"></div>
-            <div class="f"><label>Notas de cierre</label><textarea id="cj-cn" style="min-height:55px;" placeholder="Observaciones..."></textarea></div>
-            <button class="btn p" style="width:100%;" onclick="cerrarCaja()">Cerrar caja del día</button>
-          </div>
-          <div class="card"><div class="ct" style="margin-bottom:10px;">Últimos cierres</div><div id="cj-ci"></div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CITA -->
-<div class="mo" id="mo-c">
-  <div class="md">
-    <div class="mdh"><div class="mdt" id="mc-t">Nueva cita</div><button class="mdx" onclick="cerC()">×</button></div>
-    <div class="mdb">
-      <div class="f"><label>Paciente *</label>
-        <select id="mcp" onchange="onMcp()">
-          <option value="">— Seleccionar paciente —</option>
-          <option value="__n">✚ Registrar nuevo paciente</option>
-        </select>
-      </div>
-      <div id="mcnp" style="display:none;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:12px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Nuevo paciente</div>
-        <div class="g2">
-          <div class="f"><label>Nombre *</label><input type="text" id="nn" placeholder="Nombre completo"></div>
-          <div class="f"><label>Cédula/Pasaporte</label><input type="text" id="nc" placeholder="V-12345678"></div>
-        </div>
-        <div class="g2">
-          <div class="f"><label>WhatsApp *</label><input type="tel" id="nt" placeholder="+58 414 000 0000"></div>
-          <div class="f"><label>Email</label><input type="email" id="ne"></div>
-        </div>
-        <div class="g2">
-          <div class="f"><label>Ciudad</label><input type="text" id="nci" placeholder="Caracas"></div>
-          <div class="f"><label>¿Cómo nos conoció?</label>
-            <select id="nr"><option value="">—</option><option>Instagram</option><option>WhatsApp</option><option>Referido</option><option>Google</option><option>TikTok</option><option>Otro</option></select>
-          </div>
-        </div>
-      </div>
-      <div class="f">
-        <label>Tipo(s) de cita * — selecciona uno o varios</label>
-        <div class="chips" id="mchips">
-          <span class="chip" data-v="Valoración Facial" onclick="tChip(this)">Valoración Facial</span>
-          <span class="chip" data-v="Valoración Corporal" onclick="tChip(this)">Valoración Corporal</span>
-          <span class="chip" data-v="Cirugía Facial" onclick="tChip(this)">Cirugía Facial</span>
-          <span class="chip" data-v="Cirugía Corporal" onclick="tChip(this)">Cirugía Corporal</span>
-          <span class="chip" data-v="Rellenos" onclick="tChip(this)">Rellenos</span>
-          <span class="chip" data-v="Estimuladores" onclick="tChip(this)">Estimuladores</span>
-          <span class="chip" data-v="Toxina Botulínica" onclick="tChip(this)">Toxina Botulínica</span>
-          <span class="chip" data-v="Control Postoperatorio" onclick="tChip(this)">Control Postoperatorio</span>
-        </div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Fecha *</label><input type="date" id="mcf"></div>
-        <div class="f"><label>Hora *</label><input type="time" id="mch" value="09:00"></div>
-        <div class="f"><label>Modalidad</label><select id="mcm"><option value="Presencial">Presencial</option><option value="Online">Online</option></select></div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Monto ($)</label><input type="number" id="mcmo" placeholder="0.00" step="0.01" min="0"></div>
-        <div class="f"><label>Estado pago</label><select id="mcpg"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option><option value="deuda">Deuda</option></select></div>
-        <div class="f"><label>Estado cita</label><select id="mce"><option value="pendiente">Pendiente</option><option value="confirmada">Confirmada</option><option value="completada">Completada</option><option value="cancelada">Cancelada</option></select></div>
-      </div>
-      <div class="f"><label>Doctor</label><select id="mcd"><option value="Dr. Deivys Higuerey">Dr. Deivys Higuerey</option><option value="Otro">Otro</option></select></div>
-      <div class="f"><label>Notas</label><textarea id="mcn" placeholder="Zona a tratar, observaciones..."></textarea></div>
-    </div>
-    <div class="mdf">
-      <button class="btn" onclick="cerC()">Cancelar</button>
-      <button class="btn p" onclick="saveC()">Guardar cita</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PAC -->
-<div class="mo" id="mo-p">
-  <div class="md">
-    <div class="mdh"><div class="mdt" id="mp-t">Nuevo paciente</div><button class="mdx" onclick="cerP()">×</button></div>
-    <div class="mdb">
-      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Datos personales</div>
-      <div class="g2">
-        <div class="f"><label>Nombre completo *</label><input type="text" id="ep-n"></div>
-        <div class="f"><label>Cédula / Pasaporte</label><input type="text" id="ep-c" placeholder="V-12345678"></div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>WhatsApp *</label><input type="tel" id="ep-t" placeholder="+58 414 000 0000"></div>
-        <div class="f"><label>Email</label><input type="email" id="ep-e"></div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>Ciudad</label><input type="text" id="ep-ci" placeholder="Caracas"></div>
-        <div class="f"><label>Nacimiento</label><input type="date" id="ep-na"></div>
-        <div class="f"><label>Género</label><select id="ep-g"><option>Femenino</option><option>Masculino</option><option>Otro</option></select></div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>Zona de interés</label>
-          <select id="ep-z"><option value="">—</option><option>Abdomen</option><option>Brazos</option><option>Busto</option><option>Cara</option><option>Glúteos</option><option>Muslos</option><option>Nariz</option><option>Papada</option><option>Múltiples zonas</option></select>
-        </div>
-        <div class="f"><label>¿Cómo nos conoció?</label>
-          <select id="ep-r"><option value="">—</option><option>Instagram</option><option>WhatsApp</option><option>Referido</option><option>Google</option><option>TikTok</option><option>Otro</option></select>
-        </div>
-      </div>
-      <div class="div"></div>
-      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Historia clínica</div>
-      <div class="g2">
-        <div class="f"><label>Enfermedades crónicas</label><textarea id="ep-en" placeholder="Ninguna si no aplica"></textarea></div>
-        <div class="f"><label>Medicamentos actuales</label><textarea id="ep-me" placeholder="Nombre y dosis"></textarea></div>
-      </div>
-      <div class="g2">
-        <div class="f"><label>Cirugías previas</label><textarea id="ep-cr" placeholder="Procedimientos anteriores"></textarea></div>
-        <div class="f"><label>Alergias</label><textarea id="ep-al" placeholder="Medicamentos, materiales..."></textarea></div>
-      </div>
-      <div class="g3">
-        <div class="f"><label>¿Fumador/a?</label><select id="ep-f"><option value="No">No</option><option value="Sí">Sí</option><option value="Ex-fumador/a">Ex-fumador/a</option></select></div>
-        <div class="f"><label>Grupo sanguíneo</label><select id="ep-sg"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
-        <div class="f"><label>Peso (kg)</label><input type="number" id="ep-pe" placeholder="65"></div>
-      </div>
-    </div>
-    <div class="mdf">
-      <button class="btn" onclick="cerP()">Cancelar</button>
-      <button class="btn p" onclick="saveP()">Guardar paciente</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-// ═══════════════════════════════
-// CONFIG
-// ═══════════════════════════════
-const APIURL='https://script.google.com/macros/s/AKfycbzXWIhMZv_On9CCrfo60Tqb8xfwy2mZYlbpMx_GHVWyh6EKZULh7zeHFTt9g5Dfs9TLlw/exec';
+// ── DATOS MAESTROS ────────────────────────────────────────────────────────────
+const CONSULTORIOS=[{id:'C1',label:'C-1 · Enfermería / Sueroterapia'},{id:'C2',label:'C-2 · Medicina Estética'},{id:'C3',label:'C-3 · Quirófano'},{id:'C4',label:'C-4 · Consulta Médica'}];
+const METODOS_PAGO=['Efectivo USD','Efectivo Bs','Zelle','Transferencia USD','Transferencia Bs','Pago Móvil','Tarjeta de crédito'];
+const SERVICIOS={
+  'Medicina Estética':[
+    {n:'Toxina Botulínica — Tercio Superior',p:380},{n:'Toxina Botulínica — Tercio Medio',p:350},{n:'Toxina Botulínica — Tercio Inferior',p:350},{n:'Toxina Botulínica — Bandas Platismales',p:395},{n:'Toxina Botulínica — Hiperhidrosis Axilar',p:450},{n:'Toxina Botulínica — Bruxismo (Maseteros)',p:420},
+    {n:'Ácido Hialurónico — Armonización Labial 1ml',p:350},{n:'Ácido Hialurónico — Técnica 1:5 (SEME Nº80)',p:330},{n:'Ácido Hialurónico — Fosa Temporal',p:330},{n:'Ácido Hialurónico — Arrugas Estáticas',p:350},{n:'Ácido Hialurónico — Pómulos / Malar',p:360},{n:'Ácido Hialurónico — Mentón / Jawline',p:360},{n:'Ácido Hialurónico — Ojeras (Tear Trough)',p:380},{n:'Ácido Hialurónico — Surco Nasogeniano',p:330},
+    {n:'Rinomodelación — Técnica Punto Único (SEME Nº87)',p:480},{n:'Bioestimuladores — Radiesse',p:550},{n:'Bioestimuladores — Sculptra',p:580},{n:'Bioestimuladores — Ellansé',p:560},{n:'Bioestimuladores — Profhilo',p:520},
+    {n:'Mesoterapia Facial',p:180},{n:'Mesoterapia Capilar',p:160},{n:'Skinbooster — Restylane Vital',p:420},{n:'PRP Facial',p:250},{n:'PRP Capilar',p:220},{n:'Hilos Tensores — PDO Mono',p:300},{n:'Hilos Tensores — PDO Cogote / Lifting',p:480},{n:'Peeling Químico Superficial',p:120},{n:'Peeling Químico Medio',p:200},
+  ],
+  'Sueroterapia & Wellness':[
+    {n:'NAD+ Sueroterapia IV',p:280},{n:'Suero Vitamínico — Vitamina C Alta Dosis',p:120},{n:'Suero Hidratante / Myers Cocktail',p:100},{n:'Suero Glutatión',p:130},{n:'Suero Energizante',p:90},{n:'Ozonoterapia',p:150},{n:'Nutrición IV Personalizada',p:200},
+  ],
+  'Cirugía Plástica & Reconstructiva':[
+    {n:'Lipoescultura HEUS (VASER)',p:3500},{n:'Lipoescultura Convencional',p:2800},{n:'Lipotransferencia',p:0},{n:'Abdominoplastia Clásica',p:4200},{n:'Miniabdominoplastia',p:3200},{n:'Flancoplastia',p:3000},{n:'Brachioplastia',p:2800},{n:'Cruroplastia',p:2800},{n:'Body Lift Total',p:6500},{n:'Lifting Glúteo',p:4000},{n:'Aumento de Glúteos con Implantes',p:4500},{n:'BBL — Lipotransferencia Glútea',p:4000},{n:'Aumento Mamario con Implantes',p:4200},{n:'Reducción Mamaria',p:4500},{n:'Mastopexia',p:3800},{n:'Mastopexia + Implantes',p:5000},{n:'Ginecomastia',p:3000},{n:'Ritidoplastia (Facelift)',p:6000},{n:'Mini Facelift',p:4000},{n:'Blefaroplastia Superior',p:1800},{n:'Blefaroplastia Inferior (Anestesia Local)',p:1950},{n:'Blefaroplastia Total',p:3200},{n:'Otoplastia',p:2500},{n:'Mentoplastia',p:2200},{n:'Rinoplastia Abierta',p:4500},{n:'Rinoplastia Cerrada',p:3800},{n:'Liposucción de Papada',p:2000},{n:'Frontoplastia / Lifting Frontal',p:3500},{n:'Corrección de Cicatrices',p:800},{n:'Injerto de Piel',p:1500},{n:'Labioplastia',p:2200},{n:'Vaginoplastia',p:2800},{n:'Himenoplastia',p:1800},
+  ],
+  'Consultas & Valoraciones':[
+    {n:'Consulta Inicial / Valoración',p:50},{n:'Consulta de Seguimiento',p:30},{n:'Valoración Pre-quirúrgica',p:80},{n:'Control Post-operatorio',p:0},
+  ],
+};
 
-// ═══════════════════════════════
-// ESTADO
-// ═══════════════════════════════
-let citas=[],pacs=[],movs=[],cierres=[],tasas={};
-let cSel=null,eCid=null,ePid=null,tiposSel=[],filtro='todos';
-let dAct=new Date();dAct.setHours(0,0,0,0);
+const STATE={
+  view:'dashboard',bcvRate:92.5,activeTratCat:'Medicina Estética',
+  activeHCPatient:null,activeHCTab:'antecedentes',activeCajaPeriodo:'hoy',activeRepTab:'financiero',
+  patients:[
+    {id:'P001',name:'Valentina Rodríguez',cedula:'V-18.432.001',phone:'+58 412 555 0011',email:'v.rodriguez@gmail.com',dob:'1990-03-15',tags:['VIP','Recurrente'],lastVisit:'2026-06-01',procedures:8},
+    {id:'P002',name:'Andrea Méndez',cedula:'V-22.109.334',phone:'+58 414 555 0022',email:'amendezvzla@hotmail.com',dob:'1985-07-22',tags:['Recurrente'],lastVisit:'2026-05-20',procedures:3},
+    {id:'P003',name:'Sofía Castro',cedula:'V-26.771.005',phone:'+58 416 555 0033',email:'sofiacastro@outlook.com',dob:'1998-11-08',tags:['Nueva','Cirugía'],lastVisit:'2026-06-01',procedures:1},
+    {id:'P004',name:'Gabriela Torres',cedula:'V-19.883.221',phone:'+58 412 555 0044',email:'g.torres@gmail.com',dob:'1993-04-30',tags:['VIP','Recurrente'],lastVisit:'2026-05-15',procedures:12},
+    {id:'P005',name:'María Fernanda López',cedula:'V-24.501.887',phone:'+58 426 555 0055',email:'mflopez@gmail.com',dob:'2001-02-18',tags:['Nueva'],lastVisit:'2026-06-01',procedures:1},
+    {id:'P006',name:'Carolina Díaz',cedula:'V-17.664.332',phone:'+58 414 555 0066',email:'caroldiaz@gmail.com',dob:'1987-09-12',tags:['Recurrente','Cirugía'],lastVisit:'2026-05-10',procedures:5},
+  ],
+  movimientos:[
+    {id:'M001',fecha:'2026-06-01',tipo:'ingreso',desc:'Toxina Botulínica — Valentina Rodríguez',metodo:'Zelle',monto:380,moneda:'USD'},
+    {id:'M002',fecha:'2026-06-01',tipo:'ingreso',desc:'Armonización Labial — Sofía Castro',metodo:'Efectivo USD',monto:350,moneda:'USD'},
+    {id:'M003',fecha:'2026-06-01',tipo:'ingreso',desc:'NAD+ Sueroterapia — Gabriela Torres',metodo:'Transferencia USD',monto:280,moneda:'USD'},
+    {id:'M004',fecha:'2026-06-01',tipo:'egreso',desc:'Insumos Allergan — 2 viales Botox',metodo:'Efectivo USD',monto:180,moneda:'USD'},
+    {id:'M005',fecha:'2026-06-01',tipo:'ingreso',desc:'Consulta Inicial — María F. López',metodo:'Pago Móvil',monto:50,moneda:'USD'},
+    {id:'M006',fecha:'2026-05-31',tipo:'ingreso',desc:'Técnica 1:5 AH — Andrea Méndez',metodo:'Zelle',monto:330,moneda:'USD'},
+    {id:'M007',fecha:'2026-05-31',tipo:'egreso',desc:'Servicios públicos mayo',metodo:'Transferencia Bs',monto:45,moneda:'USD'},
+    {id:'M008',fecha:'2026-05-30',tipo:'ingreso',desc:'Rinomodelación — Carolina Díaz',metodo:'Zelle',monto:480,moneda:'USD'},
+    {id:'M009',fecha:'2026-05-29',tipo:'ingreso',desc:'Bioestimuladores Radiesse — Gabriela Torres',metodo:'Zelle',monto:550,moneda:'USD'},
+    {id:'M010',fecha:'2026-05-28',tipo:'ingreso',desc:'Botox Tercio Superior — Valentina Rodríguez',metodo:'Zelle',monto:380,moneda:'USD'},
+    {id:'M011',fecha:'2026-05-28',tipo:'egreso',desc:'Insumos Galderma',metodo:'Efectivo USD',monto:220,moneda:'USD'},
+    {id:'M012',fecha:'2026-05-27',tipo:'ingreso',desc:'Armonización Labial — nuevo paciente',metodo:'Transferencia USD',monto:350,moneda:'USD'},
+    {id:'M013',fecha:'2026-05-26',tipo:'ingreso',desc:'NAD+ IV — Gabriela Torres',metodo:'Zelle',monto:280,moneda:'USD'},
+    {id:'M014',fecha:'2026-05-25',tipo:'egreso',desc:'Alquiler consultorio mayo',metodo:'Transferencia Bs',monto:300,moneda:'USD'},
+    {id:'M015',fecha:'2026-05-24',tipo:'ingreso',desc:'Mesoterapia facial',metodo:'Efectivo USD',monto:180,moneda:'USD'},
+  ],
+  presupuestos:[
+    {id:'PRES-001',fecha:'2026-06-01',paciente:'Sofía Castro',cedula:'V-26.771.005',tipo:'estetica',items:[{desc:'Rinomodelación — Técnica Punto Único',monto:480},{desc:'Ácido Hialurónico — Armonización Labial 1ml',monto:350}],vigencia:90,doc:'Dr. Higuerey',notas:''},
+    {id:'PRES-002',fecha:'2026-05-28',paciente:'Valentina Rodríguez',cedula:'V-18.432.001',tipo:'estetica',items:[{desc:'Toxina Botulínica — Tercio Superior',monto:380},{desc:'Bioestimuladores — Profhilo',monto:520}],vigencia:90,doc:'Dr. Higuerey',notas:''},
+    {id:'PRES-003',fecha:'2026-05-20',paciente:'Carolina Díaz',cedula:'V-17.664.332',tipo:'quirurgico',items:[{desc:'Lipoescultura HEUS (VASER)',monto:3500},{desc:'Abdominoplastia Clásica',monto:4200}],vigencia:30,doc:'Dr. Higuerey',notas:'Incluye anestesia general.'},
+  ],
+  hcData:{
+    'P001':{antecedentes:{alergias:'Penicilina',medicamentos:'Anticonceptivos orales',antPersonales:'Sin patologías relevantes',antFamiliares:'Hipertensión materna',cirugiasPrevias:'Ninguna'},consultas:[{fecha:'2026-06-01',proc:'Toxina Botulínica — Tercio Superior',doc:'Dr. Higuerey',nota:'30U Botox glabela y frente. Resultado óptimo.',productos:[{marca:'Allergan',prod:'Botox',dosis:'30U',zona:'Glabela',lote:'ALG2025-441'}]}],consentimientos:[{nombre:'Consentimiento Toxina Botulínica',fecha:'2026-06-01',firmado:true}]},
+    'P003':{antecedentes:{alergias:'Ninguna',medicamentos:'Ninguno',antPersonales:'Ninguno',antFamiliares:'Diabetes (padre)',cirugiasPrevias:'Apendicectomía 2018'},consultas:[{fecha:'2026-06-01',proc:'Consulta Inicial / Valoración',doc:'Dr. Higuerey',nota:'Valoración armonización facial completa.',productos:[]}],consentimientos:[{nombre:'Consentimiento Consulta Inicial',fecha:'2026-06-01',firmado:true}]},
+  },
+  appointments:[
+    {id:'A001',time:'09:00',patient:'Valentina Rodríguez',proc:'Toxina Botulínica — Tercio Superior',doc:'Dr. Higuerey',status:'confirmado',consultorio:'C-2'},
+    {id:'A002',time:'10:00',patient:'Sofía Castro',proc:'Ácido Hialurónico — Armonización Labial 1ml',doc:'Dr. Higuerey',status:'en_consulta',consultorio:'C-2'},
+    {id:'A003',time:'11:30',patient:'Andrea Méndez',proc:'Ácido Hialurónico — Técnica 1:5',doc:'Dr. Higuerey',status:'pendiente',consultorio:'C-2'},
+    {id:'A004',time:'14:00',patient:'Gabriela Torres',proc:'NAD+ Sueroterapia IV',doc:'Dr. Higuerey',status:'confirmado',consultorio:'C-1'},
+    {id:'A005',time:'15:30',patient:'María Fernanda López',proc:'Consulta Inicial / Valoración',doc:'Dr. Higuerey',status:'pendiente',consultorio:'C-4'},
+  ],
+  notificaciones:[
+    {tipo:'alerta',titulo:'Cita sin confirmar',sub:'Andrea Méndez · 11:30 AM · hoy'},
+    {tipo:'alerta',titulo:'Cita sin confirmar',sub:'María Fernanda López · 15:30 PM · hoy'},
+    {tipo:'info',titulo:'Presupuesto próximo a vencer',sub:'PRES-003 · Carolina Díaz · vence en 8 días'},
+    {tipo:'success',titulo:'Nuevo paciente registrado',sub:'Sofía Castro · hoy'},
+  ],
+};
 
-try{citas=JSON.parse(localStorage.getItem('epc_c3')||'[]');}catch(e){}
-try{pacs=JSON.parse(localStorage.getItem('epc_p3')||'[]');}catch(e){}
-try{movs=JSON.parse(localStorage.getItem('epc_m3')||'[]');}catch(e){}
-try{cierres=JSON.parse(localStorage.getItem('epc_cl3')||'[]');}catch(e){}
-try{tasas=JSON.parse(localStorage.getItem('epc_t3')||'{}');}catch(e){}
+const statusMap={confirmado:{label:'Confirmado',cls:'badge-green'},en_consulta:{label:'En consulta',cls:'badge-gold'},pendiente:{label:'Pendiente',cls:'badge-gray'},completado:{label:'Completado',cls:'badge-blue'},cancelado:{label:'Cancelado',cls:'badge-red'}};
+let chartsInstances={};
 
-const TCLS={'Valoración Facial':'t1','Valoración Corporal':'t2','Cirugía Facial':'t3','Cirugía Corporal':'t4','Rellenos':'t5','Estimuladores':'t6','Toxina Botulínica':'t7','Control Postoperatorio':'t8'};
-const MES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DIA=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-const MMON={'Zelle USD':'USD','Efectivo USD':'USD','Efectivo EUR':'EUR','Efectivo Bs':'BS','Pago Móvil Bs':'BS','Transferencia Bs':'BS'};
-const SYM={USD:'$',BS:'Bs.',EUR:'€'};
+function $(id){return document.getElementById(id)}
+function showToast(msg){$('toast-msg').textContent=msg;const t=$('toast');t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3200)}
+function closeModal(){$('modal-overlay').classList.add('hidden')}
+function openModal(html){$('modal-content').innerHTML=html;$('modal-overlay').classList.remove('hidden')}
+function initials(n){return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
+function tagCls(t){return t==='VIP'?'vip':t==='Nueva'||t==='Nuevo'?'new':t==='Cirugía'?'surg':'rec'}
+function fmtUSD(n){return n===0?'Consultar':'$'+Number(n).toLocaleString()}
+function fmtDate(d){return new Date(d+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric'})}
+function destroyChart(id){if(chartsInstances[id]){chartsInstances[id].destroy();delete chartsInstances[id];}}
 
-// ═══════════════════════════════
-// UTILS
-// ═══════════════════════════════
-const isoD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const fmtF=s=>{if(!s)return'';const p=String(s).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s;};
-const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):'';
-const uid=()=>String(Date.now())+Math.random().toString(36).slice(2,5);
-const gP=id=>pacs.find(p=>String(p.id)===String(id))||null;
-const gPN=id=>{const p=gP(id);return p?p.nombre:'—';};
-const tArr=t=>Array.isArray(t)?t:typeof t==='string'&&t?t.split('|').filter(Boolean):[];
-const bE=e=>e==='pendiente'?'bp':e==='confirmada'?'bconf':e==='completada'?'bcomp':'bcanc';
-const bP=p=>p==='pagado'?'bpag':p==='deuda'?'bdeu':'bpend';
+const chartDefaults={color:'#a0b0bc',grid:'rgba(176,184,193,0.08)',gold:'#C9A452',green:'#1D9E75',blue:'#378ADD',red:'#E24B4A',purple:'#7F77DD'};
 
-// ═══════════════════════════════
-// API — JSONP para evitar CORS
-// ═══════════════════════════════
-let _cbIdx=0;
-function apiJSONP(action,data={}){
-  return new Promise((res,rej)=>{
-    const cbName='_epc_cb_'+(++_cbIdx);
-    const to=setTimeout(()=>{delete window[cbName];rej(new Error('Timeout'));},15000);
-    window[cbName]=function(d){
-      clearTimeout(to);
-      delete window[cbName];
-      const s=document.getElementById('_s_'+cbName);
-      if(s)s.remove();
-      if(d&&d.success)res(d.data);
-      else rej(new Error((d&&d.error)||'Error API'));
-    };
-    const url=`${APIURL}?action=${action}&data=${encodeURIComponent(JSON.stringify(data))}&callback=${cbName}`;
-    const s=document.createElement('script');
-    s.id='_s_'+cbName;
-    s.src=url;
-    s.onerror=()=>{clearTimeout(to);delete window[cbName];s.remove();rej(new Error('Script error'));};
-    document.head.appendChild(s);
-  });
+function showView(v){
+  STATE.view=v;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const navItems=document.querySelectorAll('.nav-item');
+  const nm={dashboard:0,agenda:1,pacientes:2,hc:3,tratamientos:4,caja:5,presupuestos:6,reportes:7};
+  if(nm[v]!==undefined) navItems[nm[v]].classList.add('active');
+  const titles={dashboard:'Dashboard',agenda:'Agenda',pacientes:'Pacientes',hc:'Historia Clínica',tratamientos:'Tratamientos',caja:'Caja',presupuestos:'Presupuestos',reportes:'Reportes'};
+  $('page-title').textContent=titles[v]||v;
+  const btnL={dashboard:'+ Nuevo',agenda:'+ Nueva cita',pacientes:'+ Paciente',hc:'+ Consulta',tratamientos:'+ Sesión',caja:'+ Movimiento',presupuestos:'+ Presupuesto',reportes:'↓ Exportar'};
+  $('btn-top').textContent=btnL[v]||'+ Nuevo';
+  Object.keys(chartsInstances).forEach(destroyChart);
+  if(v==='dashboard') renderDashboard();
+  else if(v==='agenda') renderAgenda();
+  else if(v==='pacientes') renderPacientes();
+  else if(v==='hc') renderHC();
+  else if(v==='tratamientos') renderTratamientos();
+  else if(v==='caja') renderCaja();
+  else if(v==='presupuestos') renderPresupuestos();
+  else if(v==='reportes') renderReportes();
 }
 
-// ═══════════════════════════════
-// SYNC
-// ═══════════════════════════════
-function setSt(s,m){
-  const d=document.getElementById('dot'),l=document.getElementById('slbl');
-  d.className='dot '+(s==='ok'?'ok':s==='err'?'err':s==='busy'?'busy':'');
-  l.textContent=m||(s==='ok'?'Sincronizado':s==='err'?'Sin conexión':s==='busy'?'Sincronizando...':'—');
+function openNewModal(){
+  const map={agenda:openNewCita,pacientes:openNewPatient,hc:openNewConsulta,tratamientos:openNewSesion,caja:openNewMovimiento,presupuestos:openNewPresupuesto,reportes:()=>showToast('Exportación próximamente')};
+  (map[STATE.view]||openNewPatient)();
 }
 
-async function sync(){
-  setSt('busy');
-  try{
-    const data=await apiJSONP('getAll');
-    if(Array.isArray(data.citas))       citas=data.citas.map(nC);
-    if(Array.isArray(data.pacientes))   pacs=data.pacientes.map(nP);
-    if(Array.isArray(data.movimientos)) movs=data.movimientos.map(nM);
-    if(Array.isArray(data.cierres))     cierres=data.cierres;
-    if(Array.isArray(data.tasas)){
-      tasas={};
-      data.tasas.forEach(t=>{if(t&&t.fecha)tasas[String(t.fecha)]={bcv:parseFloat(t.bcv)||0,eur:parseFloat(t.eur)||0,par:parseFloat(t.par||t.paralelo)||0};});
-    }
-    salvar();setSt('ok');
-    renderAg();
-    const on=document.querySelector('.nb.on');
-    if(on){if(on.textContent.includes('Pac'))renderPacs();if(on.textContent.includes('Caja'))renderCaja();}
-  }catch(e){setSt('err','Sin conexión: '+e.message);}
-}
-
-function apiB(action,data={}){
-  // Fire and forget — no bloquea UI
-  apiJSONP(action,data).catch(e=>console.warn('API bg:',e.message));
-}
-
-function nC(c){
-  c.id=String(c.id||uid());c.pacienteId=String(c.pacienteId||'');
-  c.tipo=tArr(c.tipo);
-  if(typeof c.recordatorios==='string'&&c.recordatorios){try{c.recordatorios=JSON.parse(c.recordatorios);}catch(e){c.recordatorios={};}}
-  if(!c.recordatorios)c.recordatorios={r7d:false,r24h:false,r2h:false};
-  c.monto=parseFloat(c.monto)||0;
-  c.fecha=String(c.fecha||'').trim();c.hora=String(c.hora||'').trim();
-  c.estado=c.estado||'pendiente';c.pago=c.pago||'pendiente';
-  return c;
-}
-function nP(p){
-  p.id=String(p.id||uid());
-  if(typeof p.anotaciones==='string'&&p.anotaciones){try{p.anotaciones=JSON.parse(p.anotaciones);}catch(e){p.anotaciones=[];}}
-  if(!Array.isArray(p.anotaciones))p.anotaciones=[];
-  if(!p.hc)p.hc={enfermedades:p.hc_enfermedades||'',medicamentos:p.hc_medicamentos||'',cirugiasPrev:p.hc_cirugiasPrev||'',alergias:p.hc_alergias||'',fumador:p.hc_fumador||'No',sangre:p.hc_sangre||'',peso:p.hc_peso||''};
-  return p;
-}
-function nM(m){m.id=String(m.id||uid());m.monto=parseFloat(m.monto)||0;return m;}
-
-function salvar(){
-  localStorage.setItem('epc_c3',JSON.stringify(citas));
-  localStorage.setItem('epc_p3',JSON.stringify(pacs));
-  localStorage.setItem('epc_m3',JSON.stringify(movs));
-  localStorage.setItem('epc_cl3',JSON.stringify(cierres));
-  localStorage.setItem('epc_t3',JSON.stringify(tasas));
-}
-
-// ═══════════════════════════════
-// NAVEGACIÓN
-// ═══════════════════════════════
-function pg(id){
-  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('on',['agenda','pacientes','caja'][i]===id));
-  document.querySelectorAll('.pg').forEach((p,i)=>p.classList.toggle('on',['p-agenda','p-pacientes','p-caja'][i]==='p-'+id));
-  if(id==='pacientes')renderPacs();
-  if(id==='caja')initCaja();
-}
-
-// ═══════════════════════════════
-// AGENDA
-// ═══════════════════════════════
-function rFecha(){
-  const hoy=new Date();hoy.setHours(0,0,0,0);
-  const d=Math.round((dAct-hoy)/86400000);
-  document.getElementById('dnl').textContent=`${DIA[dAct.getDay()]} ${dAct.getDate()} ${MES[dAct.getMonth()]}`;
-  document.getElementById('dns').textContent=d===0?'Hoy':d===1?'Mañana':d===-1?'Ayer':String(dAct.getFullYear());
-  document.getElementById('dpk').value=isoD(dAct);
-}
-
-function renderAg(){
-  rFecha();
-  const f=isoD(dAct);
-  let lista=citas.filter(c=>c.fecha===f);
-  if(filtro!=='todos')lista=lista.filter(c=>c.estado===filtro);
-  lista.sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
-  const el=document.getElementById('ag-l');
-  if(!lista.length){
-    el.innerHTML=`<div class="empty"><div class="ei">📅</div><div class="et">Sin citas${filtro!=='todos'?' (filtro activo)':''}<br><a href="#" onclick="abrirCita();return false;" style="color:var(--acc);">+ Agendar</a></div></div>`;
-    return;
+// ── NOTIFICACIONES ────────────────────────────────────────────────────────────
+function toggleNotif(){
+  const p=$('notif-panel');p.classList.toggle('open');
+  if(p.classList.contains('open')){
+    $('notif-list').innerHTML=STATE.notificaciones.map(n=>`
+    <div class="notif-item">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div class="notif-dot" style="background:${n.tipo==='alerta'?'var(--red)':n.tipo==='success'?'var(--green)':'var(--gold)'}"></div>
+        <div class="notif-title">${n.titulo}</div>
+      </div>
+      <div class="notif-sub">${n.sub}</div>
+    </div>`).join('');
   }
-  el.innerHTML=lista.map(c=>{
-    const pac=gP(c.pacienteId);
-    const sel=cSel&&String(cSel.id)===String(c.id);
-    const[hh='09',mm='00']=(c.hora||'09:00').split(':');
-    const h=parseInt(hh)||9;const h12=h%12||12;const mer=h>=12?'PM':'AM';
-    const dim=c.estado==='cancelada'||c.estado==='completada';
-    return`<div class="ci${sel?' sel':''}${dim?' dim':''}" onclick="selC('${c.id}')">
-      <div class="cit"><div class="cih">${h12}:${mm}</div><div class="cim">${mer}</div></div>
-      <div class="cid"></div>
-      <div class="cib">
-        <div class="cin">${pac?pac.nombre:'Paciente'}</div>
-        <div class="cit2">${tArr(c.tipo).join(' · ')||'—'}</div>
-      </div>
-      <span class="bx ${bE(c.estado)}">${cap(c.estado)}</span>
-    </div>`;
-  }).join('');
 }
 
-function selC(id){cSel=citas.find(c=>String(c.id)===String(id))||null;renderAg();renderFicha();}
+// ── SELECT HELPERS ────────────────────────────────────────────────────────────
+function buildServiciosSelect(id,sel=''){
+  let h=`<select class="form-input" id="${id}">`;
+  for(const[cat,items] of Object.entries(SERVICIOS)){h+=`<optgroup label="── ${cat} ──">`;items.forEach(s=>h+=`<option value="${s.n}"${s.n===sel?' selected':''}>${s.n}</option>`);h+=`</optgroup>`;}
+  return h+'</select>';
+}
+function buildConsultorioSelect(id){return`<select class="form-input" id="${id}">${CONSULTORIOS.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}</select>`;}
+function buildPacienteSelect(id,selId=''){return`<select class="form-input" id="${id}">${STATE.patients.map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${p.name}</option>`).join('')}</select>`;}
+function buildMedicoField(){return`<select class="form-input" id="f-cdoc" onchange="toggleOtroMedico(this.value)"><option value="higuerey">Dr. Higuerey</option><option value="otro">Otro médico…</option></select><div id="otro-medico-wrap" style="display:none;margin-top:8px"><input class="form-input" id="f-otro-medico" placeholder="Nombre del médico"></div>`;}
+function toggleOtroMedico(v){const w=$('otro-medico-wrap');if(w)w.style.display=v==='otro'?'block':'none'}
+function getMedicoLabel(){const s=$('f-cdoc');if(!s)return'Dr. Higuerey';if(s.value==='otro'){const i=$('f-otro-medico');return i&&i.value.trim()?i.value.trim():'Médico externo';}return'Dr. Higuerey';}
 
-function renderFicha(){
-  const el=document.getElementById('ag-f');
-  if(!cSel){el.innerHTML=`<div class="empty" style="margin-top:4rem;"><div class="ei">📋</div><div class="et">Selecciona una cita</div></div>`;return;}
-  const c=cSel,pac=gP(c.pacienteId),tipos=tArr(c.tipo);
-  el.innerHTML=`<div class="fic">
-    <div class="fich">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-        <div>
-          <div class="ficn">${pac?pac.nombre:'Paciente'}</div>
-          <div class="ficm">
-            <span>📅 ${fmtF(c.fecha)} · ${c.hora||'—'}</span>
-            <span>📍 ${c.modalidad||'Presencial'}</span>
-            ${pac&&pac.telefono?`<span>📱 ${pac.telefono}</span>`:''}
-          </div>
-          <div class="fict">${tipos.map(t=>`<span class="tp ${TCLS[t]||'t8'}">${t}</span>`).join('')}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
-          <span class="bx ${bE(c.estado)}">${cap(c.estado)}</span>
-          <span class="bx ${bP(c.pago)}">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Por cobrar'}</span>
-          ${c.monto?`<span style="font-size:16px;font-weight:700;color:var(--gr);">$${c.monto.toFixed(2)}</span>`:''}
-        </div>
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const ingHoy=STATE.movimientos.filter(m=>m.fecha==='2026-06-01'&&m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
+  const egrHoy=STATE.movimientos.filter(m=>m.fecha==='2026-06-01'&&m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
+  $('content-area').innerHTML=`
+  <div class="bcv-strip">
+    <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Tasa BCV</span>
+    <span style="font-size:16px;font-weight:600;color:var(--gold)">1 USD = ${STATE.bcvRate} Bs</span>
+    <span style="font-size:11px;color:var(--text3)">· Paralelo ≈ 96.2 Bs</span>
+    <span style="font-size:10px;color:var(--text3);margin-left:auto">Actualizado hoy · 08:00 AM</span>
+    <button class="icon-btn btn-sm" onclick="showToast('Tasa actualizada')">↻ Actualizar</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Ingresos hoy</div><div class="kpi-value">${fmtUSD(ingHoy)}</div><div class="kpi-sub">${Math.round(ingHoy*STATE.bcvRate).toLocaleString('es-VE')} Bs</div><div class="kpi-trend kpi-up">↑ +18% vs ayer</div></div>
+    <div class="kpi-card"><div class="kpi-label">Balance neto</div><div class="kpi-value">${fmtUSD(ingHoy-egrHoy)}</div><div class="kpi-sub">Egresos: ${fmtUSD(egrHoy)}</div><div class="kpi-trend kpi-up">↑ positivo</div></div>
+    <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${STATE.appointments.length}</div><div class="kpi-sub">1 en consulta · 2 confirmadas</div><div class="kpi-trend kpi-up">↑ +1 vs ayer</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pacientes activos</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>p.tags.includes('VIP')).length} VIP · ${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length} nuevos</div><div class="kpi-trend kpi-up">↑ +2 este mes</div></div>
+  </div>
+  <div class="dashboard-grid">
+    <div class="card">
+      <div class="card-title">Agenda de hoy <button class="icon-btn btn-sm" style="border:none;color:var(--gold)" onclick="showView('agenda')">Ver completa →</button></div>
+      ${STATE.appointments.map(a=>`
+      <div class="agenda-item">
+        <span class="agenda-time">${a.time}</span>
+        <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
+        <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc}</div></div>
+        <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="padding:16px">
+        <div class="card-title" style="margin-bottom:10px">Ingresos 7 días <button class="icon-btn btn-sm" style="border:none;color:var(--gold)" onclick="showView('reportes')">Reportes →</button></div>
+        <div style="position:relative;height:120px"><canvas id="dash-chart"></canvas></div>
       </div>
-      <div class="fica">
-        <button class="btn sm b" onclick="editC('${c.id}')">✏️ Editar</button>
-        <button class="btn sm g" onclick="setE('${c.id}','completada')">✓ Completada</button>
-        <button class="btn sm a" onclick="setE('${c.id}','confirmada')">Confirmar</button>
-        <button class="btn sm r" onclick="setE('${c.id}','cancelada')">✕ Cancelar</button>
-        <button class="btn sm" onclick="moverC('${c.id}')">📅 Mover</button>
-        <button class="btn sm r" onclick="elimC('${c.id}')">🗑 Eliminar</button>
+      <div class="card">
+        <div class="card-title">Top procedimientos · junio</div>
+        ${[{n:'Toxina Botulínica',c:18,max:18},{n:'Técnica 1:5 AH',c:14,max:18},{n:'Armonización Labial',c:11,max:18},{n:'NAD+ Sueroterapia',c:8,max:18},{n:'Rinomodelación',c:6,max:18}].map(p=>`
+        <div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${p.n}</span><div class="proc-bar-wrap"><div class="proc-bar" style="width:${Math.round(p.c/p.max*100)}%"></div></div><span style="font-size:12px;color:var(--text3);min-width:24px;text-align:right">${p.c}</span></div>`).join('')}
       </div>
     </div>
-    <div class="fictt">
-      <button class="fictl on" onclick="sTab('det',this)">Detalle</button>
-      <button class="fictl" onclick="sTab('cobro',this)">Cobro</button>
-      ${pac?`<button class="fictl" onclick="sTab('pac',this)">Paciente</button>`:''}
+  </div>`;
+  setTimeout(()=>{
+    const c=$('dash-chart');if(!c)return;
+    chartsInstances['dash']=new Chart(c,{type:'bar',data:{labels:['26/5','27/5','28/5','29/5','30/5','31/5','1/6'],datasets:[{data:[350,530,760,550,480,375,1060],backgroundColor:'rgba(201,164,82,0.5)',borderColor:'#C9A452',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.raw}}},scales:{x:{ticks:{color:chartDefaults.color,font:{size:9}},grid:{color:chartDefaults.grid}},y:{ticks:{color:chartDefaults.color,font:{size:9},callback:v=>'$'+v},grid:{color:chartDefaults.grid}}}}});
+  },100);
+}
+
+// ── AGENDA ────────────────────────────────────────────────────────────────────
+function renderAgenda(){
+  const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const today=new Date();const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());
+  const times=['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
+  const evMap={1:{1:[{n:'Valentina R.',p:'Botox',c:''}],2:[{n:'Sofía C.',p:'Labios',c:'green'}]},2:{3:[{n:'Andrea M.',p:'1:5 AH',c:'blue'}]},4:{0:[{n:'Gabriela T.',p:'NAD+',c:''}]},5:{2:[{n:'M. F. López',p:'Consulta',c:'green'}]}};
+  $('content-area').innerHTML=`
+  <div class="agenda-controls">
+    <div style="display:flex;align-items:center;gap:8px"><button class="icon-btn">‹</button><div class="date-display">01 – 07 Junio 2026</div><button class="icon-btn">›</button></div>
+    <div style="display:flex;gap:8px;margin-left:auto">
+      <button class="doc-chip active">Todos</button><button class="doc-chip">Dr. Higuerey</button>
+      <button class="btn btn-gold btn-sm" onclick="openNewCita()">+ Nueva cita</button>
     </div>
-    <div class="ficb">
-      <div class="ficp on" id="tab-det">
-        ${c.notas?`<div style="background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:12px;font-size:13px;color:var(--tx2);">${c.notas}</div>`:`<p style="color:var(--tx3);font-size:13px;">Sin notas.</p>`}
-        <p style="font-size:12px;color:var(--tx3);margin-top:8px;">Doctor: ${c.doctor||'Dr. Deivys Higuerey'}</p>
-      </div>
-      <div class="ficp" id="tab-cobro">
-        <div class="sg s2" style="margin-bottom:14px;">
-          <div class="st stg"><div class="sl">Monto</div><div class="sv">${c.monto?'$'+c.monto.toFixed(2):'—'}</div></div>
-          <div class="st ${c.pago==='pagado'?'stg':c.pago==='deuda'?'str':'sta'}"><div class="sl">Estado pago</div><div class="sv">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Por cobrar'}</div></div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn sm g" onclick="setPg('${c.id}','pagado')">✓ Pagado</button>
-          <button class="btn sm r" onclick="setPg('${c.id}','deuda')">Marcar deuda</button>
-          <button class="btn sm" onclick="setPg('${c.id}','pendiente')">Pendiente</button>
-        </div>
-      </div>
-      ${pac?`<div class="ficp" id="tab-pac">
-        <div class="hg" style="margin-bottom:10px;">
-          <div class="hc"><div class="hl">Documento</div><div class="hv">${pac.cedula||'—'}</div></div>
-          <div class="hc"><div class="hl">Ciudad</div><div class="hv">${pac.ciudad||'—'}</div></div>
-          <div class="hc"><div class="hl">Enfermedades</div><div class="hv">${pac.hc?.enfermedades||'Ninguna'}</div></div>
-          <div class="hc"><div class="hl">Alergias</div><div class="hv">${pac.hc?.alergias||'Ninguna'}</div></div>
-          <div class="hc"><div class="hl">Medicamentos</div><div class="hv">${pac.hc?.medicamentos||'Ninguno'}</div></div>
-          <div class="hc"><div class="hl">Cirugías previas</div><div class="hv">${pac.hc?.cirugiasPrev||'Ninguna'}</div></div>
-        </div>
-        <button class="btn sm b" onclick="irPac('${pac.id}')">Ver ficha completa →</button>
-      </div>`:''}
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+    <div class="calendar-grid">
+      <div class="cal-header" style="background:var(--bg2)"></div>
+      ${days.map((d,i)=>{const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);const isTod=dt.toDateString()===today.toDateString();return`<div class="cal-header${isTod?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;}).join('')}
+      ${times.map((t,ti)=>`<div class="cal-time">${t}</div>${days.map((d,di)=>{const isTod=new Date(weekStart.getTime()+di*86400000).toDateString()===today.toDateString();const ev=(evMap[di]||{})[ti];return`<div class="cal-cell${isTod?' today-col':''}">${ev?ev.map(e=>`<div class="cal-event ${e.c}"><div class="cal-event-name">${e.n}</div><div class="cal-event-proc">${e.p}</div></div>`).join(''):''}</div>`;}).join('')}`).join('')}
     </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Citas — hoy 01 junio 2026</div>
+    ${STATE.appointments.map(a=>`
+    <div class="agenda-item">
+      <span class="agenda-time">${a.time}</span>
+      <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
+      <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc} · ${a.consultorio} · ${a.doc}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
+        <button class="icon-btn btn-sm" onclick="cycleStatus('${a.id}')">↺</button>
+        <button class="icon-btn btn-sm" onclick="showToast('Recordatorio WhatsApp enviado a ${a.patient}')">📲</button>
+        <button class="icon-btn btn-sm" onclick="openRegistrarCobro('${a.patient}','${a.proc}')">💰</button>
+      </div>
+    </div>`).join('')}
   </div>`;
 }
 
-function sTab(id,btn){
-  document.querySelectorAll('.fictl').forEach(b=>b.classList.remove('on'));
-  document.querySelectorAll('.ficp').forEach(p=>p.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('tab-'+id)?.classList.add('on');
+function cycleStatus(id){
+  const a=STATE.appointments.find(x=>x.id===id);if(!a)return;
+  const c=['pendiente','confirmado','en_consulta','completado','cancelado'];
+  a.status=c[(c.indexOf(a.status)+1)%c.length];
+  showToast('Estado: '+statusMap[a.status].label);renderAgenda();
 }
 
-function setE(id,est){
-  const c=citas.find(x=>String(x.id)===String(id));if(!c)return;
-  c.estado=est;if(cSel&&String(cSel.id)===String(id))cSel=c;
-  salvar();apiB('saveCita',pC(c));renderAg();renderFicha();
+// ── PACIENTES ─────────────────────────────────────────────────────────────────
+function renderPacientes(filter=''){
+  const pts=filter?STATE.patients.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase())||p.cedula.includes(filter)):STATE.patients;
+  $('content-area').innerHTML=`
+  <div class="section-header">
+    <div class="section-title">Pacientes <span style="font-size:14px;color:var(--text3);font-family:Montserrat">(${STATE.patients.length})</span></div>
+    <button class="btn btn-gold" onclick="openNewPatient()">+ Nuevo paciente</button>
+  </div>
+  <div class="search-bar"><input class="search-input" placeholder="Buscar por nombre o cédula…" value="${filter}" oninput="renderPacientes(this.value)"></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="patients-table">
+      <thead><tr><th>Paciente</th><th>Cédula</th><th>Teléfono</th><th>Etiquetas</th><th>Última visita</th><th style="text-align:center">Procs.</th><th></th></tr></thead>
+      <tbody>${pts.map(p=>`
+      <tr>
+        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email}</div></div></div></td>
+        <td style="color:var(--text2);font-size:12px">${p.cedula}</td><td style="color:var(--text2);font-size:12px">${p.phone}</td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div></td>
+        <td style="font-size:12px;color:var(--text2)">${p.lastVisit}</td>
+        <td style="font-size:13px;font-weight:500;color:var(--gold);text-align:center">${p.procedures}</td>
+        <td><div style="display:flex;gap:6px">
+          <button class="icon-btn btn-sm" onclick="showView('hc');setTimeout(()=>openHCPatient('${p.id}'),50)">HC</button>
+          <button class="icon-btn btn-sm" onclick="openNewPresupuestoForPat('${p.id}')">Presup.</button>
+        </div></td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
 }
-function setPg(id,pg){
-  const c=citas.find(x=>String(x.id)===String(id));if(!c)return;
-  c.pago=pg;if(cSel&&String(cSel.id)===String(id))cSel=c;
-  salvar();apiB('saveCita',pC(c));renderFicha();
-}
-function elimC(id){
-  if(!confirm('¿Eliminar esta cita?'))return;
-  citas=citas.filter(x=>String(x.id)!==String(id));
-  if(cSel&&String(cSel.id)===String(id))cSel=null;
-  salvar();apiB('deleteCita',{id});renderAg();renderFicha();
-}
-function moverC(id){
-  const f=prompt('Nueva fecha (DD/MM/AAAA):');if(!f)return;
-  const p=f.split('/');if(p.length!==3)return;
-  const iso=`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-  const c=citas.find(x=>String(x.id)===String(id));
-  if(c){c.fecha=iso;if(cSel&&String(cSel.id)===String(id))cSel=c;salvar();apiB('saveCita',pC(c));renderAg();renderFicha();}
-}
-function dia(d){dAct.setDate(dAct.getDate()+d);cSel=null;renderAg();renderFicha();}
-function hoy(){dAct=new Date();dAct.setHours(0,0,0,0);cSel=null;renderAg();renderFicha();}
-function goF(){const v=document.getElementById('dpk').value;if(!v)return;const[y,m,d]=v.split('-');dAct=new Date(+y,+m-1,+d);cSel=null;renderAg();renderFicha();}
-function setFil(el){filtro=el.dataset.v;document.querySelectorAll('.fp').forEach(e=>e.classList.remove('on'));el.classList.add('on');cSel=null;renderAg();renderFicha();}
 
-// ═══════════════════════════════
-// MODAL CITA
-// ═══════════════════════════════
-function abrirCita(fPre){
-  eCid=null;tiposSel=[];limpC();pobSP();
-  document.getElementById('mcf').value=fPre||isoD(dAct);
-  document.getElementById('mc-t').textContent='Nueva cita';
-  document.getElementById('mo-c').classList.add('on');
+// ── HISTORIA CLÍNICA ─────────────────────────────────────────────────────────
+function renderHC(){
+  STATE.activeHCPatient=STATE.activeHCPatient||STATE.patients[0].id;
+  $('content-area').innerHTML=`
+  <div class="hc-grid">
+    <div>
+      <div class="search-bar" style="margin-bottom:10px"><input class="search-input" placeholder="Buscar paciente…" oninput="filterHCList(this.value)"></div>
+      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div class="hc-patient-name">${p.name}</div><div class="hc-patient-meta">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('')}</div>
+    </div>
+    <div id="hc-panel">${buildHCPanel(STATE.activeHCPatient)}</div>
+  </div>`;
 }
-function editC(id){
-  const c=citas.find(x=>String(x.id)===String(id));if(!c)return;
-  eCid=String(c.id);tiposSel=[];limpC();pobSP();
-  document.getElementById('mcp').value=c.pacienteId||'';
-  document.getElementById('mcf').value=c.fecha||'';
-  document.getElementById('mch').value=c.hora||'09:00';
-  document.getElementById('mcm').value=c.modalidad||'Presencial';
-  document.getElementById('mcmo').value=c.monto||'';
-  document.getElementById('mcpg').value=c.pago||'pendiente';
-  document.getElementById('mce').value=c.estado||'pendiente';
-  document.getElementById('mcd').value=c.doctor||'Dr. Deivys Higuerey';
-  document.getElementById('mcn').value=c.notas||'';
-  tiposSel=[...tArr(c.tipo)];
-  document.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('on',tiposSel.includes(ch.dataset.v)));
-  document.getElementById('mc-t').textContent='Editar cita';
-  document.getElementById('mo-c').classList.add('on');
-}
-function cerC(){document.getElementById('mo-c').classList.remove('on');}
-function limpC(){
-  document.getElementById('mcf').value='';document.getElementById('mch').value='09:00';
-  document.getElementById('mcmo').value='';document.getElementById('mcn').value='';
-  document.getElementById('mcnp').style.display='none';
-  ['mcp','mcm','mcpg','mce','mcd'].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
-  document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('on'));tiposSel=[];
-}
-function pobSP(){
-  const s=document.getElementById('mcp'),v=s.value;
-  s.innerHTML='<option value="">— Seleccionar —</option><option value="__n">✚ Nuevo paciente</option>'+
-    [...pacs].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=>`<option value="${p.id}">${p.nombre}${p.cedula?' · '+p.cedula:''}</option>`).join('');
-  if(v)s.value=v;
-}
-function onMcp(){document.getElementById('mcnp').style.display=document.getElementById('mcp').value==='__n'?'block':'none';}
-function tChip(el){
-  const v=el.dataset.v;
-  if(tiposSel.includes(v)){tiposSel=tiposSel.filter(t=>t!==v);el.classList.remove('on');}
-  else{tiposSel.push(v);el.classList.add('on');}
-}
-function saveC(){
-  const pacId=document.getElementById('mcp').value;
-  const fecha=document.getElementById('mcf').value;
-  const hora=document.getElementById('mch').value;
-  if(!fecha||!hora){alert('Completa fecha y hora.');return;}
-  if(!tiposSel.length){alert('Selecciona al menos un tipo.');return;}
-  let fPacId=pacId;
-  if(pacId==='__n'){
-    const nom=document.getElementById('nn').value.trim();
-    const tel=document.getElementById('nt').value.trim();
-    if(!nom||!tel){alert('Nombre y teléfono obligatorios para el nuevo paciente.');return;}
-    const np={id:uid(),nombre:nom,cedula:document.getElementById('nc').value.trim(),
-      telefono:tel,email:document.getElementById('ne').value.trim(),
-      ciudad:document.getElementById('nci').value.trim(),genero:'Femenino',zona:'',
-      referido:document.getElementById('nr').value,
-      hc:{enfermedades:'',medicamentos:'',cirugiasPrev:'',alergias:'',fumador:'No',sangre:'',peso:''},
-      anotaciones:[],creadoEn:new Date().toISOString()};
-    pacs.push(np);fPacId=np.id;apiB('savePaciente',pP(np));
-  }else if(!pacId){alert('Selecciona un paciente.');return;}
-  const cx=eCid?citas.find(x=>String(x.id)===String(eCid)):null;
-  const cita={
-    id:eCid||uid(),pacienteId:String(fPacId),pacienteNombre:gPN(fPacId),
-    tipo:tiposSel,modalidad:document.getElementById('mcm').value,
-    fecha,hora,monto:parseFloat(document.getElementById('mcmo').value)||0,
-    pago:document.getElementById('mcpg').value,estado:document.getElementById('mce').value,
-    doctor:document.getElementById('mcd').value,notas:document.getElementById('mcn').value.trim(),
-    recordatorios:cx?.recordatorios||{r7d:false,r24h:false,r2h:false},
-    creadaEn:cx?.creadoEn||new Date().toISOString()
-  };
-  if(eCid){const i=citas.findIndex(x=>String(x.id)===String(eCid));if(i!==-1)citas[i]=cita;}else citas.push(cita);
-  cSel=cita;salvar();cerC();apiB('saveCita',pC(cita));renderAg();renderFicha();
-}
-function pC(c){return{...c,tipo:Array.isArray(c.tipo)?c.tipo.join('|'):c.tipo,recordatorios:JSON.stringify(c.recordatorios||{})};}
 
-// ═══════════════════════════════
-// PACIENTES
-// ═══════════════════════════════
-function renderPacs(){
-  const q=(document.getElementById('pbq')?.value||'').toLowerCase().trim();
-  let lista=[...pacs];
-  if(q)lista=lista.filter(p=>(p.nombre||'').toLowerCase().includes(q)||(p.cedula||'').toLowerCase().includes(q)||(p.telefono||'').includes(q));
-  lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-  const el=document.getElementById('plist');
-  if(!lista.length){el.innerHTML=`<div class="empty"><div class="ei">👤</div><div class="et">${q?'Sin resultados para "'+q+'"':'No hay pacientes'}</div></div>`;return;}
-  el.innerHTML=lista.map(p=>{
-    const ini=p.nombre.split(' ').slice(0,2).map(n=>n[0]||'').join('').toUpperCase();
-    const cp=citas.filter(c=>String(c.pacienteId)===String(p.id));
-    const ult=cp.sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
-    const anots=p.anotaciones||[];
-    return`<div class="pc" id="pc-${p.id}">
-      <div class="pcs" onclick="togP('${p.id}')">
-        <div class="pca">${ini}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="pcn">${p.nombre}</div>
-          <div class="pcm">${p.telefono||''}${p.cedula?' · '+p.cedula:''}</div>
-          <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">
-            ${cp.length?`<span class="tag">${cp.length} cita${cp.length!==1?'s':''}</span>`:''}
-            ${ult?`<span class="tag">Última: ${fmtF(ult.fecha)}</span>`:''}
-            ${anots.length?`<span class="tag">${anots.length} anotación${anots.length!==1?'es':''}</span>`:''}
-          </div>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="btn xs b" onclick="event.stopPropagation();editP('${p.id}')">Editar</button>
-          <span class="pcc">▶</span>
-        </div>
+function filterHCList(q){
+  const pts=q?STATE.patients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())):STATE.patients;
+  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div class="hc-patient-name">${p.name}</div><div class="hc-patient-meta">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('');
+}
+
+function openHCPatient(id){
+  STATE.activeHCPatient=id;
+  const panel=$('hc-panel');if(panel)panel.innerHTML=buildHCPanel(id);
+  filterHCList('');
+}
+
+function buildHCPanel(id){
+  const p=STATE.patients.find(x=>x.id===id);if(!p)return'';
+  const hc=STATE.hcData[id]||{antecedentes:{},consultas:[],consentimientos:[]};
+  const tab=STATE.activeHCTab;
+  return`<div class="hc-panel">
+    <div class="hc-section" style="padding:14px 18px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="patient-avatar" style="width:46px;height:46px;font-size:14px">${initials(p.name)}</div>
+        <div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold)">${p.name}</div><div style="font-size:12px;color:var(--text3)">${p.cedula} · ${p.phone}</div></div>
+        <div style="display:flex;gap:6px">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div>
+        <button class="btn btn-gold btn-sm" onclick="openNewConsulta('${id}')">+ Consulta</button>
       </div>
-      <div class="pcd">
-        <div class="ptn">
-          <button class="pt on" onclick="sPt('${p.id}','dat',this)">Datos</button>
-          <button class="pt" onclick="sPt('${p.id}','hc',this)">Historia clínica</button>
-          <button class="pt" onclick="sPt('${p.id}','an',this)">Anotaciones Dr.</button>
-          <button class="pt" onclick="sPt('${p.id}','hi',this)">Historial</button>
-        </div>
-        <div class="ptc on" id="pt-${p.id}-dat">
-          <div class="hg">
-            <div class="hc"><div class="hl">Documento</div><div class="hv">${p.cedula||'—'}</div></div>
-            <div class="hc"><div class="hl">Email</div><div class="hv">${p.email||'—'}</div></div>
-            <div class="hc"><div class="hl">Ciudad</div><div class="hv">${p.ciudad||'—'}</div></div>
-            <div class="hc"><div class="hl">Género</div><div class="hv">${p.genero||'—'}</div></div>
-            <div class="hc"><div class="hl">Zona de interés</div><div class="hv">${p.zona||'—'}</div></div>
-            <div class="hc"><div class="hl">Referido por</div><div class="hv">${p.referido||'—'}</div></div>
-            <div class="hc"><div class="hl">Teléfono</div><div class="hv">${p.telefono?`<a href="https://wa.me/${(p.telefono||'').replace(/\D/g,'')}" target="_blank" style="color:var(--gr);">${p.telefono} 💬</a>`:'—'}</div></div>
-          </div>
-        </div>
-        <div class="ptc" id="pt-${p.id}-hc">
-          <div class="hg">
-            <div class="hc"><div class="hl">Enfermedades</div><div class="hv">${p.hc?.enfermedades||'Ninguna'}</div></div>
-            <div class="hc"><div class="hl">Medicamentos</div><div class="hv">${p.hc?.medicamentos||'Ninguno'}</div></div>
-            <div class="hc"><div class="hl">Cirugías previas</div><div class="hv">${p.hc?.cirugiasPrev||'Ninguna'}</div></div>
-            <div class="hc"><div class="hl">Alergias</div><div class="hv">${p.hc?.alergias||'Ninguna'}</div></div>
-            <div class="hc"><div class="hl">Fumador/a</div><div class="hv">${p.hc?.fumador||'No'}</div></div>
-            <div class="hc"><div class="hl">Grupo sanguíneo</div><div class="hv">${p.hc?.sangre||'—'}</div></div>
-            <div class="hc"><div class="hl">Peso</div><div class="hv">${p.hc?.peso?p.hc.peso+' kg':'—'}</div></div>
-          </div>
-        </div>
-        <div class="ptc" id="pt-${p.id}-an">
-          ${anots.length?anots.slice().reverse().map((a,ri)=>`
-            <div class="an">
-              <div class="anh">
-                <span class="anf">📋 ${a.fecha} · ${a.doctor||'Dr. Higuerey'}</span>
-                <button class="btn xs r" onclick="elimAn('${p.id}',${anots.length-1-ri})">✕</button>
-              </div>
-              <div class="ant">${a.texto}</div>
-            </div>`).join(''):`<div class="empty" style="padding:1.5rem;"><div class="ei" style="font-size:24px;">📋</div><div class="et">Sin anotaciones aún</div></div>`}
-          <div style="padding:12px 14px;background:var(--sur2);border-top:1px solid var(--bor);">
-            <div class="f" style="margin-bottom:8px;"><label>Nueva anotación del Dr. Higuerey</label>
-              <textarea id="at-${p.id}" placeholder="Observaciones clínicas, evaluación, plan de tratamiento..." style="min-height:90px;"></textarea>
-            </div>
-            <button class="btn p sm" onclick="saveAn('${p.id}')">💾 Guardar anotación</button>
-          </div>
-        </div>
-        <div class="ptc" id="pt-${p.id}-hi">
-          ${cp.length?`<table>
-            <thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Estado</th><th>Pago</th></tr></thead>
-            <tbody>${cp.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(c=>{
-              const ts=tArr(c.tipo);
-              return`<tr>
-                <td style="font-weight:600;white-space:nowrap;">${fmtF(c.fecha)} <span style="color:var(--tx3);font-size:11px;">${c.hora||''}</span></td>
-                <td>${ts.map(t=>`<span class="tp ${TCLS[t]||'t8'}">${t}</span>`).join('')}</td>
-                <td style="font-weight:600;">${c.monto?'$'+c.monto.toFixed(0):'—'}</td>
-                <td><span class="bx ${bE(c.estado)}">${cap(c.estado)}</span></td>
-                <td><span class="bx ${bP(c.pago)}">${c.pago==='pagado'?'Pagado':c.pago==='deuda'?'Deuda':'Pend.'}</span></td>
-              </tr>`;}).join('')}
-            </tbody></table>`:`<div class="empty" style="padding:1.5rem;"><div class="ei" style="font-size:24px;">📅</div><div class="et">Sin citas</div></div>`}
-        </div>
-        <div style="padding:10px 14px;border-top:1px solid var(--bor);background:var(--sur2);display:flex;gap:6px;">
-          <button class="btn sm p" onclick="citaParaPac('${p.id}')">+ Nueva cita</button>
-          <button class="btn sm r" onclick="elimP('${p.id}')">Eliminar</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+    </div>
+    <div class="tab-bar">
+      <div class="tab${tab==='antecedentes'?' active':''}" onclick="switchHCTab('antecedentes')">Antecedentes</div>
+      <div class="tab${tab==='consultas'?' active':''}" onclick="switchHCTab('consultas')">Consultas (${(hc.consultas||[]).length})</div>
+      <div class="tab${tab==='consentimientos'?' active':''}" onclick="switchHCTab('consentimientos')">Consentimientos</div>
+    </div>
+    <div id="hc-tab-content">${buildHCTab(id,tab)}</div>
+  </div>`;
 }
 
-function togP(id){document.getElementById('pc-'+id)?.classList.toggle('op');}
-function sPt(pid,tab,btn){
-  const c=document.getElementById('pc-'+pid);if(!c)return;
-  c.querySelectorAll('.pt').forEach(b=>b.classList.remove('on'));
-  c.querySelectorAll('.ptc').forEach(p=>p.classList.remove('on'));
-  btn.classList.add('on');document.getElementById(`pt-${pid}-${tab}`)?.classList.add('on');
-}
-function irPac(id){
-  pg('pacientes');
-  setTimeout(()=>{const p=gP(id);if(!p)return;document.getElementById('pbq').value=p.nombre;renderPacs();setTimeout(()=>{const el=document.getElementById('pc-'+id);if(el){el.classList.add('op');el.scrollIntoView({behavior:'smooth',block:'start'});}},100);},100);
-}
-function citaParaPac(pid){abrirCita();setTimeout(()=>{pobSP();document.getElementById('mcp').value=pid;},50);}
+function switchHCTab(tab){STATE.activeHCTab=tab;const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(STATE.activeHCPatient,tab);}
 
-function abrirPac(){
-  ePid=null;
-  ['ep-n','ep-c','ep-t','ep-e','ep-ci','ep-na','ep-pe'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  ['ep-g','ep-z','ep-r','ep-f','ep-sg'].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
-  ['ep-en','ep-me','ep-cr','ep-al'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('mp-t').textContent='Nuevo paciente';
-  document.getElementById('mo-p').classList.add('on');
-}
-function editP(id){
-  const p=pacs.find(x=>String(x.id)===String(id));if(!p)return;
-  ePid=String(p.id);
-  document.getElementById('ep-n').value=p.nombre||'';document.getElementById('ep-c').value=p.cedula||'';
-  document.getElementById('ep-t').value=p.telefono||'';document.getElementById('ep-e').value=p.email||'';
-  document.getElementById('ep-ci').value=p.ciudad||'';document.getElementById('ep-na').value=p.nacimiento||'';
-  document.getElementById('ep-g').value=p.genero||'Femenino';document.getElementById('ep-z').value=p.zona||'';
-  document.getElementById('ep-r').value=p.referido||'';document.getElementById('ep-en').value=p.hc?.enfermedades||'';
-  document.getElementById('ep-me').value=p.hc?.medicamentos||'';document.getElementById('ep-cr').value=p.hc?.cirugiasPrev||'';
-  document.getElementById('ep-al').value=p.hc?.alergias||'';document.getElementById('ep-f').value=p.hc?.fumador||'No';
-  document.getElementById('ep-sg').value=p.hc?.sangre||'';document.getElementById('ep-pe').value=p.hc?.peso||'';
-  document.getElementById('mp-t').textContent='Editar paciente';
-  document.getElementById('mo-p').classList.add('on');
-}
-function cerP(){document.getElementById('mo-p').classList.remove('on');}
-function saveP(){
-  const nom=document.getElementById('ep-n').value.trim(),tel=document.getElementById('ep-t').value.trim();
-  if(!nom||!tel){alert('Nombre y teléfono obligatorios.');return;}
-  const px=ePid?pacs.find(x=>String(x.id)===String(ePid)):null;
-  const p={id:ePid||uid(),nombre:nom,cedula:document.getElementById('ep-c').value.trim(),
-    telefono:tel,email:document.getElementById('ep-e').value.trim(),
-    ciudad:document.getElementById('ep-ci').value.trim(),nacimiento:document.getElementById('ep-na').value,
-    genero:document.getElementById('ep-g').value,zona:document.getElementById('ep-z').value,
-    referido:document.getElementById('ep-r').value,
-    hc:{enfermedades:document.getElementById('ep-en').value.trim(),medicamentos:document.getElementById('ep-me').value.trim(),
-      cirugiasPrev:document.getElementById('ep-cr').value.trim(),alergias:document.getElementById('ep-al').value.trim(),
-      fumador:document.getElementById('ep-f').value,sangre:document.getElementById('ep-sg').value,peso:document.getElementById('ep-pe').value},
-    anotaciones:px?.anotaciones||[],creadoEn:px?.creadoEn||new Date().toISOString()};
-  if(ePid){const i=pacs.findIndex(x=>String(x.id)===String(ePid));if(i!==-1)pacs[i]=p;}else pacs.push(p);
-  salvar();cerP();renderPacs();apiB('savePaciente',pP(p));
-}
-function pP(p){return{...p,hc_enfermedades:p.hc?.enfermedades||'',hc_medicamentos:p.hc?.medicamentos||'',hc_cirugiasPrev:p.hc?.cirugiasPrev||'',hc_alergias:p.hc?.alergias||'',hc_fumador:p.hc?.fumador||'No',hc_sangre:p.hc?.sangre||'',hc_peso:p.hc?.peso||'',anotaciones:JSON.stringify(p.anotaciones||[])};}
-function saveAn(pid){
-  const ta=document.getElementById('at-'+pid);if(!ta||!ta.value.trim()){alert('Escribe la anotación.');return;}
-  const p=pacs.find(x=>String(x.id)===String(pid));if(!p)return;
-  if(!p.anotaciones)p.anotaciones=[];
-  p.anotaciones.push({fecha:new Date().toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'}),doctor:'Dr. Deivys Higuerey',texto:ta.value.trim(),ts:Date.now()});
-  ta.value='';salvar();renderPacs();apiB('savePaciente',pP(p));
-}
-function elimAn(pid,idx){
-  if(!confirm('¿Eliminar anotación?'))return;
-  const p=pacs.find(x=>String(x.id)===String(pid));if(!p)return;
-  p.anotaciones.splice(idx,1);salvar();renderPacs();apiB('savePaciente',pP(p));
-}
-function elimP(id){
-  const p=pacs.find(x=>String(x.id)===String(id));
-  if(!p||!confirm(`¿Eliminar a ${p.nombre} y todas sus citas?`))return;
-  pacs=pacs.filter(x=>String(x.id)!==String(id));citas=citas.filter(c=>String(c.pacienteId)!==String(id));
-  salvar();renderPacs();apiB('deletePaciente',{id});
+function buildHCTab(id,tab){
+  const hc=STATE.hcData[id]||{antecedentes:{},consultas:[],consentimientos:[]};
+  const ant=hc.antecedentes||{};
+  if(tab==='antecedentes') return`<div class="hc-section"><div class="hc-section-title">Antecedentes <button class="icon-btn btn-sm" onclick="openEditAntecedentes('${id}')">✏ Editar</button></div>${[['Alergias',ant.alergias||'—'],['Medicamentos',ant.medicamentos||'—'],['Antec. personales',ant.antPersonales||'—'],['Antec. familiares',ant.antFamiliares||'—'],['Cirugías previas',ant.cirugiasPrevias||'—']].map(([l,v])=>`<div class="hc-field"><span class="hc-field-label">${l}</span><span class="hc-field-value">${v}</span></div>`).join('')}</div>`;
+  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${c.productos&&c.productos.length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}</div>`).join('');}
+  if(tab==='consentimientos'){const cs=hc.consentimientos||[];return`<div class="hc-section"><div class="hc-section-title">Consentimientos <button class="icon-btn btn-sm" onclick="openAddConsentimiento('${id}')">+ Agregar</button></div>${cs.length?cs.map(c=>`<div class="consent-item"><div class="consent-check${c.firmado?' done':''}">${c.firmado?'✓':''}</div><div style="flex:1;font-size:13px;color:var(--text)">${c.nombre}</div><div style="font-size:11px;color:var(--text3)">${c.firmado?'Firmado '+c.fecha:'Pendiente'}</div>${!c.firmado?`<button class="icon-btn btn-sm" onclick="firmarConsentimiento('${id}','${c.nombre}')">Firmar</button>`:''}</div>`).join(''):'<div style="color:var(--text3);font-size:13px">Sin consentimientos.</div>'}</div>`;}
+  return'';
 }
 
-// ═══════════════════════════════
-// CAJA
-// ═══════════════════════════════
-function initCaja(){
-  const hoy=isoD(new Date());const cf=document.getElementById('cjf');if(!cf.value)cf.value=hoy;
-  const sm=document.getElementById('mp');
-  sm.innerHTML='<option value="">— Sin paciente —</option>'+[...pacs].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
-  const t=tasas[hoy]||{};
-  if(t.bcv){document.getElementById('cjt').value=t.bcv;document.getElementById('tv1').textContent=`Bs. ${parseFloat(t.bcv).toFixed(2)}`;document.getElementById('ts1').textContent='Guardada';}
-  if(t.eur)document.getElementById('cje').value=t.eur;
-  if(t.par){document.getElementById('tv2').textContent=`Bs. ${parseFloat(t.par).toFixed(2)}`;document.getElementById('ts2').textContent='Guardada';}
-  if(!t.bcv)autoTasa();
-  setT('ingreso');renderCaja();
+function openEditAntecedentes(id){
+  const ant=(STATE.hcData[id]||{}).antecedentes||{};
+  openModal(`<div class="modal-title">Antecedentes — ${STATE.patients.find(p=>p.id===id)?.name||''}</div>
+  <div class="form-group"><label class="form-label">Alergias</label><input class="form-input" id="fa-alergias" value="${ant.alergias||''}"></div>
+  <div class="form-group"><label class="form-label">Medicamentos</label><input class="form-input" id="fa-meds" value="${ant.medicamentos||''}"></div>
+  <div class="form-group"><label class="form-label">Antecedentes personales</label><textarea class="form-input" id="fa-pers">${ant.antPersonales||''}</textarea></div>
+  <div class="form-group"><label class="form-label">Antecedentes familiares</label><textarea class="form-input" id="fa-fam">${ant.antFamiliares||''}</textarea></div>
+  <div class="form-group"><label class="form-label">Cirugías previas</label><input class="form-input" id="fa-cir" value="${ant.cirugiasPrevias||''}"></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveAntecedentes('${id}')">Guardar</button></div>`);
 }
 
-async function autoTasa(){
-  document.getElementById('tv1').textContent='...';document.getElementById('tv2').textContent='...';
-  let bcv=0,par=0,eur=1.08;
-  try{const r=await fetch('https://api.exchangerate-api.com/v4/latest/USD');if(r.ok){const d=await r.json();eur=d.rates?.EUR||1.08;}}catch(e){}
-  try{
-    const r=await fetch('https://pydolarve.org/api/v1/dollar?page=criptodolar',{signal:AbortSignal.timeout(7000)});
-    if(r.ok){const d=await r.json();
-      const b=d?.monitors?.BCV;const p2=d?.monitors?.EnParaleloVzla||d?.monitors?.Yadio;
-      if(b?.price){bcv=parseFloat(b.price)||0;document.getElementById('tv1').textContent=`Bs. ${bcv.toFixed(2)}`;document.getElementById('ts1').textContent=b.last_update||'';}
-      if(p2?.price){par=parseFloat(p2.price)||0;document.getElementById('tv2').textContent=`Bs. ${par.toFixed(2)}`;document.getElementById('ts2').textContent=p2.last_update||'';}
-    }
-  }catch(e){
-    try{
-      const r=await fetch('https://ve.dolarapi.com/v1/dolares',{signal:AbortSignal.timeout(7000)});
-      if(r.ok){const arr=await r.json();
-        const b=arr.find(x=>(x.fuente||'').toLowerCase().includes('bcv'));
-        const p2=arr.find(x=>(x.fuente||'').toLowerCase().includes('paralelo'));
-        if(b?.promedio){bcv=parseFloat(b.promedio)||0;document.getElementById('tv1').textContent=`Bs. ${bcv.toFixed(2)}`;}
-        if(p2?.promedio){par=parseFloat(p2.promedio)||0;document.getElementById('tv2').textContent=`Bs. ${par.toFixed(2)}`;}
-      }
-    }catch(e2){document.getElementById('tv1').textContent='No disponible';document.getElementById('tv2').textContent='No disponible';}
-  }
-  if(bcv>0){document.getElementById('cjt').value=bcv.toFixed(2);}
-  document.getElementById('cje').value=eur.toFixed(4);
-  const f=document.getElementById('cjf').value||isoD(new Date());
-  if(bcv>0){tasas[f]={bcv,eur,par};salvar();apiB('saveTasa',{fecha:f,bcv,eur});}
+function saveAntecedentes(id){
+  if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
+  STATE.hcData[id].antecedentes={alergias:$('fa-alergias').value,medicamentos:$('fa-meds').value,antPersonales:$('fa-pers').value,antFamiliares:$('fa-fam').value,cirugiasPrevias:$('fa-cir').value};
+  closeModal();showToast('Antecedentes guardados');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'antecedentes');
 }
 
-function saveTasa(){
-  const f=document.getElementById('cjf').value||isoD(new Date());
-  const bcv=parseFloat(document.getElementById('cjt').value)||0;
-  const eur=parseFloat(document.getElementById('cje').value)||1.08;
-  if(!bcv){alert('Ingresa la tasa BCV.');return;}
-  tasas[f]={bcv,eur,par:tasas[f]?.par||0};
-  document.getElementById('tv1').textContent=`Bs. ${bcv.toFixed(2)}`;document.getElementById('ts1').textContent='Manual';
-  salvar();apiB('saveTasa',{fecha:f,bcv,eur});renderCaja();
+function openNewConsulta(id){
+  id=id||STATE.activeHCPatient||STATE.patients[0].id;
+  openModal(`<div class="modal-title">Registrar Consulta</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fc-pat',id)}</div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="fc-fecha" value="${new Date().toISOString().split('T')[0]}"></div></div>
+  <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('fc-proc')}</div>
+  <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
+  <div class="form-group"><label class="form-label">Nota clínica</label><textarea class="form-input" id="fc-nota" style="min-height:90px" placeholder="Evolución, técnica, observaciones…"></textarea></div>
+  <div style="background:var(--bg3);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Producto utilizado</div>
+    <div class="form-row"><div class="form-group" style="margin-bottom:0"><label class="form-label">Marca</label><input class="form-input" id="fp-marca" placeholder="Allergan…"></div><div class="form-group" style="margin-bottom:0"><label class="form-label">Producto</label><input class="form-input" id="fp-prod" placeholder="Botox…"></div></div>
+    <div class="form-row" style="margin-top:10px"><div class="form-group" style="margin-bottom:0"><label class="form-label">Dosis</label><input class="form-input" id="fp-dosis" placeholder="20U…"></div><div class="form-group" style="margin-bottom:0"><label class="form-label">Zona</label><input class="form-input" id="fp-zona" placeholder="Glabela…"></div></div>
+    <div style="margin-top:10px"><label class="form-label">Lote</label><input class="form-input" id="fp-lote" style="margin-top:6px" placeholder="ALG2025-441"></div>
+  </div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveConsulta()">Guardar consulta</button></div>`);
 }
 
-function setT(t){document.getElementById('mt').value=t;document.getElementById('bi').style.opacity=t==='ingreso'?'1':'0.5';document.getElementById('be').style.opacity=t==='egreso'?'1':'0.5';}
-function onMon(){const m=document.getElementById('mm').value,s=document.getElementById('mmet');const ops=Object.entries(MMON).filter(([,v])=>v===m);s.innerHTML=ops.map(([k])=>`<option>${k}</option>`).join('');}
-function toUSD(monto,mon,f){const t=tasas[f]||{};const bcv=t.bcv||0,eur=t.eur||1.08;if(mon==='USD')return monto;if(mon==='BS')return bcv?monto/bcv:null;if(mon==='EUR')return monto*eur;return null;}
-
-function saveMov(){
-  const f=document.getElementById('cjf').value||isoD(new Date());
-  const tipo=document.getElementById('mt').value;
-  const conc=document.getElementById('mc').value.trim();
-  const monto=parseFloat(document.getElementById('mmo').value)||0;
-  const mon=document.getElementById('mm').value;
-  const met=document.getElementById('mmet').value;
-  const pac=document.getElementById('mp').value;
-  const notas=document.getElementById('mn').value.trim();
-  if(!conc){alert('Escribe el concepto.');return;}
-  if(!monto||monto<=0){alert('Monto inválido.');return;}
-  const mov={id:uid(),fecha:f,tipo,concepto:conc,monto,moneda:mon,metodo:met,pacienteId:pac||null,notas,ts:new Date().toISOString()};
-  movs.push(mov);salvar();
-  document.getElementById('mc').value='';document.getElementById('mmo').value='';document.getElementById('mn').value='';document.getElementById('mp').value='';
-  renderCaja();apiB('saveMovimiento',mov);
+function saveConsulta(){
+  const patId=$('fc-pat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
+  if(!STATE.hcData[patId])STATE.hcData[patId]={antecedentes:{},consultas:[],consentimientos:[]};
+  const prods=[];const m=$('fp-marca').value,pr=$('fp-prod').value;
+  if(m||pr)prods.push({marca:m,prod:pr,dosis:$('fp-dosis').value,zona:$('fp-zona').value,lote:$('fp-lote').value});
+  STATE.hcData[patId].consultas.unshift({fecha:$('fc-fecha').value,proc:$('fc-proc').value,doc:getMedicoLabel(),nota:$('fc-nota').value,productos:prods});
+  p.procedures++;p.lastVisit=$('fc-fecha').value;
+  STATE.activeHCPatient=patId;STATE.activeHCTab='consultas';
+  closeModal();showToast('Consulta registrada');renderHC();
 }
 
-function elimMov(id){
-  if(!confirm('¿Eliminar?'))return;
-  movs=movs.filter(m=>String(m.id)!==String(id));salvar();renderCaja();apiB('deleteMovimiento',{id});
+function firmarConsentimiento(id,nombre){
+  const hc=STATE.hcData[id];if(!hc)return;
+  const c=hc.consentimientos.find(x=>x.nombre===nombre);if(!c)return;
+  c.firmado=true;c.fecha=new Date().toISOString().split('T')[0];
+  showToast('Firmado');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
+}
+
+function openAddConsentimiento(id){
+  const opts=['Consentimiento Toxina Botulínica','Consentimiento Ácido Hialurónico','Consentimiento Rinomodelación','Consentimiento NAD+ IV','Consentimiento Bioestimuladores','Consentimiento Cirugía Plástica','Consentimiento PRP','Consentimiento Peeling Químico','Consentimiento Hilos Tensores'];
+  openModal(`<div class="modal-title">Agregar Consentimiento</div>
+  <div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fc-consent">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>
+  <div class="form-group"><label class="form-label">Estado</label><select class="form-input" id="fc-firmado"><option value="1">Firmado hoy</option><option value="0">Pendiente</option></select></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveConsentimiento('${id}')">Agregar</button></div>`);
+}
+
+function saveConsentimiento(id){
+  if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
+  const firmado=$('fc-firmado').value==='1';
+  STATE.hcData[id].consentimientos.push({nombre:$('fc-consent').value,fecha:firmado?new Date().toISOString().split('T')[0]:'',firmado});
+  closeModal();showToast('Consentimiento agregado');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
+}
+
+// ── TRATAMIENTOS ──────────────────────────────────────────────────────────────
+function renderTratamientos(){
+  const cats=Object.keys(SERVICIOS);const activeCat=STATE.activeTratCat;
+  $('content-area').innerHTML=`
+  <div class="section-header"><div class="section-title">Catálogo de Servicios</div><input class="search-input" style="width:220px;margin-bottom:0" placeholder="Buscar servicio…" oninput="filterTratamientos(this.value)"></div>
+  <div class="trat-grid">${cats.map(cat=>{const icons={'Medicina Estética':'💉','Sueroterapia & Wellness':'🧬','Cirugía Plástica & Reconstructiva':'🏥','Consultas & Valoraciones':'📋'};return`<div class="trat-cat-card${cat===activeCat?' active':''}" onclick="selectTratCat('${cat}')"><div class="trat-cat-icon">${icons[cat]||'⚕'}</div><div class="trat-cat-name">${cat}</div><div class="trat-cat-count">${SERVICIOS[cat].length} servicios</div></div>`;}).join('')}</div>
+  <div class="trat-list" id="trat-list-container">${buildTratList(activeCat,SERVICIOS[activeCat]||[])}</div>`;
+}
+
+function buildTratList(cat,items){
+  const sc=cat.replace(/\W/g,'');
+  return`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">${cat} <span style="color:var(--text3);font-size:12px">${items.length} servicios</span></div><span style="font-size:11px;color:var(--text3)">Clic en precio para editar</span></div>
+  ${items.map((s,i)=>`<div class="trat-row"><div class="trat-name">${s.n}</div><div class="trat-price" id="price-display-${sc}-${i}" onclick="editPrice('${cat}',${i})">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsultaFromTrat('${s.n}')">Sesión</button></div>`).join('')}`;
+}
+
+function selectTratCat(cat){STATE.activeTratCat=cat;const c=$('trat-list-container');if(c)c.innerHTML=buildTratList(cat,SERVICIOS[cat]||[]);document.querySelectorAll('.trat-cat-card').forEach(el=>el.classList.toggle('active',el.querySelector('.trat-cat-name')?.textContent===cat));}
+
+function filterTratamientos(q){
+  if(!q){if(STATE.view==='tratamientos')renderTratamientos();return;}
+  const all=[];Object.entries(SERVICIOS).forEach(([cat,items])=>items.forEach(s=>all.push({...s,cat})));
+  const filtered=all.filter(s=>s.n.toLowerCase().includes(q.toLowerCase()));
+  const c=$('trat-list-container');if(c)c.innerHTML=`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">"${q}" — ${filtered.length} resultados</div></div>${filtered.map(s=>`<div class="trat-row"><div class="trat-name">${s.n}</div><span style="font-size:10px;padding:2px 8px;background:rgba(176,184,193,.1);border-radius:4px;color:var(--text3)">${s.cat.split('&')[0].trim()}</span><div class="trat-price">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsultaFromTrat('${s.n}')">Sesión</button></div>`).join('')}`;
+}
+
+function editPrice(cat,idx){
+  const sc=cat.replace(/\W/g,'');const item=SERVICIOS[cat][idx];const el=$(`price-display-${sc}-${idx}`);if(!el)return;
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><span style="color:var(--text3);font-size:12px">$</span><input id="pinp-${sc}-${idx}" type="number" min="0" step="1" value="${item.p}" style="width:82px;padding:4px 8px;background:var(--bg2);border:1px solid var(--gold);border-radius:6px;color:var(--gold);font-size:13px;font-weight:600;font-family:'Montserrat',sans-serif;outline:none" onkeydown="if(event.key==='Enter')savePrice('${cat}',${idx});if(event.key==='Escape')cancelPrice('${cat}',${idx})" onblur="savePrice('${cat}',${idx})"><button class="icon-btn btn-sm" style="padding:3px 7px" onclick="savePrice('${cat}',${idx})">✓</button><button class="icon-btn btn-sm" style="padding:3px 7px" onclick="cancelPrice('${cat}',${idx})">✕</button></div>`;
+  setTimeout(()=>{const i=$(`pinp-${sc}-${idx}`);if(i){i.focus();i.select();}},40);
+}
+function savePrice(cat,idx){const sc=cat.replace(/\W/g,'');const inp=$(`pinp-${sc}-${idx}`);if(!inp)return;const val=Math.max(0,parseInt(inp.value)||0);SERVICIOS[cat][idx].p=val;const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(val);showToast(`Precio → ${fmtUSD(val)}`);}
+function cancelPrice(cat,idx){const sc=cat.replace(/\W/g,'');const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(SERVICIOS[cat][idx].p);}
+function openNewConsultaFromTrat(servicio){STATE.activeHCTab='consultas';openNewConsulta(STATE.activeHCPatient);}
+function openNewSesion(){openNewConsulta(STATE.activeHCPatient);}
+
+// ── CAJA ─────────────────────────────────────────────────────────────────────
+function getCajaMovs(){
+  const hoy='2026-06-01';
+  if(STATE.activeCajaPeriodo==='hoy')return STATE.movimientos.filter(m=>m.fecha===hoy);
+  if(STATE.activeCajaPeriodo==='semana')return STATE.movimientos.filter(m=>m.fecha>='2026-05-26'&&m.fecha<=hoy);
+  return STATE.movimientos;
 }
 
 function renderCaja(){
-  const f=document.getElementById('cjf')?.value||isoD(new Date());
-  const del=movs.filter(m=>String(m.fecha)===String(f));
-  const ing=del.filter(m=>m.tipo==='ingreso'),egr=del.filter(m=>m.tipo==='egreso');
-  const tI=ing.reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,f);return s+(v||0);},0);
-  const tE=egr.reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,f);return s+(v||0);},0);
-  const net=tI-tE;
-  const sEl=document.getElementById('cj-st');
-  if(sEl)sEl.innerHTML=`<div class="sg s4" style="margin-bottom:16px;">
-    <div class="st stg"><div class="sl">Ingresos</div><div class="sv" style="color:var(--gr);">$${tI.toFixed(2)}</div><div class="ss">${ing.length} mov.</div></div>
-    <div class="st str"><div class="sl">Egresos</div><div class="sv" style="color:var(--re);">$${tE.toFixed(2)}</div><div class="ss">${egr.length} mov.</div></div>
-    <div class="st stb"><div class="sl">Neto</div><div class="sv" style="color:${net>=0?'var(--gr)':'var(--re)'};">$${net.toFixed(2)}</div></div>
-    <div class="st sta"><div class="sl">Movimientos</div><div class="sv" style="color:var(--am);">${del.length}</div></div>
+  const movs=getCajaMovs();
+  const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
+  const egr=movs.filter(m=>m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
+  const byMetodo={};movs.filter(m=>m.tipo==='ingreso').forEach(m=>{byMetodo[m.metodo]=(byMetodo[m.metodo]||0)+m.monto;});
+  $('content-area').innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div class="section-title">Caja</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${['hoy','semana','mes'].map(p=>`<button class="periodo-btn${STATE.activeCajaPeriodo===p?' active':''}" onclick="setPeriodo('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join('')}
+      <button class="btn btn-gold btn-sm" onclick="openNewMovimiento()">+ Movimiento</button>
+    </div>
+  </div>
+  <div class="balance-bar">
+    <div class="balance-row"><span class="balance-label">💚 Ingresos</span><span style="font-size:14px;font-weight:600;color:var(--green)">${fmtUSD(ing)} <span style="font-size:11px;color:var(--text3);font-weight:400">/ ${Math.round(ing*STATE.bcvRate).toLocaleString('es-VE')} Bs</span></span></div>
+    <div class="balance-row"><span class="balance-label">🔴 Egresos</span><span style="font-size:14px;font-weight:600;color:var(--red)">${fmtUSD(egr)}</span></div>
+    <div class="balance-row"><span class="balance-label" style="font-weight:600;color:var(--text)">Balance neto</span><span class="balance-total">${fmtUSD(ing-egr)}</span></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text2)">Movimientos (${movs.length})</div>
+      ${movs.length?movs.map(m=>`<div class="movimiento-row"><div class="mov-tipo ${m.tipo==='ingreso'?'mov-ingreso':'mov-egreso'}"></div><div style="flex:1"><div class="mov-desc">${m.desc}</div><div class="mov-meta">${fmtDate(m.fecha)} · ${m.metodo}</div></div><div class="${m.tipo==='ingreso'?'mov-monto-pos':'mov-monto-neg'}">${m.tipo==='ingreso'?'+':'-'}${fmtUSD(m.monto)}</div><button class="icon-btn btn-sm" style="margin-left:6px" onclick="eliminarMovimiento('${m.id}')">✕</button></div>`).join(''):`<div style="padding:28px;text-align:center;color:var(--text3)">Sin movimientos</div>`}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">Por método de pago</div>
+        ${Object.entries(byMetodo).sort((a,b)=>b[1]-a[1]).map(([met,tot])=>`<div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${met}</span><div class="proc-bar-wrap"><div class="proc-bar" style="width:${Math.round(tot/ing*100)}%"></div></div><span style="font-size:12px;color:var(--gold);min-width:60px;text-align:right">${fmtUSD(tot)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title">Equivalencia Bs <span style="font-size:11px;color:var(--text3)">Tasa ${STATE.bcvRate} Bs/USD</span></div>
+        ${[['Ingresos',ing],['Balance neto',ing-egr]].map(([l,v])=>`<div class="balance-row"><span class="balance-label">${l}</span><span style="font-size:13px;font-weight:600;color:var(--gold)">${Math.round(v*STATE.bcvRate).toLocaleString('es-VE')} Bs</span></div>`).join('')}
+      </div>
+    </div>
   </div>`;
-  const mEl=document.getElementById('cj-mv');
-  if(mEl){
-    if(!del.length){mEl.innerHTML=`<div class="empty" style="padding:2rem;"><div class="ei">📭</div><div class="et">Sin movimientos hoy</div></div>`;}
-    else mEl.innerHTML=`<table><thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Paciente</th><th>Método</th><th>Monto</th><th>≈USD</th><th></th></tr></thead>
-      <tbody>${[...del].sort((a,b)=>(a.ts||'').localeCompare(b.ts||'')).map(m=>{
-        const hora=m.ts?new Date(m.ts).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}):'—';
-        const usd=toUSD(m.monto,m.moneda,f);const esI=m.tipo==='ingreso';
-        return`<tr>
-          <td style="color:var(--tx3);font-size:12px;">${hora}</td>
-          <td><span class="bx ${esI?'bcomp':'bdeu'}">${esI?'Ingreso':'Egreso'}</span></td>
-          <td style="font-weight:600;">${m.concepto}${m.notas?`<br><span style="font-size:11px;color:var(--tx3);">${m.notas}</span>`:''}</td>
-          <td style="font-size:12px;color:var(--tx2);">${m.pacienteId?gPN(m.pacienteId):'—'}</td>
-          <td style="font-size:12px;">${m.metodo||'—'}</td>
-          <td style="font-weight:700;color:${esI?'var(--gr)':'var(--re)'};">${esI?'+':'-'}${SYM[m.moneda]||''}${m.monto.toFixed(2)}</td>
-          <td style="font-size:12px;color:var(--tx3);">${usd!==null?'$'+usd.toFixed(2):'—'}</td>
-          <td><button class="btn xs r" onclick="elimMov('${m.id}')">✕</button></td>
-        </tr>`;}).join('')}</tbody></table>`;
+}
+
+function setPeriodo(p){STATE.activeCajaPeriodo=p;renderCaja();}
+
+function openNewMovimiento(){
+  openModal(`<div class="modal-title">Registrar Movimiento</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fm-tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="fm-fecha" value="${new Date().toISOString().split('T')[0]}"></div></div>
+  <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="fm-desc" placeholder="Concepto del movimiento…"></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fm-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método de pago</label><select class="form-input" id="fm-metodo">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveMovimiento()">Guardar</button></div>`);
+}
+
+function saveMovimiento(){
+  const desc=$('fm-desc').value.trim();const monto=parseFloat($('fm-monto').value);
+  if(!desc||isNaN(monto)||monto<=0){showToast('Descripción y monto son obligatorios');return;}
+  STATE.movimientos.unshift({id:'M'+(100+STATE.movimientos.length),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:'USD'});
+  closeModal();showToast('Movimiento registrado');renderCaja();
+}
+
+function eliminarMovimiento(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);showToast('Eliminado');renderCaja();}
+
+function openRegistrarCobro(paciente,proc){
+  openModal(`<div class="modal-title">Registrar Cobro</div>
+  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text2)"><strong style="color:var(--gold)">${paciente}</strong><br>${proc}</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fc-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método</label><select class="form-input" id="fc-metpago">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCobro('${paciente}','${proc}')">Registrar</button></div>`);
+}
+
+function saveCobro(paciente,proc){
+  const monto=parseFloat($('fc-monto').value);if(isNaN(monto)||monto<=0){showToast('Monto inválido');return;}
+  STATE.movimientos.unshift({id:'M'+(100+STATE.movimientos.length),fecha:'2026-06-01',tipo:'ingreso',desc:`${proc} — ${paciente}`,metodo:$('fc-metpago').value,monto,moneda:'USD'});
+  closeModal();showToast(`Cobro registrado: ${fmtUSD(monto)}`);
+}
+
+// ── PRESUPUESTOS ──────────────────────────────────────────────────────────────
+function renderPresupuestos(){
+  $('content-area').innerHTML=`
+  <div class="section-header"><div class="section-title">Presupuestos <span style="font-size:14px;color:var(--text3);font-family:Montserrat">(${STATE.presupuestos.length})</span></div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Nuevo presupuesto</button></div>
+  <div class="presup-list">${STATE.presupuestos.map(pr=>{const total=pr.items.reduce((a,i)=>a+i.monto,0);return`<div class="presup-card" onclick="verPresupuesto('${pr.id}')"><div><div style="font-size:11px;color:var(--text3);font-weight:500">${pr.id}</div><div style="display:flex;gap:6px;margin-top:4px"><span class="tag ${pr.tipo==='quirurgico'?'tag-surg':'tag-rec'}">${pr.tipo==='quirurgico'?'Quirúrgico':'Estética'}</span><span style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(106,126,140,.15);color:var(--text3)">Vigencia ${pr.vigencia}d</span></div></div><div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${pr.paciente}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${pr.items.map(i=>i.desc.split('—')[0].trim()).join(' · ')}</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--gold)">${total>0?fmtUSD(total):'Consultar'}</div><div style="font-size:11px;color:var(--text3)">${fmtDate(pr.fecha)}</div></div><button class="icon-btn btn-sm" onclick="event.stopPropagation();verPresupuesto('${pr.id}')">Ver →</button></div>`;}).join('')}</div>`;
+}
+
+function verPresupuesto(id){
+  const pr=STATE.presupuestos.find(x=>x.id===id);if(!pr)return;
+  const total=pr.items.reduce((a,i)=>a+i.monto,0);const esCir=pr.tipo==='quirurgico';
+  const exp=new Date(pr.fecha+'T12:00:00');exp.setDate(exp.getDate()+pr.vigencia);
+  openModal(`<div class="presup-preview">
+    <div class="presup-preview-header"><div><div class="presup-clinic-name">Elite Plastic Center</div><div class="presup-clinic-sub">C.C. Trinidad Tepuy · Consultorio 1-13 · Baruta, Caracas</div></div><div class="presup-meta"><div><strong>${pr.id}</strong></div><div>Fecha: ${fmtDate(pr.fecha)}</div><div>Médico: ${pr.doc}</div></div></div>
+    <div class="presup-patient-info"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Paciente</div><div style="font-size:16px;font-weight:600;color:#2C3740">${pr.paciente}</div><div style="font-size:12px;color:#666;margin-top:2px">${pr.cedula}</div></div>
+    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Procedimientos</div>
+    ${pr.items.map((item,i)=>`<div class="presup-item-row"><div style="font-size:11px;color:#999;min-width:20px">${i+1}.</div><div style="font-size:13px;color:#1a1a1a;flex:1">${item.desc}</div><div style="font-size:13px;font-weight:600;color:#2C3740;min-width:80px;text-align:right">${item.monto>0?fmtUSD(item.monto):'Consultar'}</div></div>`).join('')}
+    <hr style="border:none;border-top:1px solid #ddd;margin:14px 0">
+    ${esCir?`<div style="font-size:12px;color:#555;margin-bottom:8px">Abono (30%): <strong style="color:#2C3740">${total>0?fmtUSD(Math.round(total*.3)):'-'}</strong> &nbsp; Saldo (70%): <strong style="color:#2C3740">${total>0?fmtUSD(Math.round(total*.7)):'-'}</strong></div>`:`<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-size:12px;color:#888">Total</span><span style="font-size:20px;font-weight:600;color:#2C3740;font-family:'Cormorant Garamond',serif">${total>0?fmtUSD(total):'Consultar'}</span></div>`}
+    <div class="presup-footer-note">${pr.notas?`<div style="margin-bottom:8px">${pr.notas}</div>`:''}Precios en USD. Vigencia: <strong>${pr.vigencia} días</strong>. Vence: ${exp.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'})}.</div>
+  </div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button><button class="btn btn-gold" onclick="showToast('PDF próximamente')">🖨 Imprimir</button></div>`);
+}
+
+let presupItemCount=1;
+function openNewPresupuesto(patId=''){
+  presupItemCount=1;
+  openModal(`<div class="modal-title">Nuevo Presupuesto</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fp-pat',patId)}</div><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fp-tipo"><option value="estetica">Medicina Estética (90 días)</option><option value="quirurgico">Quirúrgico (30 días)</option></select></div></div>
+  <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
+  <div style="background:var(--bg3);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Procedimientos</div>
+    <div id="presup-items"><div class="form-row presup-item-entry" style="margin-bottom:8px"><div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-0')}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto USD</label><input class="form-input" id="pitem-monto-0" type="number" min="0" placeholder="0"></div></div></div>
+    <button class="btn-outline btn-sm" style="margin-top:8px" onclick="addPresupItem()">+ Agregar ítem</button>
+  </div>
+  <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="fp-notas" style="min-height:60px" placeholder="Condiciones, aclaraciones…"></textarea></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="savePresupuesto()">Generar</button></div>`);
+}
+
+function addPresupItem(){
+  const i=presupItemCount++;const wrap=$('presup-items');if(!wrap)return;
+  const div=document.createElement('div');div.className='form-row presup-item-entry';div.style.marginBottom='8px';
+  div.innerHTML=`<div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-'+i)}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto USD</label><input class="form-input" id="pitem-monto-${i}" type="number" min="0" placeholder="0"></div><button class="icon-btn btn-sm" style="align-self:flex-end;margin-bottom:0;padding:10px 12px" onclick="this.parentElement.remove()">✕</button>`;
+  wrap.appendChild(div);
+}
+
+function savePresupuesto(){
+  const patId=$('fp-pat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
+  const tipo=$('fp-tipo').value;const vigencia=tipo==='quirurgico'?30:90;
+  const items=[];
+  document.querySelectorAll('.presup-item-entry').forEach(row=>{const descEl=row.querySelector('select');const montoEl=row.querySelector('input[type="number"]');if(descEl&&montoEl&&descEl.value)items.push({desc:descEl.value,monto:parseFloat(montoEl.value)||0});});
+  if(!items.length){showToast('Agrega al menos un procedimiento');return;}
+  const id='PRES-'+String(STATE.presupuestos.length+1).padStart(3,'0');
+  STATE.presupuestos.unshift({id,fecha:new Date().toISOString().split('T')[0],paciente:p.name,cedula:p.cedula,tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value});
+  presupItemCount=1;closeModal();showToast(`Presupuesto ${id} generado`);renderPresupuestos();
+}
+
+function openNewPresupuestoForPat(id){STATE.view='presupuestos';showView('presupuestos');setTimeout(()=>openNewPresupuesto(id),50);}
+
+// ── PACIENTE / CITA ───────────────────────────────────────────────────────────
+function openNewPatient(){
+  openModal(`<div class="modal-title">Nuevo paciente</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-nombre" placeholder="Nombre completo"></div><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="f-cedula" placeholder="V-00.000.000"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" placeholder="+58 412 000 0000"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" placeholder="correo@email.com"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="f-dob"></div><div class="form-group"><label class="form-label">Etiqueta</label><select class="form-input" id="f-tag"><option>Nueva</option><option>Recurrente</option><option>VIP</option><option>Cirugía</option></select></div></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveNewPatient()">Guardar</button></div>`);
+}
+
+function saveNewPatient(){
+  const n=$('f-nombre').value.trim(),c=$('f-cedula').value.trim();
+  if(!n||!c){showToast('Nombre y cédula obligatorios');return;}
+  STATE.patients.unshift({id:'P'+(100+STATE.patients.length),name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:new Date().toISOString().split('T')[0],procedures:0});
+  closeModal();showToast('Paciente registrado');
+  if(STATE.view==='pacientes')renderPacientes();else renderDashboard();
+}
+
+function openNewCita(){
+  openModal(`<div class="modal-title">Nueva cita</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('f-cpat')}</div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="f-cdate" value="${new Date().toISOString().split('T')[0]}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Hora</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</label>${buildConsultorioSelect('f-ccons')}</div></div>
+  <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('f-cproc')}</div>
+  <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCita()">Confirmar cita</button></div>`);
+}
+
+function saveCita(){
+  const patId=$('f-cpat').value;const p=STATE.patients.find(x=>x.id===patId)||{name:patId};
+  const time=$('f-ctime').value,proc=$('f-cproc').value;
+  const co=$('f-ccons');const consLabel=co.options[co.selectedIndex].text.split('·')[0].trim();
+  STATE.appointments.push({id:'A'+(100+STATE.appointments.length),time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel});
+  STATE.appointments.sort((a,b)=>a.time.localeCompare(b.time));
+  $('badge-agenda').textContent=STATE.appointments.length;
+  closeModal();showToast(`Cita registrada: ${p.name} · ${time}`);
+  if(STATE.view==='agenda')renderAgenda();else renderDashboard();
+}
+
+// ── REPORTES ──────────────────────────────────────────────────────────────────
+function renderReportes(){
+  $('content-area').innerHTML=`
+  <div class="section-header"><div class="section-title">Reportes & Analítica</div>
+    <div style="display:flex;gap:8px"><input type="month" class="form-input" style="width:160px;margin-bottom:0" value="2026-06"><button class="btn btn-gold btn-sm" onclick="showToast('Exportar — próximamente')">↓ Exportar</button></div>
+  </div>
+  <div class="rep-tabs">
+    ${['financiero','pacientes','procedimientos','agenda'].map(t=>`<button class="rep-tab${STATE.activeRepTab===t?' active':''}" onclick="switchRepTab('${t}')">${{financiero:'💰 Financiero',pacientes:'👥 Pacientes',procedimientos:'💉 Procedimientos',agenda:'📅 Agenda'}[t]}</button>`).join('')}
+  </div>
+  <div id="rep-content">${buildRepTab(STATE.activeRepTab)}</div>`;
+  setTimeout(()=>drawRepCharts(STATE.activeRepTab),120);
+}
+
+function switchRepTab(tab){
+  STATE.activeRepTab=tab;
+  Object.keys(chartsInstances).forEach(destroyChart);
+  const el=$('rep-content');if(el)el.innerHTML=buildRepTab(tab);
+  document.querySelectorAll('.rep-tab').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(tab.split('i')[0])||b.onclick?.toString().includes(`'${tab}'`)));
+  setTimeout(()=>drawRepCharts(tab),120);
+}
+
+function buildRepTab(tab){
+  if(tab==='financiero') return`
+    <div class="rep-kpi-grid">
+      <div class="rep-kpi"><div class="rep-kpi-label">Ingresos junio</div><div class="rep-kpi-value">$1,060</div><div class="rep-kpi-sub">vs $920 mayo</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Ingresos mayo</div><div class="rep-kpi-value">$6,785</div><div class="rep-kpi-sub">Balance: $5,920</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Ticket promedio</div><div class="rep-kpi-value">$318</div><div class="rep-kpi-sub">↑ +12% vs abril</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Margen bruto</div><div class="rep-kpi-value">82%</div><div class="rep-kpi-sub">Egresos: 18%</div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="chart-card"><div class="chart-title">Ingresos diarios — últimas 2 semanas</div><div class="chart-subtitle">USD</div><div class="chart-wrap"><canvas id="chart-ingresos-diarios"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Ingresos por método de pago</div><div class="chart-subtitle">Mayo–junio 2026</div><div class="chart-wrap"><canvas id="chart-metodos"></canvas></div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="chart-card"><div class="chart-title">Ingresos vs Egresos — mensual</div><div class="chart-subtitle">USD</div><div class="chart-wrap"><canvas id="chart-ing-egr"></canvas></div></div>
+      <div class="card"><div class="card-title">Resumen de movimientos</div>
+        <table class="rep-tabla"><thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th style="text-align:right">Monto</th></tr></thead>
+        <tbody>${STATE.movimientos.slice(0,8).map(m=>`<tr><td>${fmtDate(m.fecha)}</td><td>${m.desc.length>30?m.desc.slice(0,30)+'…':m.desc}</td><td><span class="status-badge ${m.tipo==='ingreso'?'badge-green':'badge-red'}">${m.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td><td style="text-align:right;color:${m.tipo==='ingreso'?'var(--green)':'var(--red)'};font-weight:600">${m.tipo==='ingreso'?'+':'-'}${fmtUSD(m.monto)}</td></tr>`).join('')}</tbody></table>
+      </div>
+    </div>`;
+
+  if(tab==='pacientes') return`
+    <div class="rep-kpi-grid">
+      <div class="rep-kpi"><div class="rep-kpi-label">Total pacientes</div><div class="rep-kpi-value">${STATE.patients.length}</div><div class="rep-kpi-sub">Base activa</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Pacientes VIP</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('VIP')).length}</div><div class="rep-kpi-sub">${Math.round(STATE.patients.filter(p=>p.tags.includes('VIP')).length/STATE.patients.length*100)}% del total</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Pacientes nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length}</div><div class="rep-kpi-sub">Este período</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Tasa retorno</div><div class="rep-kpi-value">67%</div><div class="rep-kpi-sub">Recurrentes</div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="chart-card"><div class="chart-title">Distribución por tipo</div><div class="chart-subtitle">Etiquetas de pacientes</div><div class="chart-wrap"><canvas id="chart-pacientes-tipo"></canvas></div></div>
+      <div class="card"><div class="card-title">Pacientes por número de procedimientos</div>
+        ${STATE.patients.sort((a,b)=>b.procedures-a.procedures).map((p,i)=>`<div class="rank-item"><div class="rank-num">#${i+1}</div><div class="rank-name">${p.name}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(p.procedures/12*100)}%"></div></div><div class="rank-val">${p.procedures} procs.</div></div>`).join('')}
+      </div>
+    </div>`;
+
+  if(tab==='procedimientos') return`
+    <div class="rep-kpi-grid">
+      <div class="rep-kpi"><div class="rep-kpi-label">Total sesiones</div><div class="rep-kpi-value">87</div><div class="rep-kpi-sub">Último mes</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Categoría líder</div><div class="rep-kpi-value" style="font-size:16px">Med. Estética</div><div class="rep-kpi-sub">62% del volumen</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Proc. más rentable</div><div class="rep-kpi-value" style="font-size:16px">Bioestim.</div><div class="rep-kpi-sub">$550 promedio</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Cirugías realizadas</div><div class="rep-kpi-value">4</div><div class="rep-kpi-sub">Último mes</div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="chart-card"><div class="chart-title">Procedimientos por categoría</div><div class="chart-subtitle">Distribución porcentual</div><div class="chart-wrap"><canvas id="chart-procs-cat"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Top 8 procedimientos</div><div class="chart-subtitle">Frecuencia último mes</div><div class="chart-wrap"><canvas id="chart-top-procs"></canvas></div></div>
+    </div>`;
+
+  if(tab==='agenda') return`
+    <div class="rep-kpi-grid">
+      <div class="rep-kpi"><div class="rep-kpi-label">Citas este mes</div><div class="rep-kpi-value">42</div><div class="rep-kpi-sub">↑ +8 vs mayo</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Tasa confirmación</div><div class="rep-kpi-value">78%</div><div class="rep-kpi-sub">22% pendientes</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Cancelaciones</div><div class="rep-kpi-value">5%</div><div class="rep-kpi-sub">↓ -2% vs mayo</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Ocupación promedio</div><div class="rep-kpi-value">71%</div><div class="rep-kpi-sub">5.7 citas/día</div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="chart-card"><div class="chart-title">Citas por día de la semana</div><div class="chart-subtitle">Distribución semanal</div><div class="chart-wrap"><canvas id="chart-citas-dia"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Citas por estado</div><div class="chart-subtitle">Mes actual</div><div class="chart-wrap"><canvas id="chart-estados"></canvas></div></div>
+    </div>`;
+  return'';
+}
+
+function drawRepCharts(tab){
+  const cd=chartDefaults;
+  const opts=(extra={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label||''}: ${ctx.raw}`}}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}}},...extra});
+
+  if(tab==='financiero'){
+    const c1=$('chart-ingresos-diarios');if(c1){chartsInstances['c1']=new Chart(c1,{type:'line',data:{labels:['19/5','20/5','21/5','22/5','23/5','24/5','25/5','26/5','27/5','28/5','29/5','30/5','31/5','1/6'],datasets:[{data:[420,0,680,330,0,180,280,350,350,760,550,480,375,1060],borderColor:cd.gold,backgroundColor:'rgba(201,164,82,0.08)',tension:0.4,fill:true,pointBackgroundColor:cd.gold,pointRadius:3}]},options:{...opts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color,font:{size:9}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:9},callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
+    const c2=$('chart-metodos');if(c2){chartsInstances['c2']=new Chart(c2,{type:'doughnut',data:{labels:['Zelle','Efectivo USD','Transferencia','Pago Móvil','Tarjeta'],datasets:[{data:[2630,530,630,50,180],backgroundColor:[cd.gold,'rgba(201,164,82,0.6)',cd.blue,cd.green,cd.purple],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
+    const c3=$('chart-ing-egr');if(c3){chartsInstances['c3']=new Chart(c3,{type:'bar',data:{labels:['Feb','Mar','Abr','May','Jun'],datasets:[{label:'Ingresos',data:[4200,5100,5800,6785,1060],backgroundColor:'rgba(29,158,117,0.6)',borderRadius:4},{label:'Egresos',data:[980,1200,1050,865,180],backgroundColor:'rgba(226,75,74,0.5)',borderRadius:4}]},options:{...opts(),plugins:{legend:{display:true,labels:{color:cd.color,font:{size:11},boxWidth:12}}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10},callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
   }
-  const aEl=document.getElementById('cj-aq');
-  if(aEl){
-    aEl.innerHTML=['USD','BS','EUR'].map(mon=>{
-      const i=ing.filter(m=>m.moneda===mon).reduce((s,m)=>s+m.monto,0);
-      const e=egr.filter(m=>m.moneda===mon).reduce((s,m)=>s+m.monto,0);
-      if(!i&&!e)return'';const sym=SYM[mon];
-      return`<div class="arq"><span style="font-weight:600;">${mon==='BS'?'Bolívares':mon==='EUR'?'Euros':'Dólares'}</span>
-        <div style="display:flex;gap:10px;font-size:12px;">
-          <span style="color:var(--gr);">↑${sym}${i.toFixed(2)}</span>
-          <span style="color:var(--re);">↓${sym}${e.toFixed(2)}</span>
-          <span style="font-weight:700;color:${(i-e)>=0?'var(--gr)':'var(--re)'};">${sym}${(i-e).toFixed(2)}</span>
-        </div></div>`;}).join('')+
-      `<div style="margin-top:10px;padding:10px;background:var(--sur2);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;font-weight:700;color:var(--tx2);">NETO ≈ USD</span>
-        <span style="font-size:20px;font-weight:700;color:${net>=0?'var(--gr)':'var(--re)'};">$${net.toFixed(2)}</span>
-      </div>`;
+
+  if(tab==='pacientes'){
+    const c=$('chart-pacientes-tipo');if(c){chartsInstances['cp']=new Chart(c,{type:'pie',data:{labels:['VIP','Recurrente','Nueva','Cirugía'],datasets:[{data:[2,3,2,2],backgroundColor:[cd.gold,cd.blue,cd.green,cd.purple],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
   }
-  const cEl=document.getElementById('cj-ci');
-  if(cEl){
-    const uc=[...cierres].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).slice(0,6);
-    cEl.innerHTML=uc.length?uc.map(c=>`<div style="padding:7px 0;border-bottom:1px solid var(--bor);display:flex;justify-content:space-between;align-items:center;">
-      <div><div style="font-size:13px;font-weight:600;">${fmtF(c.fecha)}</div>${c.notas?`<div style="font-size:11px;color:var(--tx3);">${c.notas}</div>`:''}</div>
-      <div style="text-align:right;"><div style="font-size:13px;font-weight:700;color:${(parseFloat(c.neto)||0)>=0?'var(--gr)':'var(--re)'};">$${(parseFloat(c.neto)||0).toFixed(2)}</div>
-      <div style="font-size:11px;color:var(--tx3);">${c.movimientos} mov.</div></div></div>`).join('')
-    :`<p style="font-size:13px;color:var(--tx3);">Sin cierres.</p>`;
+
+  if(tab==='procedimientos'){
+    const c1=$('chart-procs-cat');if(c1){chartsInstances['pc1']=new Chart(c1,{type:'doughnut',data:{labels:['Med. Estética','Sueroterapia','Cirugía','Consultas'],datasets:[{data:[54,18,4,11],backgroundColor:[cd.gold,cd.blue,cd.purple,cd.green],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
+    const c2=$('chart-top-procs');if(c2){chartsInstances['pc2']=new Chart(c2,{type:'bar',data:{labels:['Botox','Téc. 1:5','Labios','NAD+','Rinomodelaciòn','Bioestim.','Mesoterapia','PRP'],datasets:[{data:[18,14,11,8,6,5,5,4],backgroundColor:'rgba(201,164,82,0.6)',borderColor:cd.gold,borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',...opts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}}}}});}
+  }
+
+  if(tab==='agenda'){
+    const c1=$('chart-citas-dia');if(c1){chartsInstances['ag1']=new Chart(c1,{type:'bar',data:{labels:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],datasets:[{data:[0,8,9,7,8,9,1],backgroundColor:['rgba(201,164,82,0.3)','rgba(201,164,82,0.7)','rgba(201,164,82,0.7)','rgba(201,164,82,0.6)','rgba(201,164,82,0.7)','rgba(201,164,82,0.8)','rgba(201,164,82,0.2)'],borderRadius:4}]},options:{...opts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}}}}});}
+    const c2=$('chart-estados');if(c2){chartsInstances['ag2']=new Chart(c2,{type:'doughnut',data:{labels:['Completado','Confirmado','Pendiente','Cancelado'],datasets:[{data:[28,8,4,2],backgroundColor:[cd.green,cd.blue,cd.gold,cd.red],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
   }
 }
 
-function cerrarCaja(){
-  const f=document.getElementById('cjf').value||isoD(new Date());
-  const notas=document.getElementById('cj-cn').value.trim();
-  const del=movs.filter(m=>String(m.fecha)===String(f));
-  if(!del.length){alert('No hay movimientos.');return;}
-  if(!confirm(`¿Cerrar caja del ${fmtF(f)}?`))return;
-  const tI=del.filter(m=>m.tipo==='ingreso').reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,f);return s+(v||0);},0);
-  const tE=del.filter(m=>m.tipo==='egreso').reduce((s,m)=>{const v=toUSD(m.monto,m.moneda,f);return s+(v||0);},0);
-  const c={fecha:f,notas,neto:tI-tE,ingresos:tI,egresos:tE,movimientos:del.length,ts:new Date().toISOString()};
-  const idx=cierres.findIndex(x=>String(x.fecha)===String(f));
-  if(idx!==-1)cierres[idx]=c;else cierres.push(c);
-  document.getElementById('cj-cn').value='';salvar();renderCaja();apiB('saveCierre',c);
-  alert(`✅ Caja cerrada. Neto: $${c.neto.toFixed(2)}`);
-}
-
-function expCaja(){
-  const f=document.getElementById('cjf')?.value||isoD(new Date());
-  const del=movs.filter(m=>String(m.fecha)===String(f));
-  if(!del.length){alert('Sin movimientos.');return;}
-  const ws=XLSX.utils.json_to_sheet(del.map(m=>({'Hora':m.ts?new Date(m.ts).toLocaleTimeString():'','Tipo':m.tipo,'Concepto':m.concepto,'Paciente':m.pacienteId?gPN(m.pacienteId):'','Método':m.metodo,'Moneda':m.moneda,'Monto':m.monto,'≈USD':toUSD(m.monto,m.moneda,f)?.toFixed(2)||'','Notas':m.notas||''})));
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Caja');XLSX.writeFile(wb,`EPC_Caja_${f}.xlsx`);
-}
-
-// ═══════════════════════════════
-// INIT
-// ═══════════════════════════════
-renderAg();
-pobSP();
-// Primero inicializar sheets, luego cargar datos
-apiJSONP('init').then(()=>sync()).catch(()=>sync());
+// ── INIT ──────────────────────────────────────────────────────────────────────
+$('fecha-hoy').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+// Notif badge
+$('notif-count').textContent=STATE.notificaciones.filter(n=>n.tipo==='alerta').length;
+renderDashboard();
 </script>
 </body>
 </html>
