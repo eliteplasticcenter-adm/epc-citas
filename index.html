@@ -6,13 +6,11 @@
 <title>EPC — Sistema de Gestión</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --gold:#C9A452;--gold2:#a88535;--gold3:#e8c97a;--silver:#B0B8C1;
-  --bg:#0f1923;--bg2:#172231;--bg3:#1e2d3d;--bg4:#243548;
+  --bg:#0f1923;--bg2:#172231;--bg3:#1e2d3d;
   --text:#f0f4f8;--text2:#a0b0bc;--text3:#6a7e8c;
   --border:rgba(176,184,193,0.12);--border2:rgba(201,164,82,0.25);
   --green:#1D9E75;--blue:#378ADD;--red:#E24B4A;--purple:#7F77DD;
@@ -77,7 +75,7 @@ nav{padding:14px 0;flex:1;overflow-y:auto}
 .patients-table{width:100%;border-collapse:collapse}
 .patients-table th{font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-weight:500}
 .patients-table td{padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
-.patients-table tr:hover td{background:rgba(201,164,82,.04);cursor:pointer}
+.patients-table tr:hover td{background:rgba(201,164,82,.04)}
 .patient-avatar{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gold);flex-shrink:0}
 .patient-name-cell{display:flex;align-items:center;gap:10px}
 .tag{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
@@ -92,7 +90,8 @@ nav{padding:14px 0;flex:1;overflow-y:auto}
 .cal-time{background:var(--bg2);padding:8px;font-size:11px;color:var(--text3);text-align:right}
 .cal-cell{background:var(--bg3);min-height:50px;padding:4px}
 .cal-cell.today-col{background:rgba(201,164,82,.04)}
-.cal-event{background:rgba(201,164,82,.15);border-left:3px solid var(--gold);border-radius:4px;padding:4px 6px;margin-bottom:2px;cursor:pointer}
+.cal-event{background:rgba(201,164,82,.15);border-left:3px solid var(--gold);border-radius:4px;padding:4px 6px;margin-bottom:2px;cursor:pointer;transition:all .15s}
+.cal-event:hover{background:rgba(201,164,82,.28)}
 .cal-event.green{background:rgba(29,158,117,.15);border-left-color:var(--green)}.cal-event.blue{background:rgba(55,138,221,.15);border-left-color:var(--blue)}
 .cal-event-name{font-size:10px;font-weight:600;color:var(--text)}.cal-event-proc{font-size:10px;color:var(--text3)}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -120,8 +119,6 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 .hc-grid{display:grid;grid-template-columns:270px 1fr;gap:16px}
 .hc-patient-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all .2s;margin-bottom:8px}
 .hc-patient-card:hover,.hc-patient-card.active{border-color:var(--gold);background:rgba(201,164,82,.06)}
-.hc-patient-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
-.hc-patient-meta{font-size:11px;color:var(--text3)}
 .hc-panel{display:flex;flex-direction:column;gap:14px}
 .hc-section{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:18px}
 .hc-section-title{font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
@@ -141,20 +138,16 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 .trat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 .trat-cat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;cursor:pointer;transition:all .2s;text-align:center}
 .trat-cat-card:hover,.trat-cat-card.active{border-color:var(--gold);background:rgba(201,164,82,.06)}
-.trat-cat-icon{font-size:20px;margin-bottom:6px}
-.trat-cat-name{font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px}
-.trat-cat-count{font-size:10px;color:var(--text3)}
 .trat-list{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden}
 .trat-list-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .trat-row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);transition:background .15s}
 .trat-row:last-child{border-bottom:none}.trat-row:hover{background:rgba(201,164,82,.03)}
 .trat-name{font-size:13px;color:var(--text);flex:1}
 .trat-price{font-size:13px;font-weight:500;color:var(--gold);min-width:90px;text-align:right;cursor:pointer;text-decoration:underline dotted}
-.movimiento-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.movimiento-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
 .movimiento-row:last-child{border-bottom:none}.movimiento-row:hover{background:rgba(201,164,82,.03)}
 .mov-tipo{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .mov-ingreso{background:var(--green)}.mov-egreso{background:var(--red)}
-.mov-desc{flex:1;color:var(--text)}.mov-meta{font-size:11px;color:var(--text3)}
 .mov-monto-pos{font-weight:600;color:var(--green);min-width:85px;text-align:right}
 .mov-monto-neg{font-weight:600;color:var(--red);min-width:85px;text-align:right}
 .balance-bar{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);padding:18px;margin-bottom:18px}
@@ -170,50 +163,30 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 .presup-preview{background:#fff;color:#1a1a1a;border-radius:var(--radius2);padding:36px;max-width:560px;margin:0 auto;font-family:'Montserrat',sans-serif}
 .presup-preview-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #2C3740}
 .presup-clinic-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#2C3740}
-.presup-clinic-sub{font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
-.presup-meta{text-align:right;font-size:11px;color:#555;line-height:1.8}
-.presup-patient-info{background:#f8f7f5;border-radius:8px;padding:14px 18px;margin-bottom:20px}
 .presup-item-row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid #eee}
 .presup-item-row:last-child{border-bottom:none}
-.presup-footer-note{font-size:11px;color:#888;line-height:1.7;margin-top:18px;padding-top:14px;border-top:1px solid #eee}
-/* ── REPORTES ── */
 .rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-.rep-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
-.chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:20px}
-.chart-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:4px}
-.chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:16px}
-.chart-wrap{position:relative;height:220px}
-.chart-wrap-sm{position:relative;height:170px}
 .rep-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .rep-kpi{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:16px}
 .rep-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
 .rep-kpi-value{font-size:24px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--gold)}
 .rep-kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
-.rep-tabla{width:100%;border-collapse:collapse}
-.rep-tabla th{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:500}
-.rep-tabla td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
-.rep-tabla tr:hover td{background:rgba(201,164,82,.04)}
+.chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:20px}
+.chart-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:4px}
+.chart-subtitle{font-size:11px;color:var(--text3);margin-bottom:16px}
+.chart-wrap{position:relative;height:220px}
 .rep-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
 .rep-tab{padding:7px 16px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;font-family:'Montserrat',sans-serif}
 .rep-tab.active{background:var(--gold);color:#1e2830;border-color:var(--gold);font-weight:500}
 .rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
 .rank-item:last-child{border-bottom:none}
 .rank-num{font-size:12px;font-weight:600;color:var(--gold);min-width:22px}
-.rank-name{font-size:12px;color:var(--text);flex:1}
-.rank-val{font-size:12px;font-weight:600;color:var(--text2);text-align:right}
 .rank-bar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
 .rank-bar{height:100%;background:var(--gold);border-radius:2px}
-/* NOTIF */
-.notif-panel{position:fixed;top:60px;right:0;width:320px;height:calc(100vh - 60px);background:var(--bg2);border-left:1px solid var(--border);z-index:150;padding:20px;overflow-y:auto;transform:translateX(100%);transition:transform .3s}
-.notif-panel.open{transform:translateX(0)}
-.notif-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
-.notif-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
-.notif-sub{font-size:11px;color:var(--text3)}
-.notif-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.tz-badge{background:rgba(201,164,82,.12);border:1px solid var(--border2);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--gold);font-weight:600;letter-spacing:1px}
 </style>
 </head>
 <body>
-
 <aside id="sidebar">
   <div class="logo-area">
     <div class="logo-title">EPC</div>
@@ -222,8 +195,9 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
   <nav>
     <div class="nav-section">Principal</div>
     <div class="nav-item" onclick="showView('dashboard')"><span class="nav-icon">⬛</span> Dashboard</div>
-    <div class="nav-item" onclick="showView('agenda')"><span class="nav-icon">📅</span> Agenda <span class="nav-badge" id="badge-agenda">5</span></div>
+    <div class="nav-item" onclick="showView('agenda')"><span class="nav-icon">📅</span> Agenda <span class="nav-badge" id="badge-agenda">0</span></div>
     <div class="nav-item" onclick="showView('pacientes')"><span class="nav-icon">👤</span> Pacientes</div>
+    <div class="nav-item" onclick="showView('formaciones')"><span class="nav-icon">🎓</span> Formaciones</div>
     <div class="nav-section" style="margin-top:8px">Clínica</div>
     <div class="nav-item" onclick="showView('hc')"><span class="nav-icon">📋</span> Historia Clínica</div>
     <div class="nav-item" onclick="showView('tratamientos')"><span class="nav-icon">💉</span> Tratamientos</div>
@@ -235,8 +209,8 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
   </nav>
   <div class="sidebar-footer">
     <div class="user-chip">
-      <div class="user-avatar">GS</div>
-      <div><div class="user-name">Gabriel Sierra</div><div class="user-role">Administrador</div></div>
+      <div class="user-avatar">EPC</div>
+      <div><div class="user-name">Elite Plastic Center</div><div class="user-role">Caracas, Venezuela 🇻🇪</div></div>
     </div>
   </div>
 </aside>
@@ -245,23 +219,14 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
   <div class="topbar">
     <div class="page-title" id="page-title">Dashboard</div>
     <div class="topbar-right">
+      <span id="sync-badge" style="font-size:11px;color:var(--green);font-weight:500">● En línea</span>
+      <span class="tz-badge">🕐 VET (UTC-4)</span>
       <div style="font-size:12px;color:var(--text3)" id="fecha-hoy"></div>
-      <span id="sync-badge" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;background:var(--text3);color:#fff;letter-spacing:.5px">⏳ Conectando…</span>
-      <button class="icon-btn btn-sm" onclick="toggleNotif()" title="Alertas" id="notif-btn">🔔 <span id="notif-count" style="color:var(--gold)">3</span></button>
       <button class="btn btn-gold" id="btn-top" onclick="openNewModal()">+ Nuevo</button>
     </div>
   </div>
   <div class="content" id="content-area"></div>
 </main>
-
-<!-- PANEL NOTIFICACIONES -->
-<div class="notif-panel" id="notif-panel">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div style="font-size:14px;font-weight:500;color:var(--text)">Alertas y recordatorios</div>
-    <button class="icon-btn btn-sm" onclick="toggleNotif()">✕</button>
-  </div>
-  <div id="notif-list"></div>
-</div>
 
 <div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target.id==='modal-overlay')closeModal()">
   <div class="modal" id="modal-content"></div>
@@ -269,7 +234,129 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
 
 <script>
-// ── DATOS MAESTROS ────────────────────────────────────────────────────────────
+// ── API GOOGLE SHEETS — JSONP (evita CORS) ────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbxAZjIla8HgaO-qv1ub_7DhwmMn427JV5CwMSK-KQS6VwEvMxLzGOkRcj-aHoFzdWBP/exec';
+
+// JSONP para GET — evita CORS completamente
+function jsonpGet(action, sheet) {
+  return new Promise(function(resolve) {
+    const cbName = 'cb_' + Date.now();
+    const script = document.createElement('script');
+    let done = false;
+    const timeout = setTimeout(function() {
+      if (!done) { done = true; delete window[cbName]; script.remove(); resolve({ ok: false, error: 'timeout' }); }
+    }, 10000);
+    window[cbName] = function(data) {
+      if (!done) { done = true; clearTimeout(timeout); delete window[cbName]; script.remove(); resolve(data); }
+    };
+    let url = `${API_URL}?action=${action}&callback=${cbName}`;
+    if (sheet) url += `&sheet=${sheet}`;
+    script.src = url;
+    document.head.appendChild(script);
+  });
+}
+
+// POST via fetch no-cors (evita preflight CORS con GAS)
+async function apiPost(action, sheet, data) {
+  try {
+    const payload = JSON.stringify({ action, sheet, data });
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: payload,
+    });
+    return { ok: true };
+  } catch(e) {
+    return { ok: false, error: e.toString() };
+  }
+}
+
+async function syncToSheet(sheet, dataArray) {
+  showSyncBadge('↻ Guardando…');
+  const r = await apiPost('saveAll', sheet, dataArray);
+  if (r && r.ok) showSyncBadge('✓ Sincronizado');
+  else showSyncBadge('⚠ Error sync');
+}
+
+function getHCRows() {
+  const rows = [];
+  Object.entries(STATE.hcData).forEach(([patientId, hc]) => {
+    rows.push({ patientId, tipo: 'antecedentes', nota: JSON.stringify(hc.antecedentes || {}) });
+    (hc.consultas || []).forEach(c => {
+      rows.push({ patientId, tipo: 'consulta', fecha: c.fecha, proc: c.proc, doc: c.doc, nota: c.nota, productos: c.productos || [] });
+    });
+    (hc.consentimientos || []).forEach(c => {
+      rows.push({ patientId, tipo: 'consentimiento', nombre: c.nombre, fecha: c.fecha, firmado: c.firmado });
+    });
+  });
+  return rows;
+}
+
+async function loadFromSheet(sheet) {
+  const r = await jsonpGet('getAll', sheet);
+  if (r && r.ok) return r.data || [];
+  return [];
+}
+
+function showSyncBadge(msg) {
+  const el = document.getElementById('sync-badge');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = msg.includes('✓') ? 'var(--green)' : msg.includes('↻') ? 'var(--gold)' : 'var(--red)';
+  if (msg.includes('✓')) setTimeout(() => { el.textContent = '● En línea'; el.style.color = 'var(--green)'; }, 3000);
+}
+
+async function loadAllData() {
+  showSyncBadge('↻ Cargando…');
+  try {
+    const [pacientes, citas, movimientos, presupuestos, formaciones, hcRows] = await Promise.all([
+      loadFromSheet('Pacientes'),
+      loadFromSheet('Citas'),
+      loadFromSheet('Movimientos'),
+      loadFromSheet('Presupuestos'),
+      loadFromSheet('Formaciones'),
+      loadFromSheet('HistoriaClinica'),
+    ]);
+    if (pacientes.length)    STATE.patients     = pacientes;
+    if (citas.length)        STATE.appointments = citas;
+    if (movimientos.length)  STATE.movimientos  = movimientos;
+    if (presupuestos.length) STATE.presupuestos = presupuestos;
+    if (formaciones.length)  STATE.formaciones  = formaciones;
+    hcRows.forEach(row => {
+      if (!row.patientId) return;
+      if (!STATE.hcData[row.patientId]) STATE.hcData[row.patientId] = { antecedentes:{}, consultas:[], consentimientos:[] };
+      if (row.tipo === 'antecedentes') {
+        try { STATE.hcData[row.patientId].antecedentes = typeof row.nota === 'object' ? row.nota : JSON.parse(row.nota||'{}'); } catch(e){}
+      }
+      if (row.tipo === 'consulta') {
+        STATE.hcData[row.patientId].consultas.push({ fecha:row.fecha, proc:row.proc, doc:row.doc, nota:row.nota, productos: typeof row.productos === 'object' ? row.productos : [] });
+      }
+    });
+    $('badge-agenda').textContent = STATE.appointments.length;
+    showSyncBadge('✓ Sincronizado');
+  } catch(e) {
+    showSyncBadge('⚠ Sin conexión');
+  }
+  renderDashboard();
+}
+
+// ── ZONA HORARIA VENEZUELA (UTC-4) ────────────────────────────────────────────
+// Todas las fechas y horas se manejan en VET (UTC-4) sin importar el dispositivo
+function nowVET(){
+  const now=new Date();
+  const vetOffset=-4*60;
+  const utc=now.getTime()+now.getTimezoneOffset()*60000;
+  return new Date(utc+vetOffset*60000);
+}
+function todayVET(){return nowVET().toISOString().split('T')[0]}
+function fmtDateVET(d){
+  const dt=new Date(d+'T12:00:00');
+  return dt.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'});
+}
+function fmtHoraVET(h){return h+' (VET)'}
+
+// ── CATÁLOGO ──────────────────────────────────────────────────────────────────
 const CONSULTORIOS=[{id:'C1',label:'C-1 · Enfermería / Sueroterapia'},{id:'C2',label:'C-2 · Medicina Estética'},{id:'C3',label:'C-3 · Quirófano'},{id:'C4',label:'C-4 · Consulta Médica'}];
 const METODOS_PAGO=['Efectivo USD','Efectivo Bs','Zelle','Transferencia USD','Transferencia Bs','Pago Móvil','Tarjeta de crédito'];
 const SERVICIOS={
@@ -290,56 +377,16 @@ const SERVICIOS={
   ],
 };
 
+// ── STATE — BASE DE DATOS EN BLANCO ───────────────────────────────────────────
 const STATE={
   view:'dashboard',bcvRate:92.5,activeTratCat:'Medicina Estética',
   activeHCPatient:null,activeHCTab:'antecedentes',activeCajaPeriodo:'hoy',activeRepTab:'financiero',
-  patients:[
-    {id:'P001',name:'Valentina Rodríguez',cedula:'V-18.432.001',phone:'+58 412 555 0011',email:'v.rodriguez@gmail.com',dob:'1990-03-15',tags:['VIP','Recurrente'],lastVisit:'2026-06-01',procedures:8},
-    {id:'P002',name:'Andrea Méndez',cedula:'V-22.109.334',phone:'+58 414 555 0022',email:'amendezvzla@hotmail.com',dob:'1985-07-22',tags:['Recurrente'],lastVisit:'2026-05-20',procedures:3},
-    {id:'P003',name:'Sofía Castro',cedula:'V-26.771.005',phone:'+58 416 555 0033',email:'sofiacastro@outlook.com',dob:'1998-11-08',tags:['Nueva','Cirugía'],lastVisit:'2026-06-01',procedures:1},
-    {id:'P004',name:'Gabriela Torres',cedula:'V-19.883.221',phone:'+58 412 555 0044',email:'g.torres@gmail.com',dob:'1993-04-30',tags:['VIP','Recurrente'],lastVisit:'2026-05-15',procedures:12},
-    {id:'P005',name:'María Fernanda López',cedula:'V-24.501.887',phone:'+58 426 555 0055',email:'mflopez@gmail.com',dob:'2001-02-18',tags:['Nueva'],lastVisit:'2026-06-01',procedures:1},
-    {id:'P006',name:'Carolina Díaz',cedula:'V-17.664.332',phone:'+58 414 555 0066',email:'caroldiaz@gmail.com',dob:'1987-09-12',tags:['Recurrente','Cirugía'],lastVisit:'2026-05-10',procedures:5},
-  ],
-  movimientos:[
-    {id:'M001',fecha:'2026-06-01',tipo:'ingreso',desc:'Toxina Botulínica — Valentina Rodríguez',metodo:'Zelle',monto:380,moneda:'USD'},
-    {id:'M002',fecha:'2026-06-01',tipo:'ingreso',desc:'Armonización Labial — Sofía Castro',metodo:'Efectivo USD',monto:350,moneda:'USD'},
-    {id:'M003',fecha:'2026-06-01',tipo:'ingreso',desc:'NAD+ Sueroterapia — Gabriela Torres',metodo:'Transferencia USD',monto:280,moneda:'USD'},
-    {id:'M004',fecha:'2026-06-01',tipo:'egreso',desc:'Insumos Allergan — 2 viales Botox',metodo:'Efectivo USD',monto:180,moneda:'USD'},
-    {id:'M005',fecha:'2026-06-01',tipo:'ingreso',desc:'Consulta Inicial — María F. López',metodo:'Pago Móvil',monto:50,moneda:'USD'},
-    {id:'M006',fecha:'2026-05-31',tipo:'ingreso',desc:'Técnica 1:5 AH — Andrea Méndez',metodo:'Zelle',monto:330,moneda:'USD'},
-    {id:'M007',fecha:'2026-05-31',tipo:'egreso',desc:'Servicios públicos mayo',metodo:'Transferencia Bs',monto:45,moneda:'USD'},
-    {id:'M008',fecha:'2026-05-30',tipo:'ingreso',desc:'Rinomodelación — Carolina Díaz',metodo:'Zelle',monto:480,moneda:'USD'},
-    {id:'M009',fecha:'2026-05-29',tipo:'ingreso',desc:'Bioestimuladores Radiesse — Gabriela Torres',metodo:'Zelle',monto:550,moneda:'USD'},
-    {id:'M010',fecha:'2026-05-28',tipo:'ingreso',desc:'Botox Tercio Superior — Valentina Rodríguez',metodo:'Zelle',monto:380,moneda:'USD'},
-    {id:'M011',fecha:'2026-05-28',tipo:'egreso',desc:'Insumos Galderma',metodo:'Efectivo USD',monto:220,moneda:'USD'},
-    {id:'M012',fecha:'2026-05-27',tipo:'ingreso',desc:'Armonización Labial — nuevo paciente',metodo:'Transferencia USD',monto:350,moneda:'USD'},
-    {id:'M013',fecha:'2026-05-26',tipo:'ingreso',desc:'NAD+ IV — Gabriela Torres',metodo:'Zelle',monto:280,moneda:'USD'},
-    {id:'M014',fecha:'2026-05-25',tipo:'egreso',desc:'Alquiler consultorio mayo',metodo:'Transferencia Bs',monto:300,moneda:'USD'},
-    {id:'M015',fecha:'2026-05-24',tipo:'ingreso',desc:'Mesoterapia facial',metodo:'Efectivo USD',monto:180,moneda:'USD'},
-  ],
-  presupuestos:[
-    {id:'PRES-001',fecha:'2026-06-01',paciente:'Sofía Castro',cedula:'V-26.771.005',tipo:'estetica',items:[{desc:'Rinomodelación — Técnica Punto Único',monto:480},{desc:'Ácido Hialurónico — Armonización Labial 1ml',monto:350}],vigencia:90,doc:'Dr. Higuerey',notas:''},
-    {id:'PRES-002',fecha:'2026-05-28',paciente:'Valentina Rodríguez',cedula:'V-18.432.001',tipo:'estetica',items:[{desc:'Toxina Botulínica — Tercio Superior',monto:380},{desc:'Bioestimuladores — Profhilo',monto:520}],vigencia:90,doc:'Dr. Higuerey',notas:''},
-    {id:'PRES-003',fecha:'2026-05-20',paciente:'Carolina Díaz',cedula:'V-17.664.332',tipo:'quirurgico',items:[{desc:'Lipoescultura HEUS (VASER)',monto:3500},{desc:'Abdominoplastia Clásica',monto:4200}],vigencia:30,doc:'Dr. Higuerey',notas:'Incluye anestesia general.'},
-  ],
-  hcData:{
-    'P001':{antecedentes:{alergias:'Penicilina',medicamentos:'Anticonceptivos orales',antPersonales:'Sin patologías relevantes',antFamiliares:'Hipertensión materna',cirugiasPrevias:'Ninguna'},consultas:[{fecha:'2026-06-01',proc:'Toxina Botulínica — Tercio Superior',doc:'Dr. Higuerey',nota:'30U Botox glabela y frente. Resultado óptimo.',productos:[{marca:'Allergan',prod:'Botox',dosis:'30U',zona:'Glabela',lote:'ALG2025-441'}]}],consentimientos:[{nombre:'Consentimiento Toxina Botulínica',fecha:'2026-06-01',firmado:true}]},
-    'P003':{antecedentes:{alergias:'Ninguna',medicamentos:'Ninguno',antPersonales:'Ninguno',antFamiliares:'Diabetes (padre)',cirugiasPrevias:'Apendicectomía 2018'},consultas:[{fecha:'2026-06-01',proc:'Consulta Inicial / Valoración',doc:'Dr. Higuerey',nota:'Valoración armonización facial completa.',productos:[]}],consentimientos:[{nombre:'Consentimiento Consulta Inicial',fecha:'2026-06-01',firmado:true}]},
-  },
-  appointments:[
-    {id:'A001',time:'09:00',patient:'Valentina Rodríguez',proc:'Toxina Botulínica — Tercio Superior',doc:'Dr. Higuerey',status:'confirmado',consultorio:'C-2'},
-    {id:'A002',time:'10:00',patient:'Sofía Castro',proc:'Ácido Hialurónico — Armonización Labial 1ml',doc:'Dr. Higuerey',status:'en_consulta',consultorio:'C-2'},
-    {id:'A003',time:'11:30',patient:'Andrea Méndez',proc:'Ácido Hialurónico — Técnica 1:5',doc:'Dr. Higuerey',status:'pendiente',consultorio:'C-2'},
-    {id:'A004',time:'14:00',patient:'Gabriela Torres',proc:'NAD+ Sueroterapia IV',doc:'Dr. Higuerey',status:'confirmado',consultorio:'C-1'},
-    {id:'A005',time:'15:30',patient:'María Fernanda López',proc:'Consulta Inicial / Valoración',doc:'Dr. Higuerey',status:'pendiente',consultorio:'C-4'},
-  ],
-  notificaciones:[
-    {tipo:'alerta',titulo:'Cita sin confirmar',sub:'Andrea Méndez · 11:30 AM · hoy'},
-    {tipo:'alerta',titulo:'Cita sin confirmar',sub:'María Fernanda López · 15:30 PM · hoy'},
-    {tipo:'info',titulo:'Presupuesto próximo a vencer',sub:'PRES-003 · Carolina Díaz · vence en 8 días'},
-    {tipo:'success',titulo:'Nuevo paciente registrado',sub:'Sofía Castro · hoy'},
-  ],
+  patients:[],
+  movimientos:[],
+  presupuestos:[],
+  hcData:{},
+  formaciones:[],
+  appointments:[],
 };
 
 const statusMap={confirmado:{label:'Confirmado',cls:'badge-green'},en_consulta:{label:'En consulta',cls:'badge-gold'},pendiente:{label:'Pendiente',cls:'badge-gray'},completado:{label:'Completado',cls:'badge-blue'},cancelado:{label:'Cancelado',cls:'badge-red'}};
@@ -352,25 +399,213 @@ function openModal(html){$('modal-content').innerHTML=html;$('modal-overlay').cl
 function initials(n){return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
 function tagCls(t){return t==='VIP'?'vip':t==='Nueva'||t==='Nuevo'?'new':t==='Cirugía'?'surg':'rec'}
 function fmtUSD(n){return n===0?'Consultar':'$'+Number(n).toLocaleString()}
-function fmtDate(d){return new Date(d+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric'})}
 function destroyChart(id){if(chartsInstances[id]){chartsInstances[id].destroy();delete chartsInstances[id];}}
 
-const chartDefaults={color:'#a0b0bc',grid:'rgba(176,184,193,0.08)',gold:'#C9A452',green:'#1D9E75',blue:'#378ADD',red:'#E24B4A',purple:'#7F77DD'};
+// ── FORMACIONES ───────────────────────────────────────────────────────────────
+function renderFormaciones(){
+  const fs=STATE.formaciones||[];
+  const inscritos=fs.reduce((a,f)=>a+(f.participantes||[]).length,0);
+  const recaudado=fs.reduce((a,f)=>a+(f.participantes||[]).filter(p=>p.pagado).reduce((b,p)=>b+p.monto,0),0);
+  const pendiente=fs.reduce((a,f)=>a+(f.participantes||[]).filter(p=>!p.pagado).reduce((b,p)=>b+p.monto,0),0);
+  $('content-area').innerHTML=`
+  <div class="section-header">
+    <div class="section-title">Formaciones</div>
+    <button class="btn btn-gold" onclick="openNuevaFormacion()">+ Nueva formación</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Formaciones</div><div class="kpi-value">${fs.length}</div><div class="kpi-sub">Registradas</div></div>
+    <div class="kpi-card"><div class="kpi-label">Inscritos</div><div class="kpi-value">${inscritos}</div><div class="kpi-sub">Total participantes</div></div>
+    <div class="kpi-card"><div class="kpi-label">Recaudado</div><div class="kpi-value" style="font-size:22px">${fmtUSD(recaudado)}</div><div class="kpi-sub">Pagos confirmados</div></div>
+    <div class="kpi-card"><div class="kpi-label">Por cobrar</div><div class="kpi-value" style="font-size:22px;color:var(--red)">${fmtUSD(pendiente)}</div><div class="kpi-sub">Pagos pendientes</div></div>
+  </div>
+  ${fs.length===0?`
+  <div class="card" style="text-align:center;padding:48px;color:var(--text3)">
+    <div style="font-size:40px;opacity:.3;margin-bottom:12px">🎓</div>
+    <div style="font-size:14px;margin-bottom:16px">No hay formaciones registradas</div>
+    <button class="btn btn-gold" onclick="openNuevaFormacion()">+ Registrar primera formación</button>
+  </div>`:`<div style="display:flex;flex-direction:column;gap:14px">${fs.map(f=>{
+    const total_p=(f.participantes||[]).length;
+    const pagados=(f.participantes||[]).filter(p=>p.pagado).length;
+    const recaud=(f.participantes||[]).filter(p=>p.pagado).reduce((a,p)=>a+p.monto,0);
+    const pend=(f.participantes||[]).filter(p=>!p.pagado).reduce((a,p)=>a+p.monto,0);
+    const pct=total_p>0?Math.round(pagados/total_p*100):0;
+    return`<div class="card">
+      <div style="display:flex;align-items:flex-start;gap:16px">
+        <div style="width:48px;height:48px;border-radius:12px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎓</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text)">${f.nombre}</div>
+            <span class="status-badge ${f.modalidad==='presencial'?'badge-blue':'badge-gold'}">${f.modalidad==='presencial'?'Presencial':'Online'}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:10px">📅 ${fmtDateVET(f.fecha)} · ${f.lugar||'Por confirmar'} · Dr. Higuerey · ${fmtUSD(f.precio)}/persona</div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+            <span style="font-size:12px;color:var(--text2)">👥 ${total_p} inscritos</span>
+            <span style="font-size:12px;color:var(--green)">✅ ${pagados} pagados</span>
+            <span style="font-size:12px;color:var(--red)">⏳ ${total_p-pagados} pendientes</span>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:10px;color:var(--text3)">Cobros ${pct}%</span>
+              <span style="font-size:10px;color:var(--gold)">${fmtUSD(recaud)} cobrado · ${fmtUSD(pend)} pendiente</span>
+            </div>
+            <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--gold);border-radius:2px"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="icon-btn btn-sm" onclick="openAgregarParticipante('${f.id}')">+ Participante</button>
+          <button class="icon-btn btn-sm" onclick="verFormacion('${f.id}')">Ver →</button>
+          <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarFormacion('${f.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;}).join('')}</div>`}`;
+}
+
+function openNuevaFormacion(){
+  openModal(`
+  <div class="modal-title">Nueva Formación</div>
+  <div class="form-group"><label class="form-label">Nombre de la formación</label><input class="form-input" id="ff-nombre" placeholder="Ej. Masterclass Técnica 1:5 — 2ª Edición"></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="ff-fecha" value="${todayVET()}"></div>
+    <div class="form-group"><label class="form-label">Modalidad</label><select class="form-input" id="ff-modalidad"><option value="online">Online</option><option value="presencial">Presencial</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Precio por persona (USD)</label><input class="form-input" type="number" id="ff-precio" placeholder="350" min="0"></div>
+    <div class="form-group"><label class="form-label">Lugar / Plataforma</label><input class="form-input" id="ff-lugar" placeholder="Zoom / Caracas / Valencia…"></div>
+  </div>
+  <div class="form-group"><label class="form-label">Descripción / Técnicas</label><textarea class="form-input" id="ff-desc" placeholder="Técnicas, nivel, dirigido a…" style="min-height:70px"></textarea></div>
+  <div class="modal-actions">
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-gold" onclick="guardarFormacion()">Crear formación</button>
+  </div>`);
+}
+
+function guardarFormacion(){
+  const nombre=$('ff-nombre').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio');return;}
+  STATE.formaciones.unshift({id:'F'+Date.now(),nombre,fecha:$('ff-fecha').value,modalidad:$('ff-modalidad').value,precio:parseFloat($('ff-precio').value)||0,lugar:$('ff-lugar').value,desc:$('ff-desc').value,participantes:[]});
+  closeModal();showToast('Formación creada');
+  syncToSheet('Formaciones', STATE.formaciones);
+  renderFormaciones();
+}
+
+function verFormacion(id){
+  const f=STATE.formaciones.find(x=>x.id===id);if(!f)return;
+  const pagados=(f.participantes||[]).filter(p=>p.pagado);
+  const pendientes=(f.participantes||[]).filter(p=>!p.pagado);
+  const recaud=pagados.reduce((a,p)=>a+p.monto,0);
+  const pend=pendientes.reduce((a,p)=>a+p.monto,0);
+  openModal(`
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+    <div style="width:52px;height:52px;border-radius:12px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px">🎓</div>
+    <div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)">${f.nombre}</div>
+    <div style="font-size:12px;color:var(--text3)">📅 ${fmtDateVET(f.fecha)} · ${f.lugar||'—'} · ${fmtUSD(f.precio)}/persona</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Inscritos</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--text)">${(f.participantes||[]).length}</div></div>
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Recaudado</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--green)">${fmtUSD(recaud)}</div></div>
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Por cobrar</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--red)">${fmtUSD(pend)}</div></div>
+  </div>
+  ${f.desc?`<div style="background:rgba(201,164,82,.06);border-left:3px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--text2)">${f.desc}</div>`:''}
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:12px;font-weight:500;color:var(--text2)">Participantes (${(f.participantes||[]).length})</div>
+    <button class="btn btn-gold btn-sm" onclick="closeModal();openAgregarParticipante('${f.id}')">+ Agregar participante</button>
+  </div>
+  ${!(f.participantes||[]).length?`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin participantes registrados aún.</div>`:`
+  <div style="background:var(--bg3);border-radius:var(--radius);overflow:hidden">
+    ${(f.participantes||[]).map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:${i<f.participantes.length-1?'1px solid var(--border)':'none'}">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gold);flex-shrink:0">${p.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${p.nombre}</div><div style="font-size:11px;color:var(--text3)">${p.pais||'—'} · ${p.whatsapp||'—'}</div></div>
+      <div style="text-align:right;margin-right:8px"><div style="font-size:13px;font-weight:600;color:var(--gold)">${fmtUSD(p.monto)}</div><div style="font-size:10px;color:${p.pagado?'var(--green)':'var(--red)'}">● ${p.pagado?'Pagado':'Pendiente'}</div></div>
+      ${!p.pagado?`<button class="icon-btn btn-sm" style="color:var(--green);border-color:rgba(29,158,117,.3)" onclick="marcarPagado('${f.id}','${p.id}')">✓ Cobrado</button>`:`<span style="font-size:10px;color:var(--green);padding:0 8px">✓</span>`}
+      <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarParticipante('${f.id}','${p.id}')">✕</button>
+    </div>`).join('')}
+  </div>`}
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button></div>`);
+}
+
+function openAgregarParticipante(formId){
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  openModal(`
+  <div class="modal-title">Agregar Participante</div>
+  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)"><strong style="color:var(--gold)">${f.nombre}</strong> · ${fmtDateVET(f.fecha)} · Base: ${fmtUSD(f.precio)}</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="fpar-nombre" placeholder="Nombre del profesional"></div>
+    <div class="form-group"><label class="form-label">País</label><input class="form-input" id="fpar-pais" placeholder="Venezuela, España…"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">WhatsApp</label><input class="form-input" id="fpar-ws" placeholder="+58 412 000 0000"></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="fpar-email" placeholder="correo@email.com"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Monto a pagar (USD)</label><input class="form-input" type="number" id="fpar-monto" value="${f.precio}" min="0"></div>
+    <div class="form-group"><label class="form-label">Estado de pago</label><select class="form-input" id="fpar-pagado"><option value="0">Pendiente de pago</option><option value="1">Ya pagó</option></select></div>
+  </div>
+  <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="fpar-notas" placeholder="Especialidad, institución…"></div>
+  <div class="modal-actions">
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-gold" onclick="guardarParticipante('${formId}')">Agregar</button>
+  </div>`);
+}
+
+function guardarParticipante(formId){
+  const nombre=$('fpar-nombre').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio');return;}
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  if(!f.participantes) f.participantes=[];
+  f.participantes.push({id:'PAR'+Date.now(),nombre,pais:$('fpar-pais').value,whatsapp:$('fpar-ws').value,email:$('fpar-email').value,monto:parseFloat($('fpar-monto').value)||0,pagado:$('fpar-pagado').value==='1',notas:$('fpar-notas').value,fechaInscripcion:todayVET()});
+  closeModal();showToast(`${nombre} agregado`);
+  syncToSheet('Formaciones', STATE.formaciones);
+  renderFormaciones();
+}
+
+function marcarPagado(formId,parId){
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  const p=(f.participantes||[]).find(x=>x.id===parId);if(!p)return;
+  p.pagado=true;closeModal();showToast(`Pago registrado — ${p.nombre}`);
+  syncToSheet('Formaciones', STATE.formaciones);
+  renderFormaciones();
+}
+
+function eliminarParticipante(formId,parId){
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  f.participantes=(f.participantes||[]).filter(x=>x.id!==parId);
+  closeModal();showToast('Participante eliminado');
+  syncToSheet('Formaciones', STATE.formaciones);
+  renderFormaciones();
+}
+
+function eliminarFormacion(id){
+  openModal(`
+  <div class="modal-title" style="color:var(--red)">Eliminar formación</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Confirmas eliminar esta formación y todos sus participantes? No se puede deshacer.</div>
+  <div class="modal-actions">
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarFormacion('${id}')">Sí, eliminar</button>
+  </div>`);
+}
+
+function confirmarEliminarFormacion(id){
+  STATE.formaciones=STATE.formaciones.filter(f=>f.id!==id);
+  closeModal();showToast('Formación eliminada');
+  syncToSheet('Formaciones', STATE.formaciones);
+  renderFormaciones();
+}
 
 function showView(v){
   STATE.view=v;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  const navItems=document.querySelectorAll('.nav-item');
-  const nm={dashboard:0,agenda:1,pacientes:2,hc:3,tratamientos:4,caja:5,presupuestos:6,reportes:7};
-  if(nm[v]!==undefined) navItems[nm[v]].classList.add('active');
-  const titles={dashboard:'Dashboard',agenda:'Agenda',pacientes:'Pacientes',hc:'Historia Clínica',tratamientos:'Tratamientos',caja:'Caja',presupuestos:'Presupuestos',reportes:'Reportes'};
+  const nm={dashboard:0,agenda:1,pacientes:2,formaciones:3,hc:4,tratamientos:5,caja:6,presupuestos:7,reportes:8};
+  if(nm[v]!==undefined) document.querySelectorAll('.nav-item')[nm[v]].classList.add('active');
+  const titles={dashboard:'Dashboard',agenda:'Agenda',pacientes:'Pacientes',formaciones:'Formaciones',hc:'Historia Clínica',tratamientos:'Tratamientos',caja:'Caja',presupuestos:'Presupuestos',reportes:'Reportes'};
   $('page-title').textContent=titles[v]||v;
-  const btnL={dashboard:'+ Nuevo',agenda:'+ Nueva cita',pacientes:'+ Paciente',hc:'+ Consulta',tratamientos:'+ Sesión',caja:'+ Movimiento',presupuestos:'+ Presupuesto',reportes:'↓ Exportar'};
+  const btnL={dashboard:'+ Nuevo',agenda:'+ Nueva cita',pacientes:'+ Paciente',formaciones:'+ Formación',hc:'+ Consulta',tratamientos:'+ Sesión',caja:'+ Movimiento',presupuestos:'+ Presupuesto',reportes:'↓ Exportar'};
   $('btn-top').textContent=btnL[v]||'+ Nuevo';
   Object.keys(chartsInstances).forEach(destroyChart);
   if(v==='dashboard') renderDashboard();
   else if(v==='agenda') renderAgenda();
   else if(v==='pacientes') renderPacientes();
+  else if(v==='formaciones') renderFormaciones();
   else if(v==='hc') renderHC();
   else if(v==='tratamientos') renderTratamientos();
   else if(v==='caja') renderCaja();
@@ -379,23 +614,8 @@ function showView(v){
 }
 
 function openNewModal(){
-  const map={agenda:openNewCita,pacientes:openNewPatient,hc:openNewConsulta,tratamientos:openNewSesion,caja:openNewMovimiento,presupuestos:openNewPresupuesto,reportes:()=>showToast('Exportación próximamente')};
+  const map={agenda:openNewCita,pacientes:openNewPatient,formaciones:openNuevaFormacion,hc:openNewConsulta,tratamientos:openNewSesion,caja:openNewMovimiento,presupuestos:openNewPresupuesto,reportes:()=>showToast('Exportación próximamente')};
   (map[STATE.view]||openNewPatient)();
-}
-
-// ── NOTIFICACIONES ────────────────────────────────────────────────────────────
-function toggleNotif(){
-  const p=$('notif-panel');p.classList.toggle('open');
-  if(p.classList.contains('open')){
-    $('notif-list').innerHTML=STATE.notificaciones.map(n=>`
-    <div class="notif-item">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <div class="notif-dot" style="background:${n.tipo==='alerta'?'var(--red)':n.tipo==='success'?'var(--green)':'var(--gold)'}"></div>
-        <div class="notif-title">${n.titulo}</div>
-      </div>
-      <div class="notif-sub">${n.sub}</div>
-    </div>`).join('');
-  }
 }
 
 // ── SELECT HELPERS ────────────────────────────────────────────────────────────
@@ -405,101 +625,162 @@ function buildServiciosSelect(id,sel=''){
   return h+'</select>';
 }
 function buildConsultorioSelect(id){return`<select class="form-input" id="${id}">${CONSULTORIOS.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}</select>`;}
-function buildPacienteSelect(id,selId=''){return`<select class="form-input" id="${id}">${STATE.patients.map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${p.name}</option>`).join('')}</select>`;}
+function buildPacienteSelect(id,selId=''){
+  if(!STATE.patients.length) return`<select class="form-input" id="${id}"><option value="">— Sin pacientes registrados —</option></select>`;
+  return`<select class="form-input" id="${id}">${STATE.patients.map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${p.name}</option>`).join('')}</select>`;
+}
 function buildMedicoField(){return`<select class="form-input" id="f-cdoc" onchange="toggleOtroMedico(this.value)"><option value="higuerey">Dr. Higuerey</option><option value="otro">Otro médico…</option></select><div id="otro-medico-wrap" style="display:none;margin-top:8px"><input class="form-input" id="f-otro-medico" placeholder="Nombre del médico"></div>`;}
 function toggleOtroMedico(v){const w=$('otro-medico-wrap');if(w)w.style.display=v==='otro'?'block':'none'}
 function getMedicoLabel(){const s=$('f-cdoc');if(!s)return'Dr. Higuerey';if(s.value==='otro'){const i=$('f-otro-medico');return i&&i.value.trim()?i.value.trim():'Médico externo';}return'Dr. Higuerey';}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function renderDashboard(){
-  const ingHoy=STATE.movimientos.filter(m=>m.fecha==='2026-06-01'&&m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
-  const egrHoy=STATE.movimientos.filter(m=>m.fecha==='2026-06-01'&&m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
+  const hoy=todayVET();
+  const ingHoy=STATE.movimientos.filter(m=>m.fecha===hoy&&m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
+  const egrHoy=STATE.movimientos.filter(m=>m.fecha===hoy&&m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
+  const citasHoy=STATE.appointments.filter(a=>a.fecha===hoy);
   $('content-area').innerHTML=`
   <div class="bcv-strip">
     <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Tasa BCV</span>
     <span style="font-size:16px;font-weight:600;color:var(--gold)">1 USD = ${STATE.bcvRate} Bs</span>
-    <span style="font-size:11px;color:var(--text3)">· Paralelo ≈ 96.2 Bs</span>
-    <span style="font-size:10px;color:var(--text3);margin-left:auto">Actualizado hoy · 08:00 AM</span>
+    <span style="font-size:11px;color:var(--text3)">· Paralelo ≈ ${(STATE.bcvRate*1.04).toFixed(1)} Bs</span>
+    <span style="font-size:10px;color:var(--text3);margin-left:auto">Hora Venezuela: <strong style="color:var(--gold)">${nowVET().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})}</strong></span>
     <button class="icon-btn btn-sm" onclick="showToast('Tasa actualizada')">↻ Actualizar</button>
   </div>
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Ingresos hoy</div><div class="kpi-value">${fmtUSD(ingHoy)}</div><div class="kpi-sub">${Math.round(ingHoy*STATE.bcvRate).toLocaleString('es-VE')} Bs</div><div class="kpi-trend kpi-up">↑ +18% vs ayer</div></div>
-    <div class="kpi-card"><div class="kpi-label">Balance neto</div><div class="kpi-value">${fmtUSD(ingHoy-egrHoy)}</div><div class="kpi-sub">Egresos: ${fmtUSD(egrHoy)}</div><div class="kpi-trend kpi-up">↑ positivo</div></div>
-    <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${STATE.appointments.length}</div><div class="kpi-sub">1 en consulta · 2 confirmadas</div><div class="kpi-trend kpi-up">↑ +1 vs ayer</div></div>
-    <div class="kpi-card"><div class="kpi-label">Pacientes activos</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>p.tags.includes('VIP')).length} VIP · ${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length} nuevos</div><div class="kpi-trend kpi-up">↑ +2 este mes</div></div>
+    <div class="kpi-card"><div class="kpi-label">Ingresos hoy</div><div class="kpi-value">${fmtUSD(ingHoy)}</div><div class="kpi-sub">${Math.round(ingHoy*STATE.bcvRate).toLocaleString('es-VE')} Bs</div></div>
+    <div class="kpi-card"><div class="kpi-label">Balance neto</div><div class="kpi-value">${fmtUSD(ingHoy-egrHoy)}</div><div class="kpi-sub">Egresos: ${fmtUSD(egrHoy)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${citasHoy.length}</div><div class="kpi-sub">${citasHoy.filter(a=>a.status==='confirmado').length} confirmadas · ${citasHoy.filter(a=>a.status==='pendiente').length} pendientes</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>p.tags.includes('VIP')).length} VIP · ${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length} nuevos</div></div>
   </div>
   <div class="dashboard-grid">
     <div class="card">
-      <div class="card-title">Agenda de hoy <button class="icon-btn btn-sm" style="border:none;color:var(--gold)" onclick="showView('agenda')">Ver completa →</button></div>
-      ${STATE.appointments.map(a=>`
+      <div class="card-title">Agenda de hoy — ${hoy} <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('agenda')">Ver completa →</span></div>
+      ${citasHoy.length?citasHoy.map(a=>`
       <div class="agenda-item">
-        <span class="agenda-time">${a.time}</span>
+        <span class="agenda-time">${a.time} <span style="font-size:9px;color:var(--text3)">VET</span></span>
         <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
         <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc}</div></div>
         <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
-      </div>`).join('')}
+      </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:24px;font-size:13px">Sin citas para hoy.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="closeModal();showView('agenda');setTimeout(openNewCita,50)">+ Agendar cita</button></div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
-      <div class="card" style="padding:16px">
-        <div class="card-title" style="margin-bottom:10px">Ingresos 7 días <button class="icon-btn btn-sm" style="border:none;color:var(--gold)" onclick="showView('reportes')">Reportes →</button></div>
-        <div style="position:relative;height:120px"><canvas id="dash-chart"></canvas></div>
+      <div class="card">
+        <div class="card-title">Ingresos recientes</div>
+        ${STATE.movimientos.filter(m=>m.tipo==='ingreso').slice(0,4).map(m=>`
+        <div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${m.desc.length>28?m.desc.slice(0,28)+'…':m.desc}</span><span style="font-size:12px;color:var(--green);font-weight:600">+${fmtUSD(m.monto)}</span></div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin movimientos registrados.</div>`}
       </div>
       <div class="card">
-        <div class="card-title">Top procedimientos · junio</div>
-        ${[{n:'Toxina Botulínica',c:18,max:18},{n:'Técnica 1:5 AH',c:14,max:18},{n:'Armonización Labial',c:11,max:18},{n:'NAD+ Sueroterapia',c:8,max:18},{n:'Rinomodelación',c:6,max:18}].map(p=>`
-        <div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${p.n}</span><div class="proc-bar-wrap"><div class="proc-bar" style="width:${Math.round(p.c/p.max*100)}%"></div></div><span style="font-size:12px;color:var(--text3);min-width:24px;text-align:right">${p.c}</span></div>`).join('')}
+        <div class="card-title">Pacientes recientes <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('pacientes')">Ver todos →</span></div>
+        ${STATE.patients.slice(0,3).map(p=>`
+        <div class="agenda-item" style="cursor:pointer" onclick="showView('hc');setTimeout(()=>openHCPatient('${p.id}'),50)">
+          <div class="patient-avatar">${initials(p.name)}</div>
+          <div style="flex:1"><div class="agenda-name">${p.name}</div><div class="agenda-proc">${p.procedures} procedimientos</div></div>
+        </div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin pacientes registrados.</div>`}
       </div>
     </div>
   </div>`;
-  setTimeout(()=>{
-    const c=$('dash-chart');if(!c)return;
-    chartsInstances['dash']=new Chart(c,{type:'bar',data:{labels:['26/5','27/5','28/5','29/5','30/5','31/5','1/6'],datasets:[{data:[350,530,760,550,480,375,1060],backgroundColor:'rgba(201,164,82,0.5)',borderColor:'#C9A452',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.raw}}},scales:{x:{ticks:{color:chartDefaults.color,font:{size:9}},grid:{color:chartDefaults.grid}},y:{ticks:{color:chartDefaults.color,font:{size:9},callback:v=>'$'+v},grid:{color:chartDefaults.grid}}}}});
-  },100);
 }
 
 // ── AGENDA ────────────────────────────────────────────────────────────────────
 function renderAgenda(){
   const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const today=new Date();const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());
-  const times=['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'];
-  const evMap={1:{1:[{n:'Valentina R.',p:'Botox',c:''}],2:[{n:'Sofía C.',p:'Labios',c:'green'}]},2:{3:[{n:'Andrea M.',p:'1:5 AH',c:'blue'}]},4:{0:[{n:'Gabriela T.',p:'NAD+',c:''}]},5:{2:[{n:'M. F. López',p:'Consulta',c:'green'}]}};
+  const todayVet=nowVET();
+  const weekStart=new Date(todayVet);weekStart.setDate(todayVet.getDate()-todayVet.getDay());
+  const times=['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
+  const hoy=todayVET();
+
+  // Construir mapa de eventos por día/hora
+  const evMap={};
+  STATE.appointments.forEach(a=>{
+    const dt=new Date(a.fecha+'T12:00:00');
+    const di=dt.getDay();
+    // Verificar si cae en la semana visible
+    const wStart=new Date(weekStart);
+    const diff=Math.floor((dt-wStart)/(86400000));
+    if(diff<0||diff>6) return;
+    const ti=times.indexOf(a.time);
+    if(ti<0) return;
+    if(!evMap[diff]) evMap[diff]={};
+    if(!evMap[diff][ti]) evMap[diff][ti]=[];
+    evMap[diff][ti].push(a);
+  });
+
+  const citasHoy=STATE.appointments.filter(a=>a.fecha===hoy);
+
   $('content-area').innerHTML=`
   <div class="agenda-controls">
-    <div style="display:flex;align-items:center;gap:8px"><button class="icon-btn">‹</button><div class="date-display">01 – 07 Junio 2026</div><button class="icon-btn">›</button></div>
+    <div style="display:flex;align-items:center;gap:8px"><button class="icon-btn">‹</button><div class="date-display">${weekStart.toLocaleDateString('es-VE',{day:'2-digit',month:'short',timeZone:'America/Caracas'})} – ${new Date(weekStart.getTime()+6*86400000).toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'})}</div><button class="icon-btn">›</button></div>
+    <span class="tz-badge">🕐 Hora Venezuela (VET)</span>
     <div style="display:flex;gap:8px;margin-left:auto">
-      <button class="doc-chip active">Todos</button><button class="doc-chip">Dr. Higuerey</button>
+      <button class="doc-chip active">Todos</button>
+      <button class="doc-chip">Dr. Higuerey</button>
       <button class="btn btn-gold btn-sm" onclick="openNewCita()">+ Nueva cita</button>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
     <div class="calendar-grid">
       <div class="cal-header" style="background:var(--bg2)"></div>
-      ${days.map((d,i)=>{const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);const isTod=dt.toDateString()===today.toDateString();return`<div class="cal-header${isTod?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;}).join('')}
-      ${times.map((t,ti)=>`<div class="cal-time">${t}</div>${days.map((d,di)=>{const isTod=new Date(weekStart.getTime()+di*86400000).toDateString()===today.toDateString();const ev=(evMap[di]||{})[ti];return`<div class="cal-cell${isTod?' today-col':''}">${ev?ev.map(e=>`<div class="cal-event ${e.c}"><div class="cal-event-name">${e.n}</div><div class="cal-event-proc">${e.p}</div></div>`).join(''):''}</div>`;}).join('')}`).join('')}
+      ${days.map((d,i)=>{const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);const isToday=dt.toDateString()===todayVet.toDateString();return`<div class="cal-header${isToday?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;}).join('')}
+      ${times.map((t,ti)=>`<div class="cal-time">${t}</div>${days.map((d,di)=>{
+        const isToday=new Date(weekStart.getTime()+di*86400000).toDateString()===todayVet.toDateString();
+        const evs=(evMap[di]||{})[ti]||[];
+        return`<div class="cal-cell${isToday?' today-col':''}">${evs.map(ev=>`<div class="cal-event" title="Doble clic para ver HC" ondblclick="abrirHCDesdeCita('${ev.id}')" onclick="showToast('Doble clic para abrir HC de ${ev.patient}')"><div class="cal-event-name">${ev.patient.split(' ')[0]}</div><div class="cal-event-proc">${ev.proc.split('—')[0].trim().slice(0,18)}</div></div>`).join('')}</div>`;
+      }).join('')}`).join('')}
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Citas — hoy 01 junio 2026</div>
-    ${STATE.appointments.map(a=>`
+    <div class="card-title">Citas de hoy — ${hoy} <span style="font-size:11px;color:var(--text3)">(hora Venezuela)</span></div>
+    ${citasHoy.length?citasHoy.map(a=>`
     <div class="agenda-item">
-      <span class="agenda-time">${a.time}</span>
+      <span class="agenda-time">${a.time}<span style="font-size:9px;color:var(--text3);display:block">VET</span></span>
       <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
       <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc} · ${a.consultorio} · ${a.doc}</div></div>
       <div style="display:flex;gap:6px;align-items:center">
         <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
         <button class="icon-btn btn-sm" onclick="cycleStatus('${a.id}')">↺</button>
-        <button class="icon-btn btn-sm" onclick="showToast('Recordatorio WhatsApp enviado a ${a.patient}')">📲</button>
+        <button class="icon-btn btn-sm" onclick="abrirHCDesdeCita('${a.id}')">HC</button>
+        <button class="icon-btn btn-sm" onclick="showToast('Recordatorio enviado a ${a.patient}')">📲</button>
         <button class="icon-btn btn-sm" onclick="openRegistrarCobro('${a.patient}','${a.proc}')">💰</button>
+        <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarCita('${a.id}')">✕</button>
       </div>
-    </div>`).join('')}
+    </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Sin citas para hoy en Venezuela.</div>`}
   </div>`;
+}
+
+function abrirHCDesdeCita(citaId){
+  const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
+  const p=STATE.patients.find(x=>x.name===a.patient);
+  if(p){STATE.activeHCPatient=p.id;STATE.activeHCTab='consultas';showView('hc');}
+  else showToast('Paciente no encontrado en el sistema');
 }
 
 function cycleStatus(id){
   const a=STATE.appointments.find(x=>x.id===id);if(!a)return;
   const c=['pendiente','confirmado','en_consulta','completado','cancelado'];
   a.status=c[(c.indexOf(a.status)+1)%c.length];
-  showToast('Estado: '+statusMap[a.status].label);renderAgenda();
+  showToast('Estado: '+statusMap[a.status].label);
+  syncToSheet('Citas', STATE.appointments);
+  renderAgenda();
+}
+
+function eliminarCita(id){
+  openModal(`
+  <div class="modal-title" style="color:var(--red)">Eliminar cita</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">
+    ¿Confirmas que deseas eliminar esta cita? Esta acción no se puede deshacer.
+  </div>
+  <div class="modal-actions">
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarCita('${id}')">Eliminar</button>
+  </div>`);
+}
+function confirmarEliminarCita(id){
+  STATE.appointments=STATE.appointments.filter(a=>a.id!==id);
+  $('badge-agenda').textContent=STATE.appointments.length;
+  closeModal();showToast('Cita eliminada');
+  syncToSheet('Citas', STATE.appointments);
+  renderAgenda();
 }
 
 // ── PACIENTES ─────────────────────────────────────────────────────────────────
@@ -511,33 +792,99 @@ function renderPacientes(filter=''){
     <button class="btn btn-gold" onclick="openNewPatient()">+ Nuevo paciente</button>
   </div>
   <div class="search-bar"><input class="search-input" placeholder="Buscar por nombre o cédula…" value="${filter}" oninput="renderPacientes(this.value)"></div>
+  ${STATE.patients.length===0?`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;margin-bottom:12px;opacity:.3">👤</div><div style="font-size:14px;margin-bottom:16px">No hay pacientes registrados</div><button class="btn btn-gold" onclick="openNewPatient()">+ Registrar primer paciente</button></div>`:`
   <div class="card" style="padding:0;overflow:hidden">
     <table class="patients-table">
       <thead><tr><th>Paciente</th><th>Cédula</th><th>Teléfono</th><th>Etiquetas</th><th>Última visita</th><th style="text-align:center">Procs.</th><th></th></tr></thead>
       <tbody>${pts.map(p=>`
       <tr>
         <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email}</div></div></div></td>
-        <td style="color:var(--text2);font-size:12px">${p.cedula}</td><td style="color:var(--text2);font-size:12px">${p.phone}</td>
+        <td style="color:var(--text2);font-size:12px">${p.cedula}</td>
+        <td style="color:var(--text2);font-size:12px">${p.phone}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div></td>
-        <td style="font-size:12px;color:var(--text2)">${p.lastVisit}</td>
+        <td style="font-size:12px;color:var(--text2)">${p.lastVisit||'—'}</td>
         <td style="font-size:13px;font-weight:500;color:var(--gold);text-align:center">${p.procedures}</td>
-        <td><div style="display:flex;gap:6px">
+        <td><div style="display:flex;gap:5px">
           <button class="icon-btn btn-sm" onclick="showView('hc');setTimeout(()=>openHCPatient('${p.id}'),50)">HC</button>
+          <button class="icon-btn btn-sm" onclick="openEditarPaciente('${p.id}')">✏</button>
           <button class="icon-btn btn-sm" onclick="openNewPresupuestoForPat('${p.id}')">Presup.</button>
+          <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="confirmarEliminarPaciente('${p.id}','${p.name}')">✕</button>
         </div></td>
       </tr>`).join('')}</tbody>
     </table>
-  </div>`;
+  </div>`}`;
+}
+
+// ── EDITAR PACIENTE ───────────────────────────────────────────────────────────
+function openEditarPaciente(id){
+  const p=STATE.patients.find(x=>x.id===id);if(!p)return;
+  openModal(`
+  <div class="modal-title">Editar paciente</div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="ep-nombre" value="${p.name}"></div>
+    <div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="ep-cedula" value="${p.cedula}"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="ep-phone" value="${p.phone}"></div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ep-email" value="${p.email}"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="ep-dob" value="${p.dob||''}"></div>
+    <div class="form-group"><label class="form-label">Etiqueta</label>
+      <select class="form-input" id="ep-tag">
+        ${['Nueva','Recurrente','VIP','Cirugía'].map(t=>`<option${p.tags.includes(t)?' selected':''}>${t}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-gold" onclick="guardarEdicionPaciente('${id}')">Guardar cambios</button>
+  </div>`);
+}
+
+function guardarEdicionPaciente(id){
+  const p=STATE.patients.find(x=>x.id===id);if(!p)return;
+  const nombre=$('ep-nombre').value.trim();const cedula=$('ep-cedula').value.trim();
+  if(!nombre||!cedula){showToast('Nombre y cédula son obligatorios');return;}
+  p.name=nombre;p.cedula=cedula;p.phone=$('ep-phone').value;p.email=$('ep-email').value;p.dob=$('ep-dob').value;p.tags=[$('ep-tag').value];
+  closeModal();showToast('Paciente actualizado correctamente');
+  syncToSheet('Pacientes', STATE.patients);
+  renderPacientes();
+}
+
+// ── ELIMINAR PACIENTE ─────────────────────────────────────────────────────────
+function confirmarEliminarPaciente(id,nombre){
+  openModal(`
+  <div class="modal-title" style="color:var(--red)">Eliminar paciente</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:16px;margin-bottom:18px;font-size:13px;color:var(--text2)">
+    ¿Eliminar a <strong style="color:var(--text)">${nombre}</strong>?<br>
+    <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Se eliminarán su ficha, historia clínica y consentimientos. No se puede deshacer.</span>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn" style="background:var(--red);color:#fff" onclick="eliminarPaciente('${id}')">Sí, eliminar</button>
+  </div>`);
+}
+function eliminarPaciente(id){
+  STATE.patients=STATE.patients.filter(p=>p.id!==id);
+  if(STATE.hcData[id]) delete STATE.hcData[id];
+  closeModal();showToast('Paciente eliminado');
+  syncToSheet('Pacientes', STATE.patients);
+  renderPacientes();
 }
 
 // ── HISTORIA CLÍNICA ─────────────────────────────────────────────────────────
 function renderHC(){
+  if(!STATE.patients.length){
+    $('content-area').innerHTML=`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📋</div><div style="font-size:14px;margin-bottom:16px">No hay pacientes registrados</div><button class="btn btn-gold" onclick="showView('pacientes')">Registrar paciente</button></div>`;
+    return;
+  }
   STATE.activeHCPatient=STATE.activeHCPatient||STATE.patients[0].id;
   $('content-area').innerHTML=`
   <div class="hc-grid">
     <div>
       <div class="search-bar" style="margin-bottom:10px"><input class="search-input" placeholder="Buscar paciente…" oninput="filterHCList(this.value)"></div>
-      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div class="hc-patient-name">${p.name}</div><div class="hc-patient-meta">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('')}</div>
+      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('')}</div>
     </div>
     <div id="hc-panel">${buildHCPanel(STATE.activeHCPatient)}</div>
   </div>`;
@@ -545,7 +892,7 @@ function renderHC(){
 
 function filterHCList(q){
   const pts=q?STATE.patients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())):STATE.patients;
-  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div class="hc-patient-name">${p.name}</div><div class="hc-patient-meta">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('');
+  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('');
 }
 
 function openHCPatient(id){
@@ -564,6 +911,7 @@ function buildHCPanel(id){
         <div class="patient-avatar" style="width:46px;height:46px;font-size:14px">${initials(p.name)}</div>
         <div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold)">${p.name}</div><div style="font-size:12px;color:var(--text3)">${p.cedula} · ${p.phone}</div></div>
         <div style="display:flex;gap:6px">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div>
+        <button class="icon-btn btn-sm" onclick="openEditarPaciente('${id}')">✏ Editar</button>
         <button class="btn btn-gold btn-sm" onclick="openNewConsulta('${id}')">+ Consulta</button>
       </div>
     </div>
@@ -582,7 +930,7 @@ function buildHCTab(id,tab){
   const hc=STATE.hcData[id]||{antecedentes:{},consultas:[],consentimientos:[]};
   const ant=hc.antecedentes||{};
   if(tab==='antecedentes') return`<div class="hc-section"><div class="hc-section-title">Antecedentes <button class="icon-btn btn-sm" onclick="openEditAntecedentes('${id}')">✏ Editar</button></div>${[['Alergias',ant.alergias||'—'],['Medicamentos',ant.medicamentos||'—'],['Antec. personales',ant.antPersonales||'—'],['Antec. familiares',ant.antFamiliares||'—'],['Cirugías previas',ant.cirugiasPrevias||'—']].map(([l,v])=>`<div class="hc-field"><span class="hc-field-label">${l}</span><span class="hc-field-value">${v}</span></div>`).join('')}</div>`;
-  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${c.productos&&c.productos.length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}</div>`).join('');}
+  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas registradas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${c.productos&&c.productos.length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}</div>`).join('');}
   if(tab==='consentimientos'){const cs=hc.consentimientos||[];return`<div class="hc-section"><div class="hc-section-title">Consentimientos <button class="icon-btn btn-sm" onclick="openAddConsentimiento('${id}')">+ Agregar</button></div>${cs.length?cs.map(c=>`<div class="consent-item"><div class="consent-check${c.firmado?' done':''}">${c.firmado?'✓':''}</div><div style="flex:1;font-size:13px;color:var(--text)">${c.nombre}</div><div style="font-size:11px;color:var(--text3)">${c.firmado?'Firmado '+c.fecha:'Pendiente'}</div>${!c.firmado?`<button class="icon-btn btn-sm" onclick="firmarConsentimiento('${id}','${c.nombre}')">Firmar</button>`:''}</div>`).join(''):'<div style="color:var(--text3);font-size:13px">Sin consentimientos.</div>'}</div>`;}
   return'';
 }
@@ -597,17 +945,19 @@ function openEditAntecedentes(id){
   <div class="form-group"><label class="form-label">Cirugías previas</label><input class="form-input" id="fa-cir" value="${ant.cirugiasPrevias||''}"></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveAntecedentes('${id}')">Guardar</button></div>`);
 }
-
 function saveAntecedentes(id){
   if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
   STATE.hcData[id].antecedentes={alergias:$('fa-alergias').value,medicamentos:$('fa-meds').value,antPersonales:$('fa-pers').value,antFamiliares:$('fa-fam').value,cirugiasPrevias:$('fa-cir').value};
-  closeModal();showToast('Antecedentes guardados');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'antecedentes');
+  closeModal();showToast('Antecedentes guardados');
+  syncToSheet('HistoriaClinica', getHCRows());
+  const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'antecedentes');
 }
 
 function openNewConsulta(id){
-  id=id||STATE.activeHCPatient||STATE.patients[0].id;
+  id=id||STATE.activeHCPatient||STATE.patients[0]?.id;
+  if(!id){showToast('Registra un paciente primero');return;}
   openModal(`<div class="modal-title">Registrar Consulta</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fc-pat',id)}</div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="fc-fecha" value="${new Date().toISOString().split('T')[0]}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fc-pat',id)}</div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="fc-fecha" value="${todayVET()}"></div></div>
   <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('fc-proc')}</div>
   <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
   <div class="form-group"><label class="form-label">Nota clínica</label><textarea class="form-input" id="fc-nota" style="min-height:90px" placeholder="Evolución, técnica, observaciones…"></textarea></div>
@@ -619,7 +969,6 @@ function openNewConsulta(id){
   </div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveConsulta()">Guardar consulta</button></div>`);
 }
-
 function saveConsulta(){
   const patId=$('fc-pat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
   if(!STATE.hcData[patId])STATE.hcData[patId]={antecedentes:{},consultas:[],consentimientos:[]};
@@ -628,16 +977,19 @@ function saveConsulta(){
   STATE.hcData[patId].consultas.unshift({fecha:$('fc-fecha').value,proc:$('fc-proc').value,doc:getMedicoLabel(),nota:$('fc-nota').value,productos:prods});
   p.procedures++;p.lastVisit=$('fc-fecha').value;
   STATE.activeHCPatient=patId;STATE.activeHCTab='consultas';
-  closeModal();showToast('Consulta registrada');renderHC();
+  closeModal();showToast('Consulta registrada');
+  syncToSheet('HistoriaClinica', getHCRows());
+  syncToSheet('Pacientes', STATE.patients);
+  renderHC();
 }
-
 function firmarConsentimiento(id,nombre){
   const hc=STATE.hcData[id];if(!hc)return;
   const c=hc.consentimientos.find(x=>x.nombre===nombre);if(!c)return;
-  c.firmado=true;c.fecha=new Date().toISOString().split('T')[0];
-  showToast('Firmado');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
+  c.firmado=true;c.fecha=todayVET();
+  showToast('Firmado');
+  syncToSheet('HistoriaClinica', getHCRows());
+  const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
 }
-
 function openAddConsentimiento(id){
   const opts=['Consentimiento Toxina Botulínica','Consentimiento Ácido Hialurónico','Consentimiento Rinomodelación','Consentimiento NAD+ IV','Consentimiento Bioestimuladores','Consentimiento Cirugía Plástica','Consentimiento PRP','Consentimiento Peeling Químico','Consentimiento Hilos Tensores'];
   openModal(`<div class="modal-title">Agregar Consentimiento</div>
@@ -645,38 +997,35 @@ function openAddConsentimiento(id){
   <div class="form-group"><label class="form-label">Estado</label><select class="form-input" id="fc-firmado"><option value="1">Firmado hoy</option><option value="0">Pendiente</option></select></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveConsentimiento('${id}')">Agregar</button></div>`);
 }
-
 function saveConsentimiento(id){
   if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
   const firmado=$('fc-firmado').value==='1';
-  STATE.hcData[id].consentimientos.push({nombre:$('fc-consent').value,fecha:firmado?new Date().toISOString().split('T')[0]:'',firmado});
-  closeModal();showToast('Consentimiento agregado');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
+  STATE.hcData[id].consentimientos.push({nombre:$('fc-consent').value,fecha:firmado?todayVET():'',firmado});
+  closeModal();showToast('Consentimiento agregado');
+  syncToSheet('HistoriaClinica', getHCRows());
+  const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
 }
 
 // ── TRATAMIENTOS ──────────────────────────────────────────────────────────────
 function renderTratamientos(){
-  const cats=Object.keys(SERVICIOS);const activeCat=STATE.activeTratCat;
+  const cats=Object.keys(SERVICIOS);
   $('content-area').innerHTML=`
   <div class="section-header"><div class="section-title">Catálogo de Servicios</div><input class="search-input" style="width:220px;margin-bottom:0" placeholder="Buscar servicio…" oninput="filterTratamientos(this.value)"></div>
-  <div class="trat-grid">${cats.map(cat=>{const icons={'Medicina Estética':'💉','Sueroterapia & Wellness':'🧬','Cirugía Plástica & Reconstructiva':'🏥','Consultas & Valoraciones':'📋'};return`<div class="trat-cat-card${cat===activeCat?' active':''}" onclick="selectTratCat('${cat}')"><div class="trat-cat-icon">${icons[cat]||'⚕'}</div><div class="trat-cat-name">${cat}</div><div class="trat-cat-count">${SERVICIOS[cat].length} servicios</div></div>`;}).join('')}</div>
-  <div class="trat-list" id="trat-list-container">${buildTratList(activeCat,SERVICIOS[activeCat]||[])}</div>`;
+  <div class="trat-grid">${cats.map(cat=>{const icons={'Medicina Estética':'💉','Sueroterapia & Wellness':'🧬','Cirugía Plástica & Reconstructiva':'🏥','Consultas & Valoraciones':'📋'};return`<div class="trat-cat-card${cat===STATE.activeTratCat?' active':''}" onclick="selectTratCat('${cat}')"><div style="font-size:20px;margin-bottom:6px">${icons[cat]||'⚕'}</div><div style="font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px">${cat}</div><div style="font-size:10px;color:var(--text3)">${SERVICIOS[cat].length} servicios</div></div>`;}).join('')}</div>
+  <div class="trat-list" id="trat-list-container">${buildTratList(STATE.activeTratCat,SERVICIOS[STATE.activeTratCat]||[])}</div>`;
 }
-
 function buildTratList(cat,items){
   const sc=cat.replace(/\W/g,'');
   return`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">${cat} <span style="color:var(--text3);font-size:12px">${items.length} servicios</span></div><span style="font-size:11px;color:var(--text3)">Clic en precio para editar</span></div>
   ${items.map((s,i)=>`<div class="trat-row"><div class="trat-name">${s.n}</div><div class="trat-price" id="price-display-${sc}-${i}" onclick="editPrice('${cat}',${i})">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsultaFromTrat('${s.n}')">Sesión</button></div>`).join('')}`;
 }
-
-function selectTratCat(cat){STATE.activeTratCat=cat;const c=$('trat-list-container');if(c)c.innerHTML=buildTratList(cat,SERVICIOS[cat]||[]);document.querySelectorAll('.trat-cat-card').forEach(el=>el.classList.toggle('active',el.querySelector('.trat-cat-name')?.textContent===cat));}
-
+function selectTratCat(cat){STATE.activeTratCat=cat;const c=$('trat-list-container');if(c)c.innerHTML=buildTratList(cat,SERVICIOS[cat]||[]);document.querySelectorAll('.trat-cat-card').forEach(el=>el.classList.toggle('active',el.querySelector('div:nth-child(2)')?.textContent===cat));}
 function filterTratamientos(q){
-  if(!q){if(STATE.view==='tratamientos')renderTratamientos();return;}
+  if(!q){renderTratamientos();return;}
   const all=[];Object.entries(SERVICIOS).forEach(([cat,items])=>items.forEach(s=>all.push({...s,cat})));
   const filtered=all.filter(s=>s.n.toLowerCase().includes(q.toLowerCase()));
   const c=$('trat-list-container');if(c)c.innerHTML=`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">"${q}" — ${filtered.length} resultados</div></div>${filtered.map(s=>`<div class="trat-row"><div class="trat-name">${s.n}</div><span style="font-size:10px;padding:2px 8px;background:rgba(176,184,193,.1);border-radius:4px;color:var(--text3)">${s.cat.split('&')[0].trim()}</span><div class="trat-price">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsultaFromTrat('${s.n}')">Sesión</button></div>`).join('')}`;
 }
-
 function editPrice(cat,idx){
   const sc=cat.replace(/\W/g,'');const item=SERVICIOS[cat][idx];const el=$(`price-display-${sc}-${idx}`);if(!el)return;
   el.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><span style="color:var(--text3);font-size:12px">$</span><input id="pinp-${sc}-${idx}" type="number" min="0" step="1" value="${item.p}" style="width:82px;padding:4px 8px;background:var(--bg2);border:1px solid var(--gold);border-radius:6px;color:var(--gold);font-size:13px;font-weight:600;font-family:'Montserrat',sans-serif;outline:none" onkeydown="if(event.key==='Enter')savePrice('${cat}',${idx});if(event.key==='Escape')cancelPrice('${cat}',${idx})" onblur="savePrice('${cat}',${idx})"><button class="icon-btn btn-sm" style="padding:3px 7px" onclick="savePrice('${cat}',${idx})">✓</button><button class="icon-btn btn-sm" style="padding:3px 7px" onclick="cancelPrice('${cat}',${idx})">✕</button></div>`;
@@ -689,12 +1038,11 @@ function openNewSesion(){openNewConsulta(STATE.activeHCPatient);}
 
 // ── CAJA ─────────────────────────────────────────────────────────────────────
 function getCajaMovs(){
-  const hoy='2026-06-01';
+  const hoy=todayVET();
   if(STATE.activeCajaPeriodo==='hoy')return STATE.movimientos.filter(m=>m.fecha===hoy);
-  if(STATE.activeCajaPeriodo==='semana')return STATE.movimientos.filter(m=>m.fecha>='2026-05-26'&&m.fecha<=hoy);
+  if(STATE.activeCajaPeriodo==='semana'){const d=new Date(hoy);d.setDate(d.getDate()-7);const sem=d.toISOString().split('T')[0];return STATE.movimientos.filter(m=>m.fecha>=sem&&m.fecha<=hoy);}
   return STATE.movimientos;
 }
-
 function renderCaja(){
   const movs=getCajaMovs();
   const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
@@ -716,78 +1064,80 @@ function renderCaja(){
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
     <div class="card" style="padding:0;overflow:hidden">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text2)">Movimientos (${movs.length})</div>
-      ${movs.length?movs.map(m=>`<div class="movimiento-row"><div class="mov-tipo ${m.tipo==='ingreso'?'mov-ingreso':'mov-egreso'}"></div><div style="flex:1"><div class="mov-desc">${m.desc}</div><div class="mov-meta">${fmtDate(m.fecha)} · ${m.metodo}</div></div><div class="${m.tipo==='ingreso'?'mov-monto-pos':'mov-monto-neg'}">${m.tipo==='ingreso'?'+':'-'}${fmtUSD(m.monto)}</div><button class="icon-btn btn-sm" style="margin-left:6px" onclick="eliminarMovimiento('${m.id}')">✕</button></div>`).join(''):`<div style="padding:28px;text-align:center;color:var(--text3)">Sin movimientos</div>`}
+      ${movs.length?movs.map(m=>`<div class="movimiento-row"><div class="mov-tipo ${m.tipo==='ingreso'?'mov-ingreso':'mov-egreso'}"></div><div style="flex:1"><div style="font-size:13px;color:var(--text)">${m.desc}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(m.fecha)} · ${m.metodo}</div></div><div class="${m.tipo==='ingreso'?'mov-monto-pos':'mov-monto-neg'}">${m.tipo==='ingreso'?'+':'-'}${fmtUSD(m.monto)}</div><button class="icon-btn btn-sm" style="margin-left:6px;color:var(--red)" onclick="eliminarMovimiento('${m.id}')">✕</button></div>`).join(''):`<div style="padding:32px;text-align:center;color:var(--text3)">Sin movimientos</div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="card">
         <div class="card-title">Por método de pago</div>
-        ${Object.entries(byMetodo).sort((a,b)=>b[1]-a[1]).map(([met,tot])=>`<div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${met}</span><div class="proc-bar-wrap"><div class="proc-bar" style="width:${Math.round(tot/ing*100)}%"></div></div><span style="font-size:12px;color:var(--gold);min-width:60px;text-align:right">${fmtUSD(tot)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}
+        ${Object.entries(byMetodo).sort((a,b)=>b[1]-a[1]).map(([met,tot])=>`<div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${met}</span><div class="proc-bar-wrap"><div class="proc-bar" style="width:${ing>0?Math.round(tot/ing*100):0}%"></div></div><span style="font-size:12px;color:var(--gold);min-width:60px;text-align:right">${fmtUSD(tot)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}
       </div>
       <div class="card">
-        <div class="card-title">Equivalencia Bs <span style="font-size:11px;color:var(--text3)">Tasa ${STATE.bcvRate} Bs/USD</span></div>
-        ${[['Ingresos',ing],['Balance neto',ing-egr]].map(([l,v])=>`<div class="balance-row"><span class="balance-label">${l}</span><span style="font-size:13px;font-weight:600;color:var(--gold)">${Math.round(v*STATE.bcvRate).toLocaleString('es-VE')} Bs</span></div>`).join('')}
+        <div class="card-title">Equivalencia Bs <span style="font-size:11px;color:var(--text3)">Tasa ${STATE.bcvRate}</span></div>
+        ${[['Ingresos',ing],['Balance',ing-egr]].map(([l,v])=>`<div class="balance-row"><span class="balance-label">${l}</span><span style="font-size:13px;font-weight:600;color:var(--gold)">${Math.round(v*STATE.bcvRate).toLocaleString('es-VE')} Bs</span></div>`).join('')}
       </div>
     </div>
   </div>`;
 }
-
 function setPeriodo(p){STATE.activeCajaPeriodo=p;renderCaja();}
-
 function openNewMovimiento(){
   openModal(`<div class="modal-title">Registrar Movimiento</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fm-tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="fm-fecha" value="${new Date().toISOString().split('T')[0]}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fm-tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="fm-fecha" value="${todayVET()}"></div></div>
   <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="fm-desc" placeholder="Concepto del movimiento…"></div>
   <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fm-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método de pago</label><select class="form-input" id="fm-metodo">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveMovimiento()">Guardar</button></div>`);
 }
-
 function saveMovimiento(){
   const desc=$('fm-desc').value.trim();const monto=parseFloat($('fm-monto').value);
   if(!desc||isNaN(monto)||monto<=0){showToast('Descripción y monto son obligatorios');return;}
-  STATE.movimientos.unshift({id:'M'+(100+STATE.movimientos.length),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:'USD'});
-  closeModal();showToast('Movimiento registrado');renderCaja();
+  STATE.movimientos.unshift({id:'M'+(Date.now()),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:'USD'});
+  closeModal();showToast('Movimiento registrado');
+  syncToSheet('Movimientos', STATE.movimientos);
+  renderCaja();
 }
-
-function eliminarMovimiento(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);showToast('Eliminado');renderCaja();}
-
+function eliminarMovimiento(id){
+  openModal(`<div class="modal-title" style="color:var(--red)">Eliminar movimiento</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Confirmas eliminar este movimiento? No se puede deshacer.</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarMov('${id}')">Eliminar</button></div>`);
+}
+function confirmarEliminarMov(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);closeModal();showToast('Movimiento eliminado');syncToSheet('Movimientos',STATE.movimientos);renderCaja();}
 function openRegistrarCobro(paciente,proc){
   openModal(`<div class="modal-title">Registrar Cobro</div>
   <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text2)"><strong style="color:var(--gold)">${paciente}</strong><br>${proc}</div>
   <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fc-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método</label><select class="form-input" id="fc-metpago">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCobro('${paciente}','${proc}')">Registrar</button></div>`);
 }
-
 function saveCobro(paciente,proc){
   const monto=parseFloat($('fc-monto').value);if(isNaN(monto)||monto<=0){showToast('Monto inválido');return;}
-  STATE.movimientos.unshift({id:'M'+(100+STATE.movimientos.length),fecha:'2026-06-01',tipo:'ingreso',desc:`${proc} — ${paciente}`,metodo:$('fc-metpago').value,monto,moneda:'USD'});
+  STATE.movimientos.unshift({id:'M'+Date.now(),fecha:todayVET(),tipo:'ingreso',desc:`${proc} — ${paciente}`,metodo:$('fc-metpago').value,monto,moneda:'USD'});
   closeModal();showToast(`Cobro registrado: ${fmtUSD(monto)}`);
+  syncToSheet('Movimientos', STATE.movimientos);
 }
 
 // ── PRESUPUESTOS ──────────────────────────────────────────────────────────────
 function renderPresupuestos(){
   $('content-area').innerHTML=`
   <div class="section-header"><div class="section-title">Presupuestos <span style="font-size:14px;color:var(--text3);font-family:Montserrat">(${STATE.presupuestos.length})</span></div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Nuevo presupuesto</button></div>
-  <div class="presup-list">${STATE.presupuestos.map(pr=>{const total=pr.items.reduce((a,i)=>a+i.monto,0);return`<div class="presup-card" onclick="verPresupuesto('${pr.id}')"><div><div style="font-size:11px;color:var(--text3);font-weight:500">${pr.id}</div><div style="display:flex;gap:6px;margin-top:4px"><span class="tag ${pr.tipo==='quirurgico'?'tag-surg':'tag-rec'}">${pr.tipo==='quirurgico'?'Quirúrgico':'Estética'}</span><span style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(106,126,140,.15);color:var(--text3)">Vigencia ${pr.vigencia}d</span></div></div><div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${pr.paciente}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${pr.items.map(i=>i.desc.split('—')[0].trim()).join(' · ')}</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--gold)">${total>0?fmtUSD(total):'Consultar'}</div><div style="font-size:11px;color:var(--text3)">${fmtDate(pr.fecha)}</div></div><button class="icon-btn btn-sm" onclick="event.stopPropagation();verPresupuesto('${pr.id}')">Ver →</button></div>`;}).join('')}</div>`;
+  ${STATE.presupuestos.length?`<div class="presup-list">${STATE.presupuestos.map(pr=>{const total=pr.items.reduce((a,i)=>a+i.monto,0);return`<div class="presup-card" onclick="verPresupuesto('${pr.id}')"><div><div style="font-size:11px;color:var(--text3)">${pr.id}</div><div style="display:flex;gap:6px;margin-top:4px"><span class="tag ${pr.tipo==='quirurgico'?'tag-surg':'tag-rec'}">${pr.tipo==='quirurgico'?'Quirúrgico':'Estética'}</span></div></div><div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${pr.paciente}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${pr.items.map(i=>i.desc.split('—')[0].trim()).join(' · ')}</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--gold)">${total>0?fmtUSD(total):'Consultar'}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(pr.fecha)}</div></div><button class="icon-btn btn-sm" onclick="event.stopPropagation();eliminarPresupuesto('${pr.id}')">✕</button></div>`;}).join('')}</div>`:`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📄</div><div style="font-size:14px;margin-bottom:16px">Sin presupuestos generados</div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Crear primer presupuesto</button></div>`}`;
 }
-
+function eliminarPresupuesto(id){STATE.presupuestos=STATE.presupuestos.filter(p=>p.id!==id);showToast('Presupuesto eliminado');syncToSheet('Presupuestos',STATE.presupuestos);renderPresupuestos();}
 function verPresupuesto(id){
   const pr=STATE.presupuestos.find(x=>x.id===id);if(!pr)return;
   const total=pr.items.reduce((a,i)=>a+i.monto,0);const esCir=pr.tipo==='quirurgico';
   const exp=new Date(pr.fecha+'T12:00:00');exp.setDate(exp.getDate()+pr.vigencia);
   openModal(`<div class="presup-preview">
-    <div class="presup-preview-header"><div><div class="presup-clinic-name">Elite Plastic Center</div><div class="presup-clinic-sub">C.C. Trinidad Tepuy · Consultorio 1-13 · Baruta, Caracas</div></div><div class="presup-meta"><div><strong>${pr.id}</strong></div><div>Fecha: ${fmtDate(pr.fecha)}</div><div>Médico: ${pr.doc}</div></div></div>
-    <div class="presup-patient-info"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Paciente</div><div style="font-size:16px;font-weight:600;color:#2C3740">${pr.paciente}</div><div style="font-size:12px;color:#666;margin-top:2px">${pr.cedula}</div></div>
+    <div class="presup-preview-header"><div><div class="presup-clinic-name">Elite Plastic Center</div><div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px">C.C. Trinidad Tepuy · Consultorio 1-13 · Baruta, Caracas</div></div><div style="text-align:right;font-size:11px;color:#555;line-height:1.8"><div><strong>${pr.id}</strong></div><div>Fecha: ${fmtDateVET(pr.fecha)}</div><div>Médico: ${pr.doc}</div></div></div>
+    <div style="background:#f8f7f5;border-radius:8px;padding:14px 18px;margin-bottom:20px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Paciente</div><div style="font-size:16px;font-weight:600;color:#2C3740">${pr.paciente}</div><div style="font-size:12px;color:#666;margin-top:2px">${pr.cedula}</div></div>
     <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Procedimientos</div>
     ${pr.items.map((item,i)=>`<div class="presup-item-row"><div style="font-size:11px;color:#999;min-width:20px">${i+1}.</div><div style="font-size:13px;color:#1a1a1a;flex:1">${item.desc}</div><div style="font-size:13px;font-weight:600;color:#2C3740;min-width:80px;text-align:right">${item.monto>0?fmtUSD(item.monto):'Consultar'}</div></div>`).join('')}
     <hr style="border:none;border-top:1px solid #ddd;margin:14px 0">
-    ${esCir?`<div style="font-size:12px;color:#555;margin-bottom:8px">Abono (30%): <strong style="color:#2C3740">${total>0?fmtUSD(Math.round(total*.3)):'-'}</strong> &nbsp; Saldo (70%): <strong style="color:#2C3740">${total>0?fmtUSD(Math.round(total*.7)):'-'}</strong></div>`:`<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px;margin-bottom:8px"><span style="font-size:12px;color:#888">Total</span><span style="font-size:20px;font-weight:600;color:#2C3740;font-family:'Cormorant Garamond',serif">${total>0?fmtUSD(total):'Consultar'}</span></div>`}
-    <div class="presup-footer-note">${pr.notas?`<div style="margin-bottom:8px">${pr.notas}</div>`:''}Precios en USD. Vigencia: <strong>${pr.vigencia} días</strong>. Vence: ${exp.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'})}.</div>
+    ${esCir?`<div style="font-size:12px;color:#555;margin-bottom:8px">Abono (30%): <strong>${total>0?fmtUSD(Math.round(total*.3)):'-'}</strong> &nbsp; Saldo (70%): <strong>${total>0?fmtUSD(Math.round(total*.7)):'-'}</strong></div>`:`<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px"><span style="font-size:12px;color:#888">Total</span><span style="font-size:20px;font-weight:600;color:#2C3740;font-family:'Cormorant Garamond',serif">${total>0?fmtUSD(total):'Consultar'}</span></div>`}
+    <div style="font-size:11px;color:#888;line-height:1.7;margin-top:16px;padding-top:14px;border-top:1px solid #eee">Precios en USD. Vigencia ${pr.vigencia} días. Vence: ${exp.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric',timeZone:'America/Caracas'})}.</div>
   </div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button><button class="btn btn-gold" onclick="showToast('PDF próximamente')">🖨 Imprimir</button></div>`);
 }
-
 let presupItemCount=1;
 function openNewPresupuesto(patId=''){
+  if(!STATE.patients.length){showToast('Registra un paciente primero');return;}
   presupItemCount=1;
   openModal(`<div class="modal-title">Nuevo Presupuesto</div>
   <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fp-pat',patId)}</div><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fp-tipo"><option value="estetica">Medicina Estética (90 días)</option><option value="quirurgico">Quirúrgico (30 días)</option></select></div></div>
@@ -800,14 +1150,12 @@ function openNewPresupuesto(patId=''){
   <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="fp-notas" style="min-height:60px" placeholder="Condiciones, aclaraciones…"></textarea></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="savePresupuesto()">Generar</button></div>`);
 }
-
 function addPresupItem(){
   const i=presupItemCount++;const wrap=$('presup-items');if(!wrap)return;
   const div=document.createElement('div');div.className='form-row presup-item-entry';div.style.marginBottom='8px';
-  div.innerHTML=`<div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-'+i)}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto USD</label><input class="form-input" id="pitem-monto-${i}" type="number" min="0" placeholder="0"></div><button class="icon-btn btn-sm" style="align-self:flex-end;margin-bottom:0;padding:10px 12px" onclick="this.parentElement.remove()">✕</button>`;
+  div.innerHTML=`<div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-'+i)}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto</label><input class="form-input" id="pitem-monto-${i}" type="number" min="0" placeholder="0"></div><button class="icon-btn btn-sm" style="align-self:flex-end;padding:10px 12px" onclick="this.parentElement.remove()">✕</button>`;
   wrap.appendChild(div);
 }
-
 function savePresupuesto(){
   const patId=$('fp-pat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
   const tipo=$('fp-tipo').value;const vigencia=tipo==='quirurgico'?30:90;
@@ -815,13 +1163,14 @@ function savePresupuesto(){
   document.querySelectorAll('.presup-item-entry').forEach(row=>{const descEl=row.querySelector('select');const montoEl=row.querySelector('input[type="number"]');if(descEl&&montoEl&&descEl.value)items.push({desc:descEl.value,monto:parseFloat(montoEl.value)||0});});
   if(!items.length){showToast('Agrega al menos un procedimiento');return;}
   const id='PRES-'+String(STATE.presupuestos.length+1).padStart(3,'0');
-  STATE.presupuestos.unshift({id,fecha:new Date().toISOString().split('T')[0],paciente:p.name,cedula:p.cedula,tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value});
-  presupItemCount=1;closeModal();showToast(`Presupuesto ${id} generado`);renderPresupuestos();
+  STATE.presupuestos.unshift({id,fecha:todayVET(),paciente:p.name,cedula:p.cedula,tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value});
+  presupItemCount=1;closeModal();showToast(`Presupuesto ${id} generado`);
+  syncToSheet('Presupuestos', STATE.presupuestos);
+  renderPresupuestos();
 }
+function openNewPresupuestoForPat(id){showView('presupuestos');setTimeout(()=>openNewPresupuesto(id),50);}
 
-function openNewPresupuestoForPat(id){STATE.view='presupuestos';showView('presupuestos');setTimeout(()=>openNewPresupuesto(id),50);}
-
-// ── PACIENTE / CITA ───────────────────────────────────────────────────────────
+// ── MODALES PACIENTE / CITA ───────────────────────────────────────────────────
 function openNewPatient(){
   openModal(`<div class="modal-title">Nuevo paciente</div>
   <div class="form-row"><div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-nombre" placeholder="Nombre completo"></div><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="f-cedula" placeholder="V-00.000.000"></div></div>
@@ -829,181 +1178,124 @@ function openNewPatient(){
   <div class="form-row"><div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="f-dob"></div><div class="form-group"><label class="form-label">Etiqueta</label><select class="form-input" id="f-tag"><option>Nueva</option><option>Recurrente</option><option>VIP</option><option>Cirugía</option></select></div></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveNewPatient()">Guardar</button></div>`);
 }
-
 function saveNewPatient(){
   const n=$('f-nombre').value.trim(),c=$('f-cedula').value.trim();
   if(!n||!c){showToast('Nombre y cédula obligatorios');return;}
-  const np={id:'P'+(100+STATE.patients.length),name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:new Date().toISOString().split('T')[0],procedures:0};
-  STATE.patients.unshift(np);
-  fsSync('Pacientes', np.id, np);
+  const id='P'+Date.now();
+  STATE.patients.unshift({id,name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:'',procedures:0});
   closeModal();showToast('Paciente registrado');
+  syncToSheet('Pacientes', STATE.patients);
   if(STATE.view==='pacientes')renderPacientes();else renderDashboard();
 }
-
 function openNewCita(){
-  openModal(`<div class="modal-title">Nueva cita</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('f-cpat')}</div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="f-cdate" value="${new Date().toISOString().split('T')[0]}"></div></div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Hora</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</label>${buildConsultorioSelect('f-ccons')}</div></div>
+  if(!STATE.patients.length){showToast('Registra un paciente primero');return;}
+  openModal(`<div class="modal-title">Nueva cita <span class="tz-badge" style="font-size:10px">🕐 Hora Venezuela</span></div>
+  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">⚠️ La hora se guarda en <strong style="color:var(--gold)">hora Venezuela (VET, UTC-4)</strong> sin importar desde dónde se agende.</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('f-cpat')}</div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="f-cdate" value="${todayVET()}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Hora Venezuela (VET)</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</label>${buildConsultorioSelect('f-ccons')}</div></div>
   <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('f-cproc')}</div>
   <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
+  <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="f-cnotes" placeholder="Indicaciones adicionales…"></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCita()">Confirmar cita</button></div>`);
 }
-
 function saveCita(){
-  const patId=$('f-cpat').value;const p=STATE.patients.find(x=>x.id===patId)||{name:patId};
-  const time=$('f-ctime').value,proc=$('f-cproc').value;
+  const patId=$('f-cpat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
+  const time=$('f-ctime').value,proc=$('f-cproc').value,fecha=$('f-cdate').value;
   const co=$('f-ccons');const consLabel=co.options[co.selectedIndex].text.split('·')[0].trim();
-  const na={id:'A'+(100+STATE.appointments.length),time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel,fecha:$('f-cdate').value};
-  STATE.appointments.push(na);
-  STATE.appointments.sort((a,b)=>a.time.localeCompare(b.time));
+  STATE.appointments.push({id:'A'+Date.now(),fecha,time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel,timezone:'VET'});
+  STATE.appointments.sort((a,b)=>a.fecha===b.fecha?a.time.localeCompare(b.time):a.fecha.localeCompare(b.fecha));
   $('badge-agenda').textContent=STATE.appointments.length;
-  fsSync('Citas', na.id, na);
-  closeModal();showToast(`Cita registrada: ${p.name} · ${time}`);
+  closeModal();showToast(`Cita registrada: ${p.name} · ${fecha} ${time} VET`);
+  syncToSheet('Citas', STATE.appointments);
   if(STATE.view==='agenda')renderAgenda();else renderDashboard();
 }
 
 // ── REPORTES ──────────────────────────────────────────────────────────────────
 function renderReportes(){
   $('content-area').innerHTML=`
-  <div class="section-header"><div class="section-title">Reportes & Analítica</div>
-    <div style="display:flex;gap:8px"><input type="month" class="form-input" style="width:160px;margin-bottom:0" value="2026-06"><button class="btn btn-gold btn-sm" onclick="showToast('Exportar — próximamente')">↓ Exportar</button></div>
-  </div>
+  <div class="section-header"><div class="section-title">Reportes & Analítica</div></div>
   <div class="rep-tabs">
     ${['financiero','pacientes','procedimientos','agenda'].map(t=>`<button class="rep-tab${STATE.activeRepTab===t?' active':''}" onclick="switchRepTab('${t}')">${{financiero:'💰 Financiero',pacientes:'👥 Pacientes',procedimientos:'💉 Procedimientos',agenda:'📅 Agenda'}[t]}</button>`).join('')}
   </div>
   <div id="rep-content">${buildRepTab(STATE.activeRepTab)}</div>`;
   setTimeout(()=>drawRepCharts(STATE.activeRepTab),120);
 }
-
 function switchRepTab(tab){
-  STATE.activeRepTab=tab;
-  Object.keys(chartsInstances).forEach(destroyChart);
+  STATE.activeRepTab=tab;Object.keys(chartsInstances).forEach(destroyChart);
   const el=$('rep-content');if(el)el.innerHTML=buildRepTab(tab);
-  document.querySelectorAll('.rep-tab').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(tab.split('i')[0])||b.onclick?.toString().includes(`'${tab}'`)));
+  document.querySelectorAll('.rep-tab').forEach(b=>b.classList.toggle('active',b.onclick?.toString().includes(`'${tab}'`)));
   setTimeout(()=>drawRepCharts(tab),120);
 }
-
 function buildRepTab(tab){
+  const movs=STATE.movimientos;
+  const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
+  const egr=movs.filter(m=>m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
   if(tab==='financiero') return`
     <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Ingresos junio</div><div class="rep-kpi-value">$1,060</div><div class="rep-kpi-sub">vs $920 mayo</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Ingresos mayo</div><div class="rep-kpi-value">$6,785</div><div class="rep-kpi-sub">Balance: $5,920</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Ticket promedio</div><div class="rep-kpi-value">$318</div><div class="rep-kpi-sub">↑ +12% vs abril</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Margen bruto</div><div class="rep-kpi-value">82%</div><div class="rep-kpi-sub">Egresos: 18%</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Total ingresos</div><div class="rep-kpi-value">${fmtUSD(ing)}</div><div class="rep-kpi-sub">Registrados en sistema</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Total egresos</div><div class="rep-kpi-value">${fmtUSD(egr)}</div><div class="rep-kpi-sub">Registrados en sistema</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Balance neto</div><div class="rep-kpi-value">${fmtUSD(ing-egr)}</div><div class="rep-kpi-sub">Ingresos − Egresos</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Movimientos</div><div class="rep-kpi-value">${movs.length}</div><div class="rep-kpi-sub">Total registrados</div></div>
     </div>
     <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Ingresos diarios — últimas 2 semanas</div><div class="chart-subtitle">USD</div><div class="chart-wrap"><canvas id="chart-ingresos-diarios"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Ingresos por método de pago</div><div class="chart-subtitle">Mayo–junio 2026</div><div class="chart-wrap"><canvas id="chart-metodos"></canvas></div></div>
-    </div>
-    <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Ingresos vs Egresos — mensual</div><div class="chart-subtitle">USD</div><div class="chart-wrap"><canvas id="chart-ing-egr"></canvas></div></div>
-      <div class="card"><div class="card-title">Resumen de movimientos</div>
-        <table class="rep-tabla"><thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th style="text-align:right">Monto</th></tr></thead>
-        <tbody>${STATE.movimientos.slice(0,8).map(m=>`<tr><td>${fmtDate(m.fecha)}</td><td>${m.desc.length>30?m.desc.slice(0,30)+'…':m.desc}</td><td><span class="status-badge ${m.tipo==='ingreso'?'badge-green':'badge-red'}">${m.tipo==='ingreso'?'Ingreso':'Egreso'}</span></td><td style="text-align:right;color:${m.tipo==='ingreso'?'var(--green)':'var(--red)'};font-weight:600">${m.tipo==='ingreso'?'+':'-'}${fmtUSD(m.monto)}</td></tr>`).join('')}</tbody></table>
-      </div>
+      <div class="chart-card"><div class="chart-title">Ingresos vs Egresos</div><div class="chart-subtitle">Total acumulado</div><div class="chart-wrap"><canvas id="chart-ing-egr"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Por método de pago</div><div class="chart-subtitle">Distribución de ingresos</div><div class="chart-wrap"><canvas id="chart-metodos"></canvas></div></div>
     </div>`;
-
   if(tab==='pacientes') return`
     <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Total pacientes</div><div class="rep-kpi-value">${STATE.patients.length}</div><div class="rep-kpi-sub">Base activa</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Pacientes VIP</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('VIP')).length}</div><div class="rep-kpi-sub">${Math.round(STATE.patients.filter(p=>p.tags.includes('VIP')).length/STATE.patients.length*100)}% del total</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Pacientes nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length}</div><div class="rep-kpi-sub">Este período</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Tasa retorno</div><div class="rep-kpi-value">67%</div><div class="rep-kpi-sub">Recurrentes</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Total pacientes</div><div class="rep-kpi-value">${STATE.patients.length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">VIP</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('VIP')).length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Cirugía</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('Cirugía')).length}</div></div>
     </div>
     <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Distribución por tipo</div><div class="chart-subtitle">Etiquetas de pacientes</div><div class="chart-wrap"><canvas id="chart-pacientes-tipo"></canvas></div></div>
-      <div class="card"><div class="card-title">Pacientes por número de procedimientos</div>
-        ${STATE.patients.sort((a,b)=>b.procedures-a.procedures).map((p,i)=>`<div class="rank-item"><div class="rank-num">#${i+1}</div><div class="rank-name">${p.name}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(p.procedures/12*100)}%"></div></div><div class="rank-val">${p.procedures} procs.</div></div>`).join('')}
-      </div>
+      <div class="chart-card"><div class="chart-title">Distribución por tipo</div><div class="chart-subtitle">Etiquetas de pacientes</div><div class="chart-wrap"><canvas id="chart-pac-tipo"></canvas></div></div>
+      <div class="card"><div class="card-title">Pacientes por procedimientos</div>${STATE.patients.sort((a,b)=>b.procedures-a.procedures).map((p,i)=>`<div class="rank-item"><div class="rank-num">#${i+1}</div><div style="font-size:12px;color:var(--text);flex:1">${p.name}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${STATE.patients[0].procedures>0?Math.round(p.procedures/STATE.patients[0].procedures*100):0}%"></div></div><div style="font-size:12px;font-weight:600;color:var(--text2)">${p.procedures}</div></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}</div>
     </div>`;
-
   if(tab==='procedimientos') return`
     <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Total sesiones</div><div class="rep-kpi-value">87</div><div class="rep-kpi-sub">Último mes</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Categoría líder</div><div class="rep-kpi-value" style="font-size:16px">Med. Estética</div><div class="rep-kpi-sub">62% del volumen</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Proc. más rentable</div><div class="rep-kpi-value" style="font-size:16px">Bioestim.</div><div class="rep-kpi-sub">$550 promedio</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Cirugías realizadas</div><div class="rep-kpi-value">4</div><div class="rep-kpi-sub">Último mes</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Total consultas</div><div class="rep-kpi-value">${Object.values(STATE.hcData).reduce((a,hc)=>a+(hc.consultas||[]).length,0)}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Citas agendadas</div><div class="rep-kpi-value">${STATE.appointments.length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Consentimientos</div><div class="rep-kpi-value">${Object.values(STATE.hcData).reduce((a,hc)=>a+(hc.consentimientos||[]).length,0)}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Firmados</div><div class="rep-kpi-value">${Object.values(STATE.hcData).reduce((a,hc)=>a+(hc.consentimientos||[]).filter(c=>c.firmado).length,0)}</div></div>
     </div>
-    <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Procedimientos por categoría</div><div class="chart-subtitle">Distribución porcentual</div><div class="chart-wrap"><canvas id="chart-procs-cat"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Top 8 procedimientos</div><div class="chart-subtitle">Frecuencia último mes</div><div class="chart-wrap"><canvas id="chart-top-procs"></canvas></div></div>
-    </div>`;
-
+    <div class="card"><div class="card-title">Detalle de consultas registradas</div>${Object.values(STATE.hcData).flatMap(hc=>hc.consultas||[]).map(c=>`<div class="rank-item"><div style="font-size:11px;color:var(--gold);min-width:80px">${c.fecha}</div><div style="font-size:12px;color:var(--text);flex:1">${c.proc}</div><div style="font-size:11px;color:var(--text3)">${c.doc}</div></div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:16px 0">Sin consultas registradas.</div>'}</div>`;
   if(tab==='agenda') return`
     <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Citas este mes</div><div class="rep-kpi-value">42</div><div class="rep-kpi-sub">↑ +8 vs mayo</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Tasa confirmación</div><div class="rep-kpi-value">78%</div><div class="rep-kpi-sub">22% pendientes</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Cancelaciones</div><div class="rep-kpi-value">5%</div><div class="rep-kpi-sub">↓ -2% vs mayo</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Ocupación promedio</div><div class="rep-kpi-value">71%</div><div class="rep-kpi-sub">5.7 citas/día</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Total citas</div><div class="rep-kpi-value">${STATE.appointments.length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Confirmadas</div><div class="rep-kpi-value">${STATE.appointments.filter(a=>a.status==='confirmado').length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Pendientes</div><div class="rep-kpi-value">${STATE.appointments.filter(a=>a.status==='pendiente').length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Completadas</div><div class="rep-kpi-value">${STATE.appointments.filter(a=>a.status==='completado').length}</div></div>
     </div>
-    <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Citas por día de la semana</div><div class="chart-subtitle">Distribución semanal</div><div class="chart-wrap"><canvas id="chart-citas-dia"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Citas por estado</div><div class="chart-subtitle">Mes actual</div><div class="chart-wrap"><canvas id="chart-estados"></canvas></div></div>
-    </div>`;
+    <div class="card"><div class="card-title">Todas las citas</div>${STATE.appointments.map(a=>`<div class="rank-item"><div style="font-size:11px;color:var(--gold);min-width:80px">${a.fecha}</div><div style="font-size:11px;color:var(--text3);min-width:50px">${a.time} VET</div><div style="font-size:12px;color:var(--text);flex:1">${a.patient}</div><div style="font-size:11px;color:var(--text3)">${a.proc.split('—')[0].trim().slice(0,20)}</div><span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:16px 0">Sin citas registradas.</div>'}</div>`;
   return'';
 }
-
 function drawRepCharts(tab){
-  const cd=chartDefaults;
-  const opts=(extra={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label||''}: ${ctx.raw}`}}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}}},...extra});
-
+  const cd={color:'#a0b0bc',grid:'rgba(176,184,193,0.08)',gold:'#C9A452',green:'#1D9E75',blue:'#378ADD',red:'#E24B4A'};
+  const movs=STATE.movimientos;
   if(tab==='financiero'){
-    const c1=$('chart-ingresos-diarios');if(c1){chartsInstances['c1']=new Chart(c1,{type:'line',data:{labels:['19/5','20/5','21/5','22/5','23/5','24/5','25/5','26/5','27/5','28/5','29/5','30/5','31/5','1/6'],datasets:[{data:[420,0,680,330,0,180,280,350,350,760,550,480,375,1060],borderColor:cd.gold,backgroundColor:'rgba(201,164,82,0.08)',tension:0.4,fill:true,pointBackgroundColor:cd.gold,pointRadius:3}]},options:{...opts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color,font:{size:9}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:9},callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
-    const c2=$('chart-metodos');if(c2){chartsInstances['c2']=new Chart(c2,{type:'doughnut',data:{labels:['Zelle','Efectivo USD','Transferencia','Pago Móvil','Tarjeta'],datasets:[{data:[2630,530,630,50,180],backgroundColor:[cd.gold,'rgba(201,164,82,0.6)',cd.blue,cd.green,cd.purple],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
-    const c3=$('chart-ing-egr');if(c3){chartsInstances['c3']=new Chart(c3,{type:'bar',data:{labels:['Feb','Mar','Abr','May','Jun'],datasets:[{label:'Ingresos',data:[4200,5100,5800,6785,1060],backgroundColor:'rgba(29,158,117,0.6)',borderRadius:4},{label:'Egresos',data:[980,1200,1050,865,180],backgroundColor:'rgba(226,75,74,0.5)',borderRadius:4}]},options:{...opts(),plugins:{legend:{display:true,labels:{color:cd.color,font:{size:11},boxWidth:12}}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10},callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
+    const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
+    const egr=movs.filter(m=>m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
+    const c1=$('chart-ing-egr');if(c1){chartsInstances['c1']=new Chart(c1,{type:'bar',data:{labels:['Ingresos','Egresos','Balance'],datasets:[{data:[ing,egr,ing-egr],backgroundColor:[`rgba(29,158,117,0.6)`,`rgba(226,75,74,0.5)`,`rgba(201,164,82,0.6)`],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color},grid:{color:cd.grid}},y:{ticks:{color:cd.color,callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
+    const byMetodo={};movs.filter(m=>m.tipo==='ingreso').forEach(m=>{byMetodo[m.metodo]=(byMetodo[m.metodo]||0)+m.monto;});
+    const c2=$('chart-metodos');if(c2&&Object.keys(byMetodo).length){chartsInstances['c2']=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(byMetodo),datasets:[{data:Object.values(byMetodo),backgroundColor:[cd.gold,'rgba(201,164,82,0.6)',cd.blue,cd.green,'#7F77DD'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
   }
-
   if(tab==='pacientes'){
-    const c=$('chart-pacientes-tipo');if(c){chartsInstances['cp']=new Chart(c,{type:'pie',data:{labels:['VIP','Recurrente','Nueva','Cirugía'],datasets:[{data:[2,3,2,2],backgroundColor:[cd.gold,cd.blue,cd.green,cd.purple],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
+    const tipos={VIP:0,Recurrente:0,Nueva:0,Cirugía:0};
+    STATE.patients.forEach(p=>p.tags.forEach(t=>{if(tipos[t]!==undefined)tipos[t]++;}));
+    const c=$('chart-pac-tipo');if(c){chartsInstances['cp']=new Chart(c,{type:'pie',data:{labels:Object.keys(tipos),datasets:[{data:Object.values(tipos),backgroundColor:[cd.gold,cd.blue,cd.green,'#7F77DD'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
   }
-
-  if(tab==='procedimientos'){
-    const c1=$('chart-procs-cat');if(c1){chartsInstances['pc1']=new Chart(c1,{type:'doughnut',data:{labels:['Med. Estética','Sueroterapia','Cirugía','Consultas'],datasets:[{data:[54,18,4,11],backgroundColor:[cd.gold,cd.blue,cd.purple,cd.green],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
-    const c2=$('chart-top-procs');if(c2){chartsInstances['pc2']=new Chart(c2,{type:'bar',data:{labels:['Botox','Téc. 1:5','Labios','NAD+','Rinomodelaciòn','Bioestim.','Mesoterapia','PRP'],datasets:[{data:[18,14,11,8,6,5,5,4],backgroundColor:'rgba(201,164,82,0.6)',borderColor:cd.gold,borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',...opts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}}}}});}
-  }
-
-  if(tab==='agenda'){
-    const c1=$('chart-citas-dia');if(c1){chartsInstances['ag1']=new Chart(c1,{type:'bar',data:{labels:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],datasets:[{data:[0,8,9,7,8,9,1],backgroundColor:['rgba(201,164,82,0.3)','rgba(201,164,82,0.7)','rgba(201,164,82,0.7)','rgba(201,164,82,0.6)','rgba(201,164,82,0.7)','rgba(201,164,82,0.8)','rgba(201,164,82,0.2)'],borderRadius:4}]},options:{...opts(),plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}},y:{ticks:{color:cd.color,font:{size:10}},grid:{color:cd.grid}}}}});}
-    const c2=$('chart-estados');if(c2){chartsInstances['ag2']=new Chart(c2,{type:'doughnut',data:{labels:['Completado','Confirmado','Pendiente','Cancelado'],datasets:[{data:[28,8,4,2],backgroundColor:[cd.green,cd.blue,cd.gold,cd.red],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
-  }
-}
-
-// ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
-const FB_CONFIG = {
-  apiKey: "AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",
-  authDomain: "epc-clinic.firebaseapp.com",
-  projectId: "epc-clinic"
-};
-let db = null;
-function initFirebase(){
-  try {
-    if(!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-    db = firebase.firestore();
-    setSyncBadge('conectado');
-  } catch(e){ setSyncBadge('error'); }
-}
-function setSyncBadge(estado){
-  const el = $('sync-badge');
-  if(!el) return;
-  if(estado==='conectado')  { el.textContent='✓ Sincronizado'; el.style.background='var(--green)'; }
-  else if(estado==='sync')  { el.textContent='↑ Guardando…';  el.style.background='var(--blue)';  }
-  else if(estado==='error') { el.textContent='✗ Sin conexión'; el.style.background='var(--red)';  }
-}
-async function fsSync(coleccion, id, datos){
-  if(!db) return;
-  setSyncBadge('sync');
-  try {
-    await db.collection(coleccion).doc(id).set(datos, {merge:true});
-    setSyncBadge('conectado');
-  } catch(e){ setSyncBadge('error'); console.error('Firebase sync error:',e); }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-$('fecha-hoy').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-// Notif badge
-$('notif-count').textContent=STATE.notificaciones.filter(n=>n.tipo==='alerta').length;
-initFirebase();
-renderDashboard();
+function updateClock(){
+  const now=nowVET();
+  $('fecha-hoy').textContent=now.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})+' · '+now.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})+' VET';
+}
+updateClock();
+setInterval(updateClock, 60000);
+// Cargar datos desde Google Sheets al iniciar
+loadAllData();
 </script>
 </body>
 </html>
