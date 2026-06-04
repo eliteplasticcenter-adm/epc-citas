@@ -6,6 +6,8 @@
 <title>EPC — Sistema de Gestión</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -244,6 +246,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
     <div class="page-title" id="page-title">Dashboard</div>
     <div class="topbar-right">
       <div style="font-size:12px;color:var(--text3)" id="fecha-hoy"></div>
+      <span id="sync-badge" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;background:var(--text3);color:#fff;letter-spacing:.5px">⏳ Conectando…</span>
       <button class="icon-btn btn-sm" onclick="toggleNotif()" title="Alertas" id="notif-btn">🔔 <span id="notif-count" style="color:var(--gold)">3</span></button>
       <button class="btn btn-gold" id="btn-top" onclick="openNewModal()">+ Nuevo</button>
     </div>
@@ -830,7 +833,9 @@ function openNewPatient(){
 function saveNewPatient(){
   const n=$('f-nombre').value.trim(),c=$('f-cedula').value.trim();
   if(!n||!c){showToast('Nombre y cédula obligatorios');return;}
-  STATE.patients.unshift({id:'P'+(100+STATE.patients.length),name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:new Date().toISOString().split('T')[0],procedures:0});
+  const np={id:'P'+(100+STATE.patients.length),name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:new Date().toISOString().split('T')[0],procedures:0};
+  STATE.patients.unshift(np);
+  fsSync('Pacientes', np.id, np);
   closeModal();showToast('Paciente registrado');
   if(STATE.view==='pacientes')renderPacientes();else renderDashboard();
 }
@@ -848,9 +853,11 @@ function saveCita(){
   const patId=$('f-cpat').value;const p=STATE.patients.find(x=>x.id===patId)||{name:patId};
   const time=$('f-ctime').value,proc=$('f-cproc').value;
   const co=$('f-ccons');const consLabel=co.options[co.selectedIndex].text.split('·')[0].trim();
-  STATE.appointments.push({id:'A'+(100+STATE.appointments.length),time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel});
+  const na={id:'A'+(100+STATE.appointments.length),time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel,fecha:$('f-cdate').value};
+  STATE.appointments.push(na);
   STATE.appointments.sort((a,b)=>a.time.localeCompare(b.time));
   $('badge-agenda').textContent=STATE.appointments.length;
+  fsSync('Citas', na.id, na);
   closeModal();showToast(`Cita registrada: ${p.name} · ${time}`);
   if(STATE.view==='agenda')renderAgenda();else renderDashboard();
 }
@@ -961,10 +968,41 @@ function drawRepCharts(tab){
   }
 }
 
+// ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
+const FB_CONFIG = {
+  apiKey: "AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",
+  authDomain: "epc-clinic.firebaseapp.com",
+  projectId: "epc-clinic"
+};
+let db = null;
+function initFirebase(){
+  try {
+    if(!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    db = firebase.firestore();
+    setSyncBadge('conectado');
+  } catch(e){ setSyncBadge('error'); }
+}
+function setSyncBadge(estado){
+  const el = $('sync-badge');
+  if(!el) return;
+  if(estado==='conectado')  { el.textContent='✓ Sincronizado'; el.style.background='var(--green)'; }
+  else if(estado==='sync')  { el.textContent='↑ Guardando…';  el.style.background='var(--blue)';  }
+  else if(estado==='error') { el.textContent='✗ Sin conexión'; el.style.background='var(--red)';  }
+}
+async function fsSync(coleccion, id, datos){
+  if(!db) return;
+  setSyncBadge('sync');
+  try {
+    await db.collection(coleccion).doc(id).set(datos, {merge:true});
+    setSyncBadge('conectado');
+  } catch(e){ setSyncBadge('error'); console.error('Firebase sync error:',e); }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 $('fecha-hoy').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 // Notif badge
 $('notif-count').textContent=STATE.notificaciones.filter(n=>n.tipo==='alerta').length;
+initFirebase();
 renderDashboard();
 </script>
 </body>
