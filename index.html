@@ -6,6 +6,7 @@
 <title>EPC — Sistema de Gestión</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Firebase SDK -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -234,69 +235,36 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
 
 <script>
-// ── API GOOGLE SHEETS — JSONP (evita CORS) ────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbxAZjIla8HgaO-qv1ub_7DhwmMn427JV5CwMSK-KQS6VwEvMxLzGOkRcj-aHoFzdWBP/exec';
-
-// JSONP para GET — evita CORS completamente
-function jsonpGet(action, sheet) {
-  return new Promise(function(resolve) {
-    const cbName = 'cb_' + Date.now();
-    const script = document.createElement('script');
-    let done = false;
-    const timeout = setTimeout(function() {
-      if (!done) { done = true; delete window[cbName]; script.remove(); resolve({ ok: false, error: 'timeout' }); }
-    }, 10000);
-    window[cbName] = function(data) {
-      if (!done) { done = true; clearTimeout(timeout); delete window[cbName]; script.remove(); resolve(data); }
-    };
-    let url = `${API_URL}?action=${action}&callback=${cbName}`;
-    if (sheet) url += `&sheet=${sheet}`;
-    script.src = url;
-    document.head.appendChild(script);
-  });
+// ── SYNC CON FIREBASE FIRESTORE ───────────────────────────────────────────────
+function saveLocal(key, data) {
+  try { localStorage.setItem('epc_' + key, JSON.stringify(data)); } catch(e) {}
+}
+function loadLocal(key) {
+  try { const d = localStorage.getItem('epc_' + key); return d ? JSON.parse(d) : null; } catch(e) { return null; }
 }
 
-// POST via fetch no-cors (evita preflight CORS con GAS)
-async function apiPost(action, sheet, data) {
-  try {
-    const payload = JSON.stringify({ action, sheet, data });
-    await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: payload,
-    });
-    return { ok: true };
-  } catch(e) {
-    return { ok: false, error: e.toString() };
+async function syncToSheet(colName, dataArray) {
+  saveLocal(colName, dataArray);
+  showSyncBadge('↻ Guardando…');
+  if (window.firebaseReady) {
+    const ok = await window.fsSave(colName, dataArray);
+    showSyncBadge(ok ? '✓ Sincronizado' : '⚠ Solo local');
+  } else {
+    showSyncBadge('● Local');
   }
 }
 
-async function syncToSheet(sheet, dataArray) {
-  showSyncBadge('↻ Guardando…');
-  const r = await apiPost('saveAll', sheet, dataArray);
-  if (r && r.ok) showSyncBadge('✓ Sincronizado');
-  else showSyncBadge('⚠ Error sync');
-}
-
-function getHCRows() {
-  const rows = [];
-  Object.entries(STATE.hcData).forEach(([patientId, hc]) => {
-    rows.push({ patientId, tipo: 'antecedentes', nota: JSON.stringify(hc.antecedentes || {}) });
-    (hc.consultas || []).forEach(c => {
-      rows.push({ patientId, tipo: 'consulta', fecha: c.fecha, proc: c.proc, doc: c.doc, nota: c.nota, productos: c.productos || [] });
-    });
-    (hc.consentimientos || []).forEach(c => {
-      rows.push({ patientId, tipo: 'consentimiento', nombre: c.nombre, fecha: c.fecha, firmado: c.firmado });
-    });
-  });
-  return rows;
-}
-
-async function loadFromSheet(sheet) {
-  const r = await jsonpGet('getAll', sheet);
-  if (r && r.ok) return r.data || [];
-  return [];
+async function loadFromSheet(colName) {
+  if (window.firebaseReady) {
+    try {
+      const data = await window.fsLoad(colName);
+      if (data && data.length > 0) {
+        saveLocal(colName, data);
+        return data;
+      }
+    } catch(e) {}
+  }
+  return loadLocal(colName) || [];
 }
 
 function showSyncBadge(msg) {
@@ -304,41 +272,54 @@ function showSyncBadge(msg) {
   if (!el) return;
   el.textContent = msg;
   el.style.color = msg.includes('✓') ? 'var(--green)' : msg.includes('↻') ? 'var(--gold)' : 'var(--red)';
-  if (msg.includes('✓')) setTimeout(() => { el.textContent = '● En línea'; el.style.color = 'var(--green)'; }, 3000);
+  if (msg.includes('✓')) setTimeout(() => { el.textContent = '● En línea'; el.style.color = 'var(--green)'; }, 2500);
 }
 
 async function loadAllData() {
   showSyncBadge('↻ Cargando…');
-  try {
-    const [pacientes, citas, movimientos, presupuestos, formaciones, hcRows] = await Promise.all([
-      loadFromSheet('Pacientes'),
-      loadFromSheet('Citas'),
-      loadFromSheet('Movimientos'),
-      loadFromSheet('Presupuestos'),
-      loadFromSheet('Formaciones'),
-      loadFromSheet('HistoriaClinica'),
-    ]);
-    if (pacientes.length)    STATE.patients     = pacientes;
-    if (citas.length)        STATE.appointments = citas;
-    if (movimientos.length)  STATE.movimientos  = movimientos;
-    if (presupuestos.length) STATE.presupuestos = presupuestos;
-    if (formaciones.length)  STATE.formaciones  = formaciones;
-    hcRows.forEach(row => {
-      if (!row.patientId) return;
-      if (!STATE.hcData[row.patientId]) STATE.hcData[row.patientId] = { antecedentes:{}, consultas:[], consentimientos:[] };
-      if (row.tipo === 'antecedentes') {
-        try { STATE.hcData[row.patientId].antecedentes = typeof row.nota === 'object' ? row.nota : JSON.parse(row.nota||'{}'); } catch(e){}
-      }
-      if (row.tipo === 'consulta') {
-        STATE.hcData[row.patientId].consultas.push({ fecha:row.fecha, proc:row.proc, doc:row.doc, nota:row.nota, productos: typeof row.productos === 'object' ? row.productos : [] });
-      }
-    });
-    $('badge-agenda').textContent = STATE.appointments.length;
-    showSyncBadge('✓ Sincronizado');
-  } catch(e) {
-    showSyncBadge('⚠ Sin conexión');
-  }
+  // Cargar local primero — respuesta inmediata
+  const lp = loadLocal('Pacientes'); if(lp && lp.length) STATE.patients = lp;
+  const lc = loadLocal('Citas'); if(lc && lc.length) STATE.appointments = lc;
+  const lm = loadLocal('Movimientos'); if(lm && lm.length) STATE.movimientos = lm;
+  const lpr = loadLocal('Presupuestos'); if(lpr && lpr.length) STATE.presupuestos = lpr;
+  const lf = loadLocal('Formaciones'); if(lf && lf.length) STATE.formaciones = lf;
+  $('badge-agenda').textContent = STATE.appointments.length;
   renderDashboard();
+
+  // Cargar desde Firebase en background
+  const doLoad = async () => {
+    try {
+      const [pacientes, citas, movimientos, presupuestos, formaciones] = await Promise.all([
+        loadFromSheet('Pacientes'),
+        loadFromSheet('Citas'),
+        loadFromSheet('Movimientos'),
+        loadFromSheet('Presupuestos'),
+        loadFromSheet('Formaciones'),
+      ]);
+      let updated = false;
+      if (pacientes.length) { STATE.patients = pacientes; updated = true; }
+      if (citas.length) { STATE.appointments = citas; updated = true; }
+      if (movimientos.length) { STATE.movimientos = movimientos; updated = true; }
+      if (presupuestos.length) { STATE.presupuestos = presupuestos; updated = true; }
+      if (formaciones.length) { STATE.formaciones = formaciones; updated = true; }
+      if (updated) {
+        $('badge-agenda').textContent = STATE.appointments.length;
+        if (STATE.view === 'dashboard') renderDashboard();
+        showSyncBadge('✓ Sincronizado');
+      } else {
+        showSyncBadge('● En línea');
+      }
+    } catch(e) {
+      showSyncBadge('● Local');
+    }
+  };
+
+  if (window.firebaseReady) {
+    doLoad();
+  } else {
+    window.addEventListener('firebase-ready', doLoad, { once: true });
+    setTimeout(() => showSyncBadge('● Local'), 8000);
+  }
 }
 
 // ── ZONA HORARIA VENEZUELA (UTC-4) ────────────────────────────────────────────
@@ -554,25 +535,19 @@ function guardarParticipante(formId){
   const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
   if(!f.participantes) f.participantes=[];
   f.participantes.push({id:'PAR'+Date.now(),nombre,pais:$('fpar-pais').value,whatsapp:$('fpar-ws').value,email:$('fpar-email').value,monto:parseFloat($('fpar-monto').value)||0,pagado:$('fpar-pagado').value==='1',notas:$('fpar-notas').value,fechaInscripcion:todayVET()});
-  closeModal();showToast(`${nombre} agregado`);
-  syncToSheet('Formaciones', STATE.formaciones);
-  renderFormaciones();
+  closeModal();showToast(`${nombre} agregado`);renderFormaciones();
 }
 
 function marcarPagado(formId,parId){
   const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
   const p=(f.participantes||[]).find(x=>x.id===parId);if(!p)return;
-  p.pagado=true;closeModal();showToast(`Pago registrado — ${p.nombre}`);
-  syncToSheet('Formaciones', STATE.formaciones);
-  renderFormaciones();
+  p.pagado=true;closeModal();showToast(`Pago registrado — ${p.nombre}`);renderFormaciones();
 }
 
 function eliminarParticipante(formId,parId){
   const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
   f.participantes=(f.participantes||[]).filter(x=>x.id!==parId);
-  closeModal();showToast('Participante eliminado');
-  syncToSheet('Formaciones', STATE.formaciones);
-  renderFormaciones();
+  closeModal();showToast('Participante eliminado');renderFormaciones();
 }
 
 function eliminarFormacion(id){
@@ -587,9 +562,7 @@ function eliminarFormacion(id){
 
 function confirmarEliminarFormacion(id){
   STATE.formaciones=STATE.formaciones.filter(f=>f.id!==id);
-  closeModal();showToast('Formación eliminada');
-  syncToSheet('Formaciones', STATE.formaciones);
-  renderFormaciones();
+  closeModal();showToast('Formación eliminada');renderFormaciones();
 }
 
 function showView(v){
@@ -683,21 +656,21 @@ function renderDashboard(){
 }
 
 // ── AGENDA ────────────────────────────────────────────────────────────────────
+let agendaWeekOffset = 0; // semanas desde hoy
+
 function renderAgenda(){
   const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const todayVet=nowVET();
-  const weekStart=new Date(todayVet);weekStart.setDate(todayVet.getDate()-todayVet.getDay());
+  const weekStart=new Date(todayVet);
+  weekStart.setDate(todayVet.getDate()-todayVet.getDay()+(agendaWeekOffset*7));
+  const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);
   const times=['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
   const hoy=todayVET();
 
-  // Construir mapa de eventos por día/hora
   const evMap={};
   STATE.appointments.forEach(a=>{
     const dt=new Date(a.fecha+'T12:00:00');
-    const di=dt.getDay();
-    // Verificar si cae en la semana visible
-    const wStart=new Date(weekStart);
-    const diff=Math.floor((dt-wStart)/(86400000));
+    const diff=Math.round((dt-weekStart)/86400000);
     if(diff<0||diff>6) return;
     const ti=times.indexOf(a.time);
     if(ti<0) return;
@@ -706,11 +679,24 @@ function renderAgenda(){
     evMap[diff][ti].push(a);
   });
 
-  const citasHoy=STATE.appointments.filter(a=>a.fecha===hoy);
+  const citasSemana=STATE.appointments.filter(a=>{
+    const d=a.fecha;
+    const ws=weekStart.toISOString().split('T')[0];
+    const we=weekEnd.toISOString().split('T')[0];
+    return d>=ws&&d<=we;
+  });
+
+  const labelSemana=weekStart.toLocaleDateString('es-VE',{day:'2-digit',month:'short',timeZone:'America/Caracas'})+' – '+weekEnd.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'});
+  const esHoy=agendaWeekOffset===0;
 
   $('content-area').innerHTML=`
   <div class="agenda-controls">
-    <div style="display:flex;align-items:center;gap:8px"><button class="icon-btn">‹</button><div class="date-display">${weekStart.toLocaleDateString('es-VE',{day:'2-digit',month:'short',timeZone:'America/Caracas'})} – ${new Date(weekStart.getTime()+6*86400000).toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'})}</div><button class="icon-btn">›</button></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="icon-btn" onclick="cambiarSemana(-1)">‹ Anterior</button>
+      <div class="date-display">${labelSemana}</div>
+      <button class="icon-btn" onclick="cambiarSemana(1)">Siguiente ›</button>
+      ${!esHoy?`<button class="icon-btn btn-sm" onclick="irHoy()">Hoy</button>`:''}
+    </div>
     <span class="tz-badge">🕐 Hora Venezuela (VET)</span>
     <div style="display:flex;gap:8px;margin-left:auto">
       <button class="doc-chip active">Todos</button>
@@ -721,47 +707,74 @@ function renderAgenda(){
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
     <div class="calendar-grid">
       <div class="cal-header" style="background:var(--bg2)"></div>
-      ${days.map((d,i)=>{const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);const isToday=dt.toDateString()===todayVet.toDateString();return`<div class="cal-header${isToday?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;}).join('')}
+      ${days.map((d,i)=>{
+        const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);
+        const isToday=dt.toISOString().split('T')[0]===hoy;
+        return`<div class="cal-header${isToday?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;
+      }).join('')}
       ${times.map((t,ti)=>`<div class="cal-time">${t}</div>${days.map((d,di)=>{
-        const isToday=new Date(weekStart.getTime()+di*86400000).toDateString()===todayVet.toDateString();
+        const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+di);
+        const isToday=dt.toISOString().split('T')[0]===hoy;
         const evs=(evMap[di]||{})[ti]||[];
-        return`<div class="cal-cell${isToday?' today-col':''}">${evs.map(ev=>`<div class="cal-event" title="Doble clic para ver HC" ondblclick="abrirHCDesdeCita('${ev.id}')" onclick="showToast('Doble clic para abrir HC de ${ev.patient}')"><div class="cal-event-name">${ev.patient.split(' ')[0]}</div><div class="cal-event-proc">${ev.proc.split('—')[0].trim().slice(0,18)}</div></div>`).join('')}</div>`;
+        return`<div class="cal-cell${isToday?' today-col':''}">${evs.map(ev=>`
+          <div class="cal-event" 
+            title="Doble clic para abrir HC" 
+            ondblclick="abrirHCDesdeCita('${ev.id}')"
+            onclick="showToast('Doble clic para abrir HC de ${ev.patient}')">
+            <div class="cal-event-name">${ev.patient.split(' ')[0]}</div>
+            <div class="cal-event-proc">${ev.proc.split('—')[0].trim().slice(0,16)}</div>
+            <div style="font-size:9px;color:var(--text3)">${ev.time} VET</div>
+          </div>`).join('')}</div>`;
       }).join('')}`).join('')}
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Citas de hoy — ${hoy} <span style="font-size:11px;color:var(--text3)">(hora Venezuela)</span></div>
-    ${citasHoy.length?citasHoy.map(a=>`
+    <div class="card-title">Citas — semana del ${labelSemana} <span style="font-size:11px;color:var(--text3)">(${citasSemana.length} citas)</span></div>
+    ${citasSemana.length?citasSemana.sort((a,b)=>a.fecha===b.fecha?a.time.localeCompare(b.time):a.fecha.localeCompare(b.fecha)).map(a=>`
     <div class="agenda-item">
-      <span class="agenda-time">${a.time}<span style="font-size:9px;color:var(--text3);display:block">VET</span></span>
+      <div style="min-width:80px">
+        <div class="agenda-time">${a.time} <span style="font-size:9px;color:var(--text3)">VET</span></div>
+        <div style="font-size:10px;color:var(--text3)">${fmtDateVET(a.fecha)}</div>
+      </div>
       <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
-      <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc} · ${a.consultorio} · ${a.doc}</div></div>
+      <div style="flex:1">
+        <div class="agenda-name" style="cursor:pointer" ondblclick="abrirHCDesdeCita('${a.id}')">${a.patient}</div>
+        <div class="agenda-proc">${a.proc} · ${a.consultorio} · ${a.doc}</div>
+      </div>
       <div style="display:flex;gap:6px;align-items:center">
         <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
         <button class="icon-btn btn-sm" onclick="cycleStatus('${a.id}')">↺</button>
-        <button class="icon-btn btn-sm" onclick="abrirHCDesdeCita('${a.id}')">HC</button>
+        <button class="icon-btn btn-sm" onclick="abrirHCDesdeCita('${a.id}')" title="Abrir Historia Clínica">📋 HC</button>
         <button class="icon-btn btn-sm" onclick="showToast('Recordatorio enviado a ${a.patient}')">📲</button>
         <button class="icon-btn btn-sm" onclick="openRegistrarCobro('${a.patient}','${a.proc}')">💰</button>
         <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarCita('${a.id}')">✕</button>
       </div>
-    </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Sin citas para hoy en Venezuela.</div>`}
+    </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Sin citas esta semana.</div>`}
   </div>`;
 }
+
+function cambiarSemana(dir){ agendaWeekOffset+=dir; renderAgenda(); }
+function irHoy(){ agendaWeekOffset=0; renderAgenda(); }
 
 function abrirHCDesdeCita(citaId){
   const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
   const p=STATE.patients.find(x=>x.name===a.patient);
-  if(p){STATE.activeHCPatient=p.id;STATE.activeHCTab='consultas';showView('hc');}
-  else showToast('Paciente no encontrado en el sistema');
+  if(p){
+    STATE.activeHCPatient=p.id;
+    STATE.activeHCTab='consultas';
+    showView('hc');
+    // Abrir directamente modal de nueva consulta pre-cargada
+    setTimeout(()=>openNewConsulta(p.id), 300);
+  } else {
+    showToast('Paciente no encontrado — regístralo primero en Pacientes');
+  }
 }
 
 function cycleStatus(id){
   const a=STATE.appointments.find(x=>x.id===id);if(!a)return;
   const c=['pendiente','confirmado','en_consulta','completado','cancelado'];
   a.status=c[(c.indexOf(a.status)+1)%c.length];
-  showToast('Estado: '+statusMap[a.status].label);
-  syncToSheet('Citas', STATE.appointments);
-  renderAgenda();
+  showToast('Estado: '+statusMap[a.status].label);renderAgenda();
 }
 
 function eliminarCita(id){
@@ -778,9 +791,7 @@ function eliminarCita(id){
 function confirmarEliminarCita(id){
   STATE.appointments=STATE.appointments.filter(a=>a.id!==id);
   $('badge-agenda').textContent=STATE.appointments.length;
-  closeModal();showToast('Cita eliminada');
-  syncToSheet('Citas', STATE.appointments);
-  renderAgenda();
+  closeModal();showToast('Cita eliminada');renderAgenda();
 }
 
 // ── PACIENTES ─────────────────────────────────────────────────────────────────
@@ -948,9 +959,7 @@ function openEditAntecedentes(id){
 function saveAntecedentes(id){
   if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
   STATE.hcData[id].antecedentes={alergias:$('fa-alergias').value,medicamentos:$('fa-meds').value,antPersonales:$('fa-pers').value,antFamiliares:$('fa-fam').value,cirugiasPrevias:$('fa-cir').value};
-  closeModal();showToast('Antecedentes guardados');
-  syncToSheet('HistoriaClinica', getHCRows());
-  const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'antecedentes');
+  closeModal();showToast('Antecedentes guardados');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'antecedentes');
 }
 
 function openNewConsulta(id){
@@ -977,18 +986,13 @@ function saveConsulta(){
   STATE.hcData[patId].consultas.unshift({fecha:$('fc-fecha').value,proc:$('fc-proc').value,doc:getMedicoLabel(),nota:$('fc-nota').value,productos:prods});
   p.procedures++;p.lastVisit=$('fc-fecha').value;
   STATE.activeHCPatient=patId;STATE.activeHCTab='consultas';
-  closeModal();showToast('Consulta registrada');
-  syncToSheet('HistoriaClinica', getHCRows());
-  syncToSheet('Pacientes', STATE.patients);
-  renderHC();
+  closeModal();showToast('Consulta registrada');renderHC();
 }
 function firmarConsentimiento(id,nombre){
   const hc=STATE.hcData[id];if(!hc)return;
   const c=hc.consentimientos.find(x=>x.nombre===nombre);if(!c)return;
   c.firmado=true;c.fecha=todayVET();
-  showToast('Firmado');
-  syncToSheet('HistoriaClinica', getHCRows());
-  const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
+  showToast('Firmado');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
 }
 function openAddConsentimiento(id){
   const opts=['Consentimiento Toxina Botulínica','Consentimiento Ácido Hialurónico','Consentimiento Rinomodelación','Consentimiento NAD+ IV','Consentimiento Bioestimuladores','Consentimiento Cirugía Plástica','Consentimiento PRP','Consentimiento Peeling Químico','Consentimiento Hilos Tensores'];
@@ -1001,9 +1005,7 @@ function saveConsentimiento(id){
   if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
   const firmado=$('fc-firmado').value==='1';
   STATE.hcData[id].consentimientos.push({nombre:$('fc-consent').value,fecha:firmado?todayVET():'',firmado});
-  closeModal();showToast('Consentimiento agregado');
-  syncToSheet('HistoriaClinica', getHCRows());
-  const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
+  closeModal();showToast('Consentimiento agregado');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
 }
 
 // ── TRATAMIENTOS ──────────────────────────────────────────────────────────────
@@ -1090,16 +1092,14 @@ function saveMovimiento(){
   const desc=$('fm-desc').value.trim();const monto=parseFloat($('fm-monto').value);
   if(!desc||isNaN(monto)||monto<=0){showToast('Descripción y monto son obligatorios');return;}
   STATE.movimientos.unshift({id:'M'+(Date.now()),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:'USD'});
-  closeModal();showToast('Movimiento registrado');
-  syncToSheet('Movimientos', STATE.movimientos);
-  renderCaja();
+  closeModal();showToast('Movimiento registrado');renderCaja();
 }
 function eliminarMovimiento(id){
   openModal(`<div class="modal-title" style="color:var(--red)">Eliminar movimiento</div>
   <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Confirmas eliminar este movimiento? No se puede deshacer.</div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarMov('${id}')">Eliminar</button></div>`);
 }
-function confirmarEliminarMov(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);closeModal();showToast('Movimiento eliminado');syncToSheet('Movimientos',STATE.movimientos);renderCaja();}
+function confirmarEliminarMov(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);closeModal();showToast('Movimiento eliminado');renderCaja();}
 function openRegistrarCobro(paciente,proc){
   openModal(`<div class="modal-title">Registrar Cobro</div>
   <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text2)"><strong style="color:var(--gold)">${paciente}</strong><br>${proc}</div>
@@ -1110,7 +1110,6 @@ function saveCobro(paciente,proc){
   const monto=parseFloat($('fc-monto').value);if(isNaN(monto)||monto<=0){showToast('Monto inválido');return;}
   STATE.movimientos.unshift({id:'M'+Date.now(),fecha:todayVET(),tipo:'ingreso',desc:`${proc} — ${paciente}`,metodo:$('fc-metpago').value,monto,moneda:'USD'});
   closeModal();showToast(`Cobro registrado: ${fmtUSD(monto)}`);
-  syncToSheet('Movimientos', STATE.movimientos);
 }
 
 // ── PRESUPUESTOS ──────────────────────────────────────────────────────────────
@@ -1119,7 +1118,7 @@ function renderPresupuestos(){
   <div class="section-header"><div class="section-title">Presupuestos <span style="font-size:14px;color:var(--text3);font-family:Montserrat">(${STATE.presupuestos.length})</span></div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Nuevo presupuesto</button></div>
   ${STATE.presupuestos.length?`<div class="presup-list">${STATE.presupuestos.map(pr=>{const total=pr.items.reduce((a,i)=>a+i.monto,0);return`<div class="presup-card" onclick="verPresupuesto('${pr.id}')"><div><div style="font-size:11px;color:var(--text3)">${pr.id}</div><div style="display:flex;gap:6px;margin-top:4px"><span class="tag ${pr.tipo==='quirurgico'?'tag-surg':'tag-rec'}">${pr.tipo==='quirurgico'?'Quirúrgico':'Estética'}</span></div></div><div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${pr.paciente}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${pr.items.map(i=>i.desc.split('—')[0].trim()).join(' · ')}</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--gold)">${total>0?fmtUSD(total):'Consultar'}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(pr.fecha)}</div></div><button class="icon-btn btn-sm" onclick="event.stopPropagation();eliminarPresupuesto('${pr.id}')">✕</button></div>`;}).join('')}</div>`:`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📄</div><div style="font-size:14px;margin-bottom:16px">Sin presupuestos generados</div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Crear primer presupuesto</button></div>`}`;
 }
-function eliminarPresupuesto(id){STATE.presupuestos=STATE.presupuestos.filter(p=>p.id!==id);showToast('Presupuesto eliminado');syncToSheet('Presupuestos',STATE.presupuestos);renderPresupuestos();}
+function eliminarPresupuesto(id){STATE.presupuestos=STATE.presupuestos.filter(p=>p.id!==id);showToast('Presupuesto eliminado');renderPresupuestos();}
 function verPresupuesto(id){
   const pr=STATE.presupuestos.find(x=>x.id===id);if(!pr)return;
   const total=pr.items.reduce((a,i)=>a+i.monto,0);const esCir=pr.tipo==='quirurgico';
