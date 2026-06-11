@@ -10,6 +10,42 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",
+    authDomain: "epc-clinic.firebaseapp.com",
+    projectId: "epc-clinic",
+    storageBucket: "epc-clinic.firebasestorage.app",
+    messagingSenderId: "503441399542",
+    appId: "1:503441399542:web:60fd39c9d3b6c8524716d7"
+  });
+  const db = firebase.firestore();
+  window.fsLoad = async function(colName) {
+    try {
+      const snap = await db.collection(colName).get();
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) { console.error('fsLoad:', e); return []; }
+  };
+  window.fsSave = async function(colName, dataArray) {
+    try {
+      const batch = db.batch();
+      dataArray.forEach(item => {
+        if (!item.id) return;
+        batch.set(db.collection(colName).doc(String(item.id)), item);
+      });
+      await batch.commit();
+      return true;
+    } catch(e) { console.error('fsSave:', e); return false; }
+  };
+  window.fsDelete = async function(colName, id) {
+    try {
+      await db.collection(colName).doc(String(id)).delete();
+      return true;
+    } catch(e) { return false; }
+  };
+  window.firebaseReady = true;
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
