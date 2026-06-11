@@ -663,7 +663,7 @@ function renderDashboard(){
     <div class="kpi-card"><div class="kpi-label">Ingresos hoy</div><div class="kpi-value">${fmtUSD(ingHoy)}</div><div class="kpi-sub">${Math.round(ingHoy*STATE.bcvRate).toLocaleString('es-VE')} Bs</div></div>
     <div class="kpi-card"><div class="kpi-label">Balance neto</div><div class="kpi-value">${fmtUSD(ingHoy-egrHoy)}</div><div class="kpi-sub">Egresos: ${fmtUSD(egrHoy)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${citasHoy.length}</div><div class="kpi-sub">${citasHoy.filter(a=>a.status==='confirmado').length} confirmadas · ${citasHoy.filter(a=>a.status==='pendiente').length} pendientes</div></div>
-    <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>p.tags.includes('VIP')).length} VIP · ${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length} nuevos</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>(p.tags||[]).includes('VIP')).length} VIP · ${STATE.patients.filter(p=>(p.tags||[]).includes('Nueva')||(p.tags||[]).includes('Nuevo')).length} nuevos</div></div>
   </div>
   <div class="dashboard-grid">
     <div class="card">
@@ -686,7 +686,7 @@ function renderDashboard(){
         <div class="card-title">Pacientes recientes <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('pacientes')">Ver todos →</span></div>
         ${STATE.patients.slice(0,3).map(p=>`
         <div class="agenda-item" style="cursor:pointer" onclick="showView('hc');setTimeout(()=>openHCPatient('${p.id}'),50)">
-          <div class="patient-avatar">${initials(p.name)}</div>
+          <div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div>
           <div style="flex:1"><div class="agenda-name">${p.name}</div><div class="agenda-proc">${p.procedures} procedimientos</div></div>
         </div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin pacientes registrados.</div>`}
       </div>
@@ -848,7 +848,7 @@ function renderPacientes(filter=''){
       <thead><tr><th>Paciente</th><th>Cédula</th><th>Teléfono</th><th>Etiquetas</th><th>Última visita</th><th style="text-align:center">Procs.</th><th></th></tr></thead>
       <tbody>${pts.map(p=>`
       <tr>
-        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email}</div></div></div></td>
+        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email}</div></div></div></td>
         <td style="color:var(--text2);font-size:12px">${p.cedula}</td>
         <td style="color:var(--text2);font-size:12px">${p.phone}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div></td>
@@ -882,7 +882,7 @@ function openEditarPaciente(id){
     <div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="ep-dob" value="${p.dob||''}"></div>
     <div class="form-group"><label class="form-label">Etiqueta</label>
       <select class="form-input" id="ep-tag">
-        ${['Nueva','Recurrente','VIP','Cirugía'].map(t=>`<option${p.tags.includes(t)?' selected':''}>${t}</option>`).join('')}
+        ${['Nueva','Recurrente','VIP','Cirugía'].map(t=>`<option${(p.tags||[]).includes(t)?' selected':''}>${t}</option>`).join('')}
       </select>
     </div>
   </div>
@@ -934,7 +934,7 @@ function renderHC(){
   <div class="hc-grid">
     <div>
       <div class="search-bar" style="margin-bottom:10px"><input class="search-input" placeholder="Buscar paciente…" oninput="filterHCList(this.value)"></div>
-      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('')}</div>
+      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('')}</div>
     </div>
     <div id="hc-panel">${buildHCPanel(STATE.activeHCPatient)}</div>
   </div>`;
@@ -942,7 +942,7 @@ function renderHC(){
 
 function filterHCList(q){
   const pts=q?STATE.patients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())):STATE.patients;
-  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('');
+  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('');
 }
 
 function openHCPatient(id){
@@ -958,7 +958,7 @@ function buildHCPanel(id){
   return`<div class="hc-panel">
     <div class="hc-section" style="padding:14px 18px">
       <div style="display:flex;align-items:center;gap:14px">
-        <div class="patient-avatar" style="width:46px;height:46px;font-size:14px">${initials(p.name)}</div>
+        <div class="patient-avatar" style="width:46px;height:46px;font-size:14px">${initials(p.name||p.nombre||'?')}</div>
         <div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold)">${p.name}</div><div style="font-size:12px;color:var(--text3)">${p.cedula} · ${p.phone}</div></div>
         <div style="display:flex;gap:6px">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div>
         <button class="icon-btn btn-sm" onclick="openEditarPaciente('${id}')">✏ Editar</button>
@@ -1282,9 +1282,9 @@ function buildRepTab(tab){
   if(tab==='pacientes') return`
     <div class="rep-kpi-grid">
       <div class="rep-kpi"><div class="rep-kpi-label">Total pacientes</div><div class="rep-kpi-value">${STATE.patients.length}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">VIP</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('VIP')).length}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('Nueva')||p.tags.includes('Nuevo')).length}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Cirugía</div><div class="rep-kpi-value">${STATE.patients.filter(p=>p.tags.includes('Cirugía')).length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">VIP</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).includes('VIP')).length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).includes('Nueva')||(p.tags||[]).includes('Nuevo')).length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Cirugía</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).includes('Cirugía')).length}</div></div>
     </div>
     <div class="rep-grid">
       <div class="chart-card"><div class="chart-title">Distribución por tipo</div><div class="chart-subtitle">Etiquetas de pacientes</div><div class="chart-wrap"><canvas id="chart-pac-tipo"></canvas></div></div>
