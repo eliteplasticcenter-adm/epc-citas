@@ -337,7 +337,7 @@ const SERVICIOS={
     {n:'Mesoterapia Facial',p:180},{n:'Mesoterapia Capilar',p:160},{n:'Skinbooster — Restylane Vital',p:420},{n:'PRP Facial',p:250},{n:'PRP Capilar',p:220},{n:'Hilos Tensores — PDO Mono',p:300},{n:'Hilos Tensores — PDO Cogote / Lifting',p:480},{n:'Peeling Químico Superficial',p:120},{n:'Peeling Químico Medio',p:200},
   ],
   'Sueroterapia & Wellness':[
-    {n:'NAD+ Sueroterapia IV',p:280},{n:'Suero Vitamínico — Vitamina C Alta Dosis',p:120},{n:'Suero Hidratante / Myers Cocktail',p:100},{n:'Suero Glutatión',p:130},{n:'Suero Energizante'sp:90},{n:'Ozonoterapia',p:150},{n:'Nutrición IV Personalizada',p:200},
+    {n:'NAD+ Sueroterapia IV',p:280},{n:'Suero Vitamínico — Vitamina C Alta Dosis',p:120},{n:'Suero Hidratante / Myers Cocktail',p:100},{n:'Suero Glutatión',p:130},{n:'Suero Energizante',p:90},{n:'Ozonoterapia',p:150},{n:'Nutrición IV Personalizada',p:200},
   ],
   'Cirugía Plástica & Reconstructiva':[
     {n:'Lipoescultura HEUS (VASER)',p:3500},{n:'Lipoescultura Convencional',p:2800},{n:'Lipotransferencia',p:0},{n:'Abdominoplastia Clásica',p:4200},{n:'Miniabdominoplastia',p:3200},{n:'Flancoplastia',p:3000},{n:'Brachioplastia',p:2800},{n:'Cruroplastia',p:2800},{n:'Body Lift Total',p:6500},{n:'Lifting Glúteo',p:4000},{n:'Aumento de Glúteos con Implantes',p:4500},{n:'BBL — Lipotransferencia Glútea',p:4000},{n:'Aumento Mamario con Implantes',p:4200},{n:'Reducción Mamaria',p:4500},{n:'Mastopexia',p:3800},{n:'Mastopexia + Implantes',p:5000},{n:'Ginecomastia',p:3000},{n:'Ritidoplastia (Facelift)',p:6000},{n:'Mini Facelift',p:4000},{n:'Blefaroplastia Superior',p:1800},{n:'Blefaroplastia Inferior (Anestesia Local)',p:1950},{n:'Blefaroplastia Total',p:3200},{n:'Otoplastia',p:2500},{n:'Mentoplastia',p:2200},{n:'Rinoplastia Abierta',p:4500},{n:'Rinoplastia Cerrada',p:3800},{n:'Liposucción de Papada',p:2000},{n:'Frontoplastia / Lifting Frontal',p:3500},{n:'Corrección de Cicatrices',p:800},{n:'Injerto de Piel',p:1500},{n:'Labioplastia',p:2200},{n:'Vaginoplastia',p:2800},{n:'Himenoplastia',p:1800},
@@ -903,7 +903,7 @@ function openNewPresupuesto(patId=''){
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="savePresupuesto()">Generar</button></div>`);
 }
 function addPresupItem(){
-  const i=presupItemCount++;const wrap=$('presup-items');if('wrap)return;
+  const i=presupItemCount++;const wrap=$('presup-items');if(!wrap)return;
   const div=document.createElement('div');div.className='form-row presup-item-entry';div.style.marginBottom='8px';
   div.innerHTML=`<div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-'+i)}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto</label><input class="form-input" id="pitem-monto-${i}" type="number" min="0" placeholder="0"></div><button class="icon-btn btn-sm" style="align-self:flex-end;padding:10px 12px" onclick="this.parentElement.remove()">✕</button>`;
   wrap.appendChild(div);
@@ -927,7 +927,7 @@ function openNewCita(){
   openModal(`<div class="modal-title">Nueva cita <span class="tz-badge" style="font-size:10px">🕐 VET</span></div>
   <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">⚠️ La hora se guarda en <strong style="color:var(--gold)">hora Venezuela (VET)</strong> sin importar desde dónde se agende.</div>
   <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('f-cpat')}</div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="f-cdate" value="${todayVET()}"></div></div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Hora VET</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</sabel>${buildConsultorioSelect('f-ccons')}</div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Hora VET</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</label>${buildConsultorioSelect('f-ccons')}</div></div>
   <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('f-cproc')}</div>
   <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCita()">Confirmar</button></div>`);
