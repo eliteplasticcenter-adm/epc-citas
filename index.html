@@ -1,4 +1,3 @@
-<!-- EPC v38 + Firebase -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,44 +6,31 @@
 <title>EPC — Sistema de Gestión</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-  firebase.initializeApp({
-    apiKey: "AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",
-    authDomain: "epc-clinic.firebaseapp.com",
-    projectId: "epc-clinic",
-    storageBucket: "epc-clinic.firebasestorage.app",
-    messagingSenderId: "503441399542",
-    appId: "1:503441399542:web:60fd39c9d3b6c8524716d7"
-  });
-  const db = firebase.firestore();
-  window.fsLoad = async function(colName) {
-    try {
-      const snap = await db.collection(colName).get();
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch(e) { console.error('fsLoad:', e); return []; }
-  };
-  window.fsSave = async function(colName, dataArray) {
-    try {
-      const batch = db.batch();
-      dataArray.forEach(item => {
-        if (!item.id) return;
-        batch.set(db.collection(colName).doc(String(item.id)), item);
-      });
-      await batch.commit();
-      return true;
-    } catch(e) { console.error('fsSave:', e); return false; }
-  };
-  window.fsDelete = async function(colName, id) {
-    try {
-      await db.collection(colName).doc(String(id)).delete();
-      return true;
-    } catch(e) { return false; }
-  };
-  window.firebaseReady = true;
-  window.dispatchEvent(new Event('firebase-ready'));
+const firebaseConfig = {
+  apiKey: "AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",
+  authDomain: "epc-clinic.firebaseapp.com",
+  projectId: "epc-clinic",
+  storageBucket: "epc-clinic.firebasestorage.app",
+  messagingSenderId: "503441399542",
+  appId: "1:503441399542:web:60fd39c9d3b6c8524716d7"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+window.fsLoad = async function(col){
+  try{ const s=await db.collection(col).get(); return s.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ return []; }
+};
+window.fsSave = async function(col,arr){
+  try{
+    const b=db.batch();
+    arr.forEach(item=>{ if(item.id) b.set(db.collection(col).doc(String(item.id)),item); });
+    await b.commit(); return true;
+  }catch(e){ return false; }
+};
+window.firebaseReady=true;
+window.dispatchEvent(new Event('firebase-ready'));
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -91,8 +77,6 @@ nav{padding:14px 0;flex:1;overflow-y:auto}
 .kpi-label{font-size:11px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
 .kpi-value{font-size:26px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--text);margin-bottom:3px}
 .kpi-sub{font-size:11px;color:var(--text3)}
-.kpi-trend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;margin-top:5px}
-.kpi-up{background:rgba(29,158,117,.15);color:var(--green)}.kpi-down{background:rgba(226,75,74,.15);color:var(--red)}
 .dashboard-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
 .agenda-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .agenda-item:last-child{border-bottom:none}
@@ -108,7 +92,6 @@ nav{padding:14px 0;flex:1;overflow-y:auto}
 .proc-item:last-child{border-bottom:none}
 .proc-bar-wrap{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
 .proc-bar{height:100%;background:var(--gold);border-radius:2px}
-.bcv-strip{background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .search-bar{display:flex;gap:10px;margin-bottom:18px}
 .search-input{flex:1;padding:10px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'Montserrat',sans-serif;outline:none}
 .search-input:focus{border-color:var(--gold)}.search-input::placeholder{color:var(--text3)}
@@ -121,7 +104,7 @@ nav{padding:14px 0;flex:1;overflow-y:auto}
 .tag{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
 .tag-vip{background:rgba(201,164,82,.2);color:var(--gold)}.tag-new{background:rgba(29,158,117,.15);color:var(--green)}.tag-surg{background:rgba(55,138,221,.15);color:var(--blue)}.tag-rec{background:rgba(176,184,193,.15);color:var(--silver)}
 .agenda-controls{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-.date-display{font-size:14px;font-weight:500;color:var(--text);min-width:180px;text-align:center}
+.date-display{font-size:14px;font-weight:500;color:var(--text);min-width:200px;text-align:center}
 .doc-chip{padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;font-family:'Montserrat',sans-serif}
 .doc-chip.active{background:var(--gold);color:#1e2830;border-color:var(--gold);font-weight:500}
 .calendar-grid{display:grid;grid-template-columns:60px repeat(7,1fr);gap:1px;background:var(--border)}
@@ -132,8 +115,9 @@ nav{padding:14px 0;flex:1;overflow-y:auto}
 .cal-cell.today-col{background:rgba(201,164,82,.04)}
 .cal-event{background:rgba(201,164,82,.15);border-left:3px solid var(--gold);border-radius:4px;padding:4px 6px;margin-bottom:2px;cursor:pointer;transition:all .15s}
 .cal-event:hover{background:rgba(201,164,82,.28)}
-.cal-event.green{background:rgba(29,158,117,.15);border-left-color:var(--green)}.cal-event.blue{background:rgba(55,138,221,.15);border-left-color:var(--blue)}
-.cal-event-name{font-size:10px;font-weight:600;color:var(--text)}.cal-event-proc{font-size:10px;color:var(--text3)}
+.cal-event.green{background:rgba(29,158,117,.15);border-left-color:var(--green)}
+.cal-event-name{font-size:10px;font-weight:600;color:var(--text)}
+.cal-event-proc{font-size:10px;color:var(--text3)}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);width:680px;max-width:96vw;max-height:90vh;overflow-y:auto;padding:28px}
 .modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:18px}
@@ -190,11 +174,9 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 .mov-ingreso{background:var(--green)}.mov-egreso{background:var(--red)}
 .mov-monto-pos{font-weight:600;color:var(--green);min-width:85px;text-align:right}
 .mov-monto-neg{font-weight:600;color:var(--red);min-width:85px;text-align:right}
-.balance-bar{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);padding:18px;margin-bottom:18px}
 .balance-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
 .balance-row:last-child{border-bottom:none;padding-top:12px}
 .balance-label{font-size:12px;color:var(--text3)}
-.balance-total{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)}
 .periodo-btn{padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;font-family:'Montserrat',sans-serif;transition:all .2s}
 .periodo-btn.active{background:var(--gold);color:#1e2830;border-color:var(--gold);font-weight:500}
 .presup-list{display:flex;flex-direction:column;gap:10px}
@@ -224,6 +206,9 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 .rank-bar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
 .rank-bar{height:100%;background:var(--gold);border-radius:2px}
 .tz-badge{background:rgba(201,164,82,.12);border:1px solid var(--border2);border-radius:6px;padding:3px 10px;font-size:10px;color:var(--gold);font-weight:600;letter-spacing:1px}
+.mkt-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:16px;cursor:pointer;transition:all .2s;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.mkt-card:hover{border-color:var(--gold)}
+.mkt-icon{width:40px;height:40px;border-radius:10px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -238,6 +223,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
     <div class="nav-item" onclick="showView('agenda')"><span class="nav-icon">📅</span> Agenda <span class="nav-badge" id="badge-agenda">0</span></div>
     <div class="nav-item" onclick="showView('pacientes')"><span class="nav-icon">👤</span> Pacientes</div>
     <div class="nav-item" onclick="showView('formaciones')"><span class="nav-icon">🎓</span> Formaciones</div>
+    <div class="nav-item" onclick="showView('marketing')"><span class="nav-icon">📣</span> Marketing</div>
     <div class="nav-section" style="margin-top:8px">Clínica</div>
     <div class="nav-item" onclick="showView('hc')"><span class="nav-icon">📋</span> Historia Clínica</div>
     <div class="nav-item" onclick="showView('tratamientos')"><span class="nav-icon">💉</span> Tratamientos</div>
@@ -274,107 +260,71 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 <div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
 
 <script>
-// ── SYNC CON FIREBASE FIRESTORE ───────────────────────────────────────────────
-function saveLocal(key, data) {
-  try { localStorage.setItem('epc_' + key, JSON.stringify(data)); } catch(e) {}
-}
-function loadLocal(key) {
-  try { const d = localStorage.getItem('epc_' + key); return d ? JSON.parse(d) : null; } catch(e) { return null; }
-}
+// ── FIREBASE SYNC ─────────────────────────────────────────────────────────────
+function saveLocal(k,d){try{localStorage.setItem('epc_'+k,JSON.stringify(d));}catch(e){}}
+function loadLocal(k){try{const d=localStorage.getItem('epc_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}
 
-async function syncToSheet(colName, dataArray) {
-  saveLocal(colName, dataArray);
+async function syncToSheet(col,arr){
+  saveLocal(col,arr);
   showSyncBadge('↻ Guardando…');
-  if (window.firebaseReady) {
-    const ok = await window.fsSave(colName, dataArray);
-    showSyncBadge(ok ? '✓ Sincronizado' : '⚠ Solo local');
+  if(window.firebaseReady){
+    const ok=await window.fsSave(col,arr);
+    showSyncBadge(ok?'✓ Sincronizado':'⚠ Solo local');
   } else {
     showSyncBadge('● Local');
   }
 }
 
-async function loadFromSheet(colName) {
-  if (window.firebaseReady) {
-    try {
-      const data = await window.fsLoad(colName);
-      if (data && data.length > 0) {
-        saveLocal(colName, data);
-        return data;
-      }
-    } catch(e) {}
+async function loadFromSheet(col){
+  if(window.firebaseReady){
+    try{
+      const data=await window.fsLoad(col);
+      if(data&&data.length>0){saveLocal(col,data);return data;}
+    }catch(e){}
   }
-  return loadLocal(colName) || [];
+  return loadLocal(col)||[];
 }
 
-function showSyncBadge(msg) {
-  const el = document.getElementById('sync-badge');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = msg.includes('✓') ? 'var(--green)' : msg.includes('↻') ? 'var(--gold)' : 'var(--red)';
-  if (msg.includes('✓')) setTimeout(() => { el.textContent = '● En línea'; el.style.color = 'var(--green)'; }, 2500);
+function showSyncBadge(msg){
+  const el=$('sync-badge');if(!el)return;
+  el.textContent=msg;
+  el.style.color=msg.includes('✓')?'var(--green)':msg.includes('↻')?'var(--gold)':'var(--red)';
+  if(msg.includes('✓'))setTimeout(()=>{el.textContent='● En línea';el.style.color='var(--green)';},2500);
 }
 
-async function loadAllData() {
+async function loadAllData(){
   showSyncBadge('↻ Cargando…');
-  // Cargar local primero — respuesta inmediata
-  const lp = loadLocal('Pacientes'); if(lp && lp.length) STATE.patients = lp;
-  const lc = loadLocal('Citas'); if(lc && lc.length) STATE.appointments = lc;
-  const lm = loadLocal('Movimientos'); if(lm && lm.length) STATE.movimientos = lm;
-  const lpr = loadLocal('Presupuestos'); if(lpr && lpr.length) STATE.presupuestos = lpr;
-  const lf = loadLocal('Formaciones'); if(lf && lf.length) STATE.formaciones = lf;
-  $('badge-agenda').textContent = STATE.appointments.length;
+  const lp=loadLocal('Pacientes');if(lp&&lp.length)STATE.patients=lp;
+  const lc=loadLocal('Citas');if(lc&&lc.length)STATE.appointments=lc;
+  const lm=loadLocal('Movimientos');if(lm&&lm.length)STATE.movimientos=lm;
+  const lpr=loadLocal('Presupuestos');if(lpr&&lpr.length)STATE.presupuestos=lpr;
+  const lf=loadLocal('Formaciones');if(lf&&lf.length)STATE.formaciones=lf;
+  $('badge-agenda').textContent=STATE.appointments.length;
   renderDashboard();
-
-  // Cargar desde Firebase en background
-  const doLoad = async () => {
-    try {
-      const [pacientes, citas, movimientos, presupuestos, formaciones] = await Promise.all([
-        loadFromSheet('Pacientes'),
-        loadFromSheet('Citas'),
-        loadFromSheet('Movimientos'),
-        loadFromSheet('Presupuestos'),
-        loadFromSheet('Formaciones'),
+  const doLoad=async()=>{
+    try{
+      const[p,c,m,pr,f]=await Promise.all([
+        loadFromSheet('Pacientes'),loadFromSheet('Citas'),loadFromSheet('Movimientos'),
+        loadFromSheet('Presupuestos'),loadFromSheet('Formaciones')
       ]);
-      let updated = false;
-      if (pacientes.length) { STATE.patients = pacientes; updated = true; }
-      if (citas.length) { STATE.appointments = citas; updated = true; }
-      if (movimientos.length) { STATE.movimientos = movimientos; updated = true; }
-      if (presupuestos.length) { STATE.presupuestos = presupuestos; updated = true; }
-      if (formaciones.length) { STATE.formaciones = formaciones; updated = true; }
-      if (updated) {
-        $('badge-agenda').textContent = STATE.appointments.length;
-        if (STATE.view === 'dashboard') renderDashboard();
-        showSyncBadge('✓ Sincronizado');
-      } else {
-        showSyncBadge('● En línea');
-      }
-    } catch(e) {
-      showSyncBadge('● Local');
-    }
+      let u=false;
+      if(p.length){STATE.patients=p;u=true;}
+      if(c.length){STATE.appointments=c;u=true;}
+      if(m.length){STATE.movimientos=m;u=true;}
+      if(pr.length){STATE.presupuestos=pr;u=true;}
+      if(f.length){STATE.formaciones=f;u=true;}
+      if(u){$('badge-agenda').textContent=STATE.appointments.length;if(STATE.view==='dashboard')renderDashboard();showSyncBadge('✓ Sincronizado');}
+      else showSyncBadge('● En línea');
+    }catch(e){showSyncBadge('● Local');}
   };
-
-  if (window.firebaseReady) {
-    doLoad();
-  } else {
-    window.addEventListener('firebase-ready', doLoad, { once: true });
-    setTimeout(() => showSyncBadge('● Local'), 8000);
-  }
+  if(window.firebaseReady)doLoad();
+  else window.addEventListener('firebase-ready',doLoad,{once:true});
 }
 
-// ── ZONA HORARIA VENEZUELA (UTC-4) ────────────────────────────────────────────
-// Todas las fechas y horas se manejan en VET (UTC-4) sin importar el dispositivo
-function nowVET(){
-  const now=new Date();
-  const vetOffset=-4*60;
-  const utc=now.getTime()+now.getTimezoneOffset()*60000;
-  return new Date(utc+vetOffset*60000);
-}
-function todayVET(){return nowVET().toISOString().split('T')[0]}
-function fmtDateVET(d){
-  const dt=new Date(d+'T12:00:00');
-  return dt.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'});
-}
-function fmtHoraVET(h){return h+' (VET)'}
+// ── ZONA HORARIA VET ──────────────────────────────────────────────────────────
+function nowVET(){const n=new Date();const u=n.getTime()+n.getTimezoneOffset()*60000;return new Date(u+(-4*60)*60000);}
+function todayVET(){return nowVET().toISOString().split('T')[0];}
+function fmtDateVET(d){return new Date(d+'T12:00:00').toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'});}
 
 // ── CATÁLOGO ──────────────────────────────────────────────────────────────────
 const CONSULTORIOS=[{id:'C1',label:'C-1 · Enfermería / Sueroterapia'},{id:'C2',label:'C-2 · Medicina Estética'},{id:'C3',label:'C-3 · Quirófano'},{id:'C4',label:'C-4 · Consulta Médica'}];
@@ -387,7 +337,7 @@ const SERVICIOS={
     {n:'Mesoterapia Facial',p:180},{n:'Mesoterapia Capilar',p:160},{n:'Skinbooster — Restylane Vital',p:420},{n:'PRP Facial',p:250},{n:'PRP Capilar',p:220},{n:'Hilos Tensores — PDO Mono',p:300},{n:'Hilos Tensores — PDO Cogote / Lifting',p:480},{n:'Peeling Químico Superficial',p:120},{n:'Peeling Químico Medio',p:200},
   ],
   'Sueroterapia & Wellness':[
-    {n:'NAD+ Sueroterapia IV',p:280},{n:'Suero Vitamínico — Vitamina C Alta Dosis',p:120},{n:'Suero Hidratante / Myers Cocktail',p:100},{n:'Suero Glutatión',p:130},{n:'Suero Energizante',p:90},{n:'Ozonoterapia',p:150},{n:'Nutrición IV Personalizada',p:200},
+    {n:'NAD+ Sueroterapia IV',p:280},{n:'Suero Vitamínico — Vitamina C Alta Dosis',p:120},{n:'Suero Hidratante / Myers Cocktail',p:100},{n:'Suero Glutatión',p:130},{n:'Suero Energizante'sp:90},{n:'Ozonoterapia',p:150},{n:'Nutrición IV Personalizada',p:200},
   ],
   'Cirugía Plástica & Reconstructiva':[
     {n:'Lipoescultura HEUS (VASER)',p:3500},{n:'Lipoescultura Convencional',p:2800},{n:'Lipotransferencia',p:0},{n:'Abdominoplastia Clásica',p:4200},{n:'Miniabdominoplastia',p:3200},{n:'Flancoplastia',p:3000},{n:'Brachioplastia',p:2800},{n:'Cruroplastia',p:2800},{n:'Body Lift Total',p:6500},{n:'Lifting Glúteo',p:4000},{n:'Aumento de Glúteos con Implantes',p:4500},{n:'BBL — Lipotransferencia Glútea',p:4000},{n:'Aumento Mamario con Implantes',p:4200},{n:'Reducción Mamaria',p:4500},{n:'Mastopexia',p:3800},{n:'Mastopexia + Implantes',p:5000},{n:'Ginecomastia',p:3000},{n:'Ritidoplastia (Facelift)',p:6000},{n:'Mini Facelift',p:4000},{n:'Blefaroplastia Superior',p:1800},{n:'Blefaroplastia Inferior (Anestesia Local)',p:1950},{n:'Blefaroplastia Total',p:3200},{n:'Otoplastia',p:2500},{n:'Mentoplastia',p:2200},{n:'Rinoplastia Abierta',p:4500},{n:'Rinoplastia Cerrada',p:3800},{n:'Liposucción de Papada',p:2000},{n:'Frontoplastia / Lifting Frontal',p:3500},{n:'Corrección de Cicatrices',p:800},{n:'Injerto de Piel',p:1500},{n:'Labioplastia',p:2200},{n:'Vaginoplastia',p:2800},{n:'Himenoplastia',p:1800},
@@ -397,236 +347,69 @@ const SERVICIOS={
   ],
 };
 
-// ── STATE — BASE DE DATOS EN BLANCO ───────────────────────────────────────────
-const STATE={
-  view:'dashboard',bcvRate:92.5,activeTratCat:'Medicina Estética',
-  activeHCPatient:null,activeHCTab:'antecedentes',activeCajaPeriodo:'hoy',activeRepTab:'financiero',
-  patients:[],
-  movimientos:[],
-  presupuestos:[],
-  hcData:{},
-  formaciones:[],
-  appointments:[],
+const WA_PLANTILLAS=[
+  {id:'recordatorio',nombre:'Recordatorio de Cita',icono:'📅',desc:'Recordatorio 24h antes',texto:'Hola [NOMBRE] 👋\n\nLe recordamos su cita en *Elite Plastic Center* mañana:\n\n🕐 *Hora:* [HORA] VET\n💉 *Procedimiento:* [PROC]\n👨‍⚕️ *Médico:* Dr. Higuerey\n📍 C.C. Trinidad Tepuy, Consultorio 1-13, Baruta\n\n¡Le esperamos! ✨'},
+  {id:'confirmacion',nombre:'Confirmación de Cita',icono:'✅',desc:'Confirmar cita agendada',texto:'Hola [NOMBRE] ✅\n\nSu cita en *Elite Plastic Center* ha sido confirmada:\n\n📅 *Fecha:* [FECHA]\n🕐 *Hora:* [HORA] VET\n💉 *Procedimiento:* [PROC]\n👨‍⚕️ *Médico:* Dr. Higuerey\n📍 C.C. Trinidad Tepuy, Consultorio 1-13, Baruta\n\n¡Le esperamos puntualmente! 🙏'},
+  {id:'postratamiento',nombre:'Post-Tratamiento',icono:'💉',desc:'Seguimiento post-procedimiento',texto:'Hola [NOMBRE] 👋\n\nEsperamos que se encuentre muy bien después de su tratamiento en *Elite Plastic Center*.\n\nRecuerde seguir las indicaciones del Dr. Higuerey. Ante cualquier duda contáctenos.\n\n¡Fue un placer atenderle! 😊✨'},
+  {id:'cumpleanos',nombre:'Felicitación de Cumpleaños',icono:'🎂',desc:'Mensaje especial de cumpleaños',texto:'Hola [NOMBRE] 🎂\n\n*¡Feliz Cumpleaños!* 🎉\n\nTodo el equipo de *Elite Plastic Center* le desea un día maravilloso.\n\nTenemos una sorpresa especial para usted en su próxima visita. ¡Contáctenos! 🎁✨'},
+  {id:'promocion',nombre:'Promoción Especial',icono:'🌟',desc:'Oferta para pacientes',texto:'Hola [NOMBRE] 🌟\n\n¡Tenemos una promoción exclusiva para usted en *Elite Plastic Center*!\n\n✨ [DESCRIPCION_PROMO]\n\nVálido hasta [FECHA_LIMITE]. Cupos limitados.\n\nEscríbanos para reservar. ¡No se lo pierda! 💫'},
+  {id:'reactivacion',nombre:'Reactivación de Paciente',icono:'🔄',desc:'Contactar pacientes inactivos',texto:'Hola [NOMBRE] 👋\n\n¡Le extrañamos en *Elite Plastic Center*! 😊\n\nTenemos nuevos tratamientos y promociones que podrían interesarle.\n\n¿Agendamos una consulta con el Dr. Higuerey? ✨'},
+];
+
+const EMAIL_PLANTILLAS={
+  email_recordatorio:{nombre:'Recordatorio de Cita',asunto:'Recordatorio: Su cita en Elite Plastic Center',cuerpo:'Estimado/a [NOMBRE],\n\nLe recordamos su cita en Elite Plastic Center:\n\nFecha: [FECHA]\nHora: [HORA] VET\nProcedimiento: [PROC]\nMédico: Dr. Higuerey\nLugar: C.C. Trinidad Tepuy, Consultorio 1-13, Baruta, Caracas\n\nAtentamente,\nElite Plastic Center'},
+  email_bienvenida:{nombre:'Bienvenida Paciente Nuevo',asunto:'Bienvenido/a a Elite Plastic Center',cuerpo:'Estimado/a [NOMBRE],\n\nEs un placer darle la bienvenida a Elite Plastic Center.\n\nSomos una clínica especializada en cirugía plástica y medicina estética bajo la dirección del Dr. Higuerey.\n\nNo dude en contactarnos para cualquier consulta.\n\nAtentamente,\nElite Plastic Center\neliteplasticcenter@gmail.com'},
+  email_promo:{nombre:'Promoción Especial',asunto:'🌟 Oferta especial — Elite Plastic Center',cuerpo:'Estimado/a [NOMBRE],\n\nTenemos una promoción exclusiva:\n\n✨ [DESCRIPCION_PROMO]\n\nVálido hasta: [FECHA_LIMITE]\n\nContáctenos para reservar.\n\nAtentamente,\nElite Plastic Center'},
+  email_post:{nombre:'Cuidados Post-Tratamiento',asunto:'Cuidados después de su tratamiento — Elite Plastic Center',cuerpo:'Estimado/a [NOMBRE],\n\nGracias por confiar en Elite Plastic Center.\n\nA continuación los cuidados importantes:\n\n• [CUIDADO_1]\n• [CUIDADO_2]\n• [CUIDADO_3]\n\nAnte cualquier molestia, contáctenos.\n\nAtentamente,\nDr. Higuerey — Elite Plastic Center'},
+  email_cumple:{nombre:'Felicitación Cumpleaños',asunto:'🎂 ¡Feliz Cumpleaños! — Elite Plastic Center',cuerpo:'Estimado/a [NOMBRE],\n\n¡Todo el equipo de Elite Plastic Center le desea un feliz cumpleaños!\n\nTenemos una sorpresa especial en su próxima visita. 🎁\n\nAtentamente,\nElite Plastic Center'},
+  email_news:{nombre:'Newsletter Mensual',asunto:'Novedades de Elite Plastic Center',cuerpo:'Estimado/a [NOMBRE],\n\nNovedades de Elite Plastic Center:\n\n🆕 [NOVEDAD_1]\n💉 [NOVEDAD_2]\n🌟 [NOVEDAD_3]\n\nAtentamente,\nElite Plastic Center'},
 };
 
-const statusMap={confirmado:{label:'Confirmado',cls:'badge-green'},en_consulta:{label:'En consulta',cls:'badge-gold'},pendiente:{label:'Pendiente',cls:'badge-gray'},completado:{label:'Completado',cls:'badge-blue'},cancelado:{label:'Cancelado',cls:'badge-red'}};
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const STATE={
+  view:'dashboard',activeTratCat:'Medicina Estética',
+  activeHCPatient:null,activeHCTab:'antecedentes',activeCajaPeriodo:'hoy',activeRepTab:'financiero',
+  patients:[],movimientos:[],presupuestos:[],hcData:{},formaciones:[],appointments:[],
+};
+let agendaWeekOffset=0;
 let chartsInstances={};
+let presupItemCount=1;
 
-function $(id){return document.getElementById(id)}
-function showToast(msg){$('toast-msg').textContent=msg;const t=$('toast');t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3200)}
-function closeModal(){$('modal-overlay').classList.add('hidden')}
-function openModal(html){$('modal-content').innerHTML=html;$('modal-overlay').classList.remove('hidden')}
-function initials(n){return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
-function tagCls(t){return t==='VIP'?'vip':t==='Nueva'||t==='Nuevo'?'new':t==='Cirugía'?'surg':'rec'}
-function fmtUSD(n){return n===0?'Consultar':'$'+Number(n).toLocaleString()}
+const statusMap={confirmado:{label:'Confirmado',cls:'badge-green'},en_consulta:{label:'En consulta',cls:'badge-gold'},pendiente:{label:'Pendiente',cls:'badge-gray'},completado:{label:'Completado',cls:'badge-blue'},cancelado:{label:'Cancelado',cls:'badge-red'}};
+
+function $(id){return document.getElementById(id);}
+function showToast(msg){$('toast-msg').textContent=msg;const t=$('toast');t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3200);}
+function closeModal(){$('modal-overlay').classList.add('hidden');}
+function openModal(html){$('modal-content').innerHTML=html;$('modal-overlay').classList.remove('hidden');}
+function initials(n){return(n||'').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+function tagCls(t){return t==='VIP'?'vip':t==='Nueva'||t==='Nuevo'?'new':t==='Cirugía'?'surg':'rec';}
+function fmtUSD(n){return n===0?'Consultar':'$'+Number(n).toLocaleString();}
 function destroyChart(id){if(chartsInstances[id]){chartsInstances[id].destroy();delete chartsInstances[id];}}
-
-// ── FORMACIONES ───────────────────────────────────────────────────────────────
-function renderFormaciones(){
-  const fs=STATE.formaciones||[];
-  const inscritos=fs.reduce((a,f)=>a+(f.participantes||[]).length,0);
-  const recaudado=fs.reduce((a,f)=>a+(f.participantes||[]).filter(p=>p.pagado).reduce((b,p)=>b+p.monto,0),0);
-  const pendiente=fs.reduce((a,f)=>a+(f.participantes||[]).filter(p=>!p.pagado).reduce((b,p)=>b+p.monto,0),0);
-  $('content-area').innerHTML=`
-  <div class="section-header">
-    <div class="section-title">Formaciones</div>
-    <button class="btn btn-gold" onclick="openNuevaFormacion()">+ Nueva formación</button>
-  </div>
-  <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Formaciones</div><div class="kpi-value">${fs.length}</div><div class="kpi-sub">Registradas</div></div>
-    <div class="kpi-card"><div class="kpi-label">Inscritos</div><div class="kpi-value">${inscritos}</div><div class="kpi-sub">Total participantes</div></div>
-    <div class="kpi-card"><div class="kpi-label">Recaudado</div><div class="kpi-value" style="font-size:22px">${fmtUSD(recaudado)}</div><div class="kpi-sub">Pagos confirmados</div></div>
-    <div class="kpi-card"><div class="kpi-label">Por cobrar</div><div class="kpi-value" style="font-size:22px;color:var(--red)">${fmtUSD(pendiente)}</div><div class="kpi-sub">Pagos pendientes</div></div>
-  </div>
-  ${fs.length===0?`
-  <div class="card" style="text-align:center;padding:48px;color:var(--text3)">
-    <div style="font-size:40px;opacity:.3;margin-bottom:12px">🎓</div>
-    <div style="font-size:14px;margin-bottom:16px">No hay formaciones registradas</div>
-    <button class="btn btn-gold" onclick="openNuevaFormacion()">+ Registrar primera formación</button>
-  </div>`:`<div style="display:flex;flex-direction:column;gap:14px">${fs.map(f=>{
-    const total_p=(f.participantes||[]).length;
-    const pagados=(f.participantes||[]).filter(p=>p.pagado).length;
-    const recaud=(f.participantes||[]).filter(p=>p.pagado).reduce((a,p)=>a+p.monto,0);
-    const pend=(f.participantes||[]).filter(p=>!p.pagado).reduce((a,p)=>a+p.monto,0);
-    const pct=total_p>0?Math.round(pagados/total_p*100):0;
-    return`<div class="card">
-      <div style="display:flex;align-items:flex-start;gap:16px">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎓</div>
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text)">${f.nombre}</div>
-            <span class="status-badge ${f.modalidad==='presencial'?'badge-blue':'badge-gold'}">${f.modalidad==='presencial'?'Presencial':'Online'}</span>
-          </div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:10px">📅 ${fmtDateVET(f.fecha)} · ${f.lugar||'Por confirmar'} · Dr. Higuerey · ${fmtUSD(f.precio)}/persona</div>
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
-            <span style="font-size:12px;color:var(--text2)">👥 ${total_p} inscritos</span>
-            <span style="font-size:12px;color:var(--green)">✅ ${pagados} pagados</span>
-            <span style="font-size:12px;color:var(--red)">⏳ ${total_p-pagados} pendientes</span>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-              <span style="font-size:10px;color:var(--text3)">Cobros ${pct}%</span>
-              <span style="font-size:10px;color:var(--gold)">${fmtUSD(recaud)} cobrado · ${fmtUSD(pend)} pendiente</span>
-            </div>
-            <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--gold);border-radius:2px"></div></div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="icon-btn btn-sm" onclick="openAgregarParticipante('${f.id}')">+ Participante</button>
-          <button class="icon-btn btn-sm" onclick="verFormacion('${f.id}')">Ver →</button>
-          <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarFormacion('${f.id}')">✕</button>
-        </div>
-      </div>
-    </div>`;}).join('')}</div>`}`;
-}
-
-function openNuevaFormacion(){
-  openModal(`
-  <div class="modal-title">Nueva Formación</div>
-  <div class="form-group"><label class="form-label">Nombre de la formación</label><input class="form-input" id="ff-nombre" placeholder="Ej. Masterclass Técnica 1:5 — 2ª Edición"></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="ff-fecha" value="${todayVET()}"></div>
-    <div class="form-group"><label class="form-label">Modalidad</label><select class="form-input" id="ff-modalidad"><option value="online">Online</option><option value="presencial">Presencial</option></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Precio por persona (USD)</label><input class="form-input" type="number" id="ff-precio" placeholder="350" min="0"></div>
-    <div class="form-group"><label class="form-label">Lugar / Plataforma</label><input class="form-input" id="ff-lugar" placeholder="Zoom / Caracas / Valencia…"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Descripción / Técnicas</label><textarea class="form-input" id="ff-desc" placeholder="Técnicas, nivel, dirigido a…" style="min-height:70px"></textarea></div>
-  <div class="modal-actions">
-    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-gold" onclick="guardarFormacion()">Crear formación</button>
-  </div>`);
-}
-
-function guardarFormacion(){
-  const nombre=$('ff-nombre').value.trim();
-  if(!nombre){showToast('El nombre es obligatorio');return;}
-  STATE.formaciones.unshift({id:'F'+Date.now(),nombre,fecha:$('ff-fecha').value,modalidad:$('ff-modalidad').value,precio:parseFloat($('ff-precio').value)||0,lugar:$('ff-lugar').value,desc:$('ff-desc').value,participantes:[]});
-  closeModal();showToast('Formación creada');
-  syncToSheet('Formaciones', STATE.formaciones);
-  renderFormaciones();
-}
-
-function verFormacion(id){
-  const f=STATE.formaciones.find(x=>x.id===id);if(!f)return;
-  const pagados=(f.participantes||[]).filter(p=>p.pagado);
-  const pendientes=(f.participantes||[]).filter(p=>!p.pagado);
-  const recaud=pagados.reduce((a,p)=>a+p.monto,0);
-  const pend=pendientes.reduce((a,p)=>a+p.monto,0);
-  openModal(`
-  <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-    <div style="width:52px;height:52px;border-radius:12px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px">🎓</div>
-    <div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)">${f.nombre}</div>
-    <div style="font-size:12px;color:var(--text3)">📅 ${fmtDateVET(f.fecha)} · ${f.lugar||'—'} · ${fmtUSD(f.precio)}/persona</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
-    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Inscritos</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--text)">${(f.participantes||[]).length}</div></div>
-    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Recaudado</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--green)">${fmtUSD(recaud)}</div></div>
-    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Por cobrar</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--red)">${fmtUSD(pend)}</div></div>
-  </div>
-  ${f.desc?`<div style="background:rgba(201,164,82,.06);border-left:3px solid var(--gold);border-radius:var(--radius);padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--text2)">${f.desc}</div>`:''}
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div style="font-size:12px;font-weight:500;color:var(--text2)">Participantes (${(f.participantes||[]).length})</div>
-    <button class="btn btn-gold btn-sm" onclick="closeModal();openAgregarParticipante('${f.id}')">+ Agregar participante</button>
-  </div>
-  ${!(f.participantes||[]).length?`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin participantes registrados aún.</div>`:`
-  <div style="background:var(--bg3);border-radius:var(--radius);overflow:hidden">
-    ${(f.participantes||[]).map((p,i)=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:${i<f.participantes.length-1?'1px solid var(--border)':'none'}">
-      <div style="width:30px;height:30px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gold);flex-shrink:0">${p.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${p.nombre}</div><div style="font-size:11px;color:var(--text3)">${p.pais||'—'} · ${p.whatsapp||'—'}</div></div>
-      <div style="text-align:right;margin-right:8px"><div style="font-size:13px;font-weight:600;color:var(--gold)">${fmtUSD(p.monto)}</div><div style="font-size:10px;color:${p.pagado?'var(--green)':'var(--red)'}">● ${p.pagado?'Pagado':'Pendiente'}</div></div>
-      ${!p.pagado?`<button class="icon-btn btn-sm" style="color:var(--green);border-color:rgba(29,158,117,.3)" onclick="marcarPagado('${f.id}','${p.id}')">✓ Cobrado</button>`:`<span style="font-size:10px;color:var(--green);padding:0 8px">✓</span>`}
-      <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarParticipante('${f.id}','${p.id}')">✕</button>
-    </div>`).join('')}
-  </div>`}
-  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button></div>`);
-}
-
-function openAgregarParticipante(formId){
-  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
-  openModal(`
-  <div class="modal-title">Agregar Participante</div>
-  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)"><strong style="color:var(--gold)">${f.nombre}</strong> · ${fmtDateVET(f.fecha)} · Base: ${fmtUSD(f.precio)}</div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="fpar-nombre" placeholder="Nombre del profesional"></div>
-    <div class="form-group"><label class="form-label">País</label><input class="form-input" id="fpar-pais" placeholder="Venezuela, España…"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">WhatsApp</label><input class="form-input" id="fpar-ws" placeholder="+58 412 000 0000"></div>
-    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="fpar-email" placeholder="correo@email.com"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Monto a pagar (USD)</label><input class="form-input" type="number" id="fpar-monto" value="${f.precio}" min="0"></div>
-    <div class="form-group"><label class="form-label">Estado de pago</label><select class="form-input" id="fpar-pagado"><option value="0">Pendiente de pago</option><option value="1">Ya pagó</option></select></div>
-  </div>
-  <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="fpar-notas" placeholder="Especialidad, institución…"></div>
-  <div class="modal-actions">
-    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-gold" onclick="guardarParticipante('${formId}')">Agregar</button>
-  </div>`);
-}
-
-function guardarParticipante(formId){
-  const nombre=$('fpar-nombre').value.trim();
-  if(!nombre){showToast('El nombre es obligatorio');return;}
-  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
-  if(!f.participantes) f.participantes=[];
-  f.participantes.push({id:'PAR'+Date.now(),nombre,pais:$('fpar-pais').value,whatsapp:$('fpar-ws').value,email:$('fpar-email').value,monto:parseFloat($('fpar-monto').value)||0,pagado:$('fpar-pagado').value==='1',notas:$('fpar-notas').value,fechaInscripcion:todayVET()});
-  closeModal();showToast(`${nombre} agregado`);renderFormaciones();
-}
-
-function marcarPagado(formId,parId){
-  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
-  const p=(f.participantes||[]).find(x=>x.id===parId);if(!p)return;
-  p.pagado=true;closeModal();showToast(`Pago registrado — ${p.nombre}`);renderFormaciones();
-}
-
-function eliminarParticipante(formId,parId){
-  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
-  f.participantes=(f.participantes||[]).filter(x=>x.id!==parId);
-  closeModal();showToast('Participante eliminado');renderFormaciones();
-}
-
-function eliminarFormacion(id){
-  openModal(`
-  <div class="modal-title" style="color:var(--red)">Eliminar formación</div>
-  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Confirmas eliminar esta formación y todos sus participantes? No se puede deshacer.</div>
-  <div class="modal-actions">
-    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarFormacion('${id}')">Sí, eliminar</button>
-  </div>`);
-}
-
-function confirmarEliminarFormacion(id){
-  STATE.formaciones=STATE.formaciones.filter(f=>f.id!==id);
-  closeModal();showToast('Formación eliminada');renderFormaciones();
-}
 
 function showView(v){
   STATE.view=v;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  const nm={dashboard:0,agenda:1,pacientes:2,formaciones:3,hc:4,tratamientos:5,caja:6,presupuestos:7,reportes:8};
-  if(nm[v]!==undefined) document.querySelectorAll('.nav-item')[nm[v]].classList.add('active');
-  const titles={dashboard:'Dashboard',agenda:'Agenda',pacientes:'Pacientes',formaciones:'Formaciones',hc:'Historia Clínica',tratamientos:'Tratamientos',caja:'Caja',presupuestos:'Presupuestos',reportes:'Reportes'};
+  const nm={dashboard:0,agenda:1,pacientes:2,formaciones:3,marketing:4,hc:5,tratamientos:6,caja:7,presupuestos:8,reportes:9};
+  if(nm[v]!==undefined)document.querySelectorAll('.nav-item')[nm[v]].classList.add('active');
+  const titles={dashboard:'Dashboard',agenda:'Agenda',pacientes:'Pacientes',formaciones:'Formaciones',marketing:'Marketing',hc:'Historia Clínica',tratamientos:'Tratamientos',caja:'Caja',presupuestos:'Presupuestos',reportes:'Reportes'};
   $('page-title').textContent=titles[v]||v;
-  const btnL={dashboard:'+ Nuevo',agenda:'+ Nueva cita',pacientes:'+ Paciente',formaciones:'+ Formación',hc:'+ Consulta',tratamientos:'+ Sesión',caja:'+ Movimiento',presupuestos:'+ Presupuesto',reportes:'↓ Exportar'};
+  const btnL={dashboard:'+ Nuevo',agenda:'+ Nueva cita',pacientes:'+ Paciente',formaciones:'+ Formación',marketing:'+ Campaña',hc:'+ Consulta',tratamientos:'+ Sesión',caja:'+ Movimiento',presupuestos:'+ Presupuesto',reportes:'↓ Exportar'};
   $('btn-top').textContent=btnL[v]||'+ Nuevo';
   Object.keys(chartsInstances).forEach(destroyChart);
-  if(v==='dashboard') renderDashboard();
-  else if(v==='agenda') renderAgenda();
-  else if(v==='pacientes') renderPacientes();
-  else if(v==='formaciones') renderFormaciones();
-  else if(v==='hc') renderHC();
-  else if(v==='tratamientos') renderTratamientos();
-  else if(v==='caja') renderCaja();
-  else if(v==='presupuestos') renderPresupuestos();
-  else if(v==='reportes') renderReportes();
+  if(v==='dashboard')renderDashboard();
+  else if(v==='agenda')renderAgenda();
+  else if(v==='pacientes')renderPacientes();
+  else if(v==='formaciones')renderFormaciones();
+  else if(v==='marketing')renderMarketing();
+  else if(v==='hc')renderHC();
+  else if(v==='tratamientos')renderTratamientos();
+  else if(v==='caja')renderCaja();
+  else if(v==='presupuestos')renderPresupuestos();
+  else if(v==='reportes')renderReportes();
 }
 
 function openNewModal(){
-  const map={agenda:openNewCita,pacientes:openNewPatient,formaciones:openNuevaFormacion,hc:openNewConsulta,tratamientos:openNewSesion,caja:openNewMovimiento,presupuestos:openNewPresupuesto,reportes:()=>showToast('Exportación próximamente')};
+  const map={agenda:openNewCita,pacientes:openNewPatient,formaciones:openNuevaFormacion,marketing:renderMarketing,hc:openNewConsulta,tratamientos:()=>openNewConsulta(STATE.activeHCPatient),caja:openNewMovimiento,presupuestos:openNewPresupuesto,reportes:()=>showToast('Exportación próximamente')};
   (map[STATE.view]||openNewPatient)();
 }
 
@@ -638,65 +421,54 @@ function buildServiciosSelect(id,sel=''){
 }
 function buildConsultorioSelect(id){return`<select class="form-input" id="${id}">${CONSULTORIOS.map(c=>`<option value="${c.id}">${c.label}</option>`).join('')}</select>`;}
 function buildPacienteSelect(id,selId=''){
-  if(!STATE.patients.length) return`<select class="form-input" id="${id}"><option value="">— Sin pacientes registrados —</option></select>`;
+  if(!STATE.patients.length)return`<select class="form-input" id="${id}"><option value="">— Sin pacientes —</option></select>`;
   return`<select class="form-input" id="${id}">${STATE.patients.map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${p.name}</option>`).join('')}</select>`;
 }
 function buildMedicoField(){return`<select class="form-input" id="f-cdoc" onchange="toggleOtroMedico(this.value)"><option value="higuerey">Dr. Higuerey</option><option value="otro">Otro médico…</option></select><div id="otro-medico-wrap" style="display:none;margin-top:8px"><input class="form-input" id="f-otro-medico" placeholder="Nombre del médico"></div>`;}
-function toggleOtroMedico(v){const w=$('otro-medico-wrap');if(w)w.style.display=v==='otro'?'block':'none'}
+function toggleOtroMedico(v){const w=$('otro-medico-wrap');if(w)w.style.display=v==='otro'?'block':'none';}
 function getMedicoLabel(){const s=$('f-cdoc');if(!s)return'Dr. Higuerey';if(s.value==='otro'){const i=$('f-otro-medico');return i&&i.value.trim()?i.value.trim():'Médico externo';}return'Dr. Higuerey';}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function renderDashboard(){
   const hoy=todayVET();
-  const ingHoy=STATE.movimientos.filter(m=>m.fecha===hoy&&m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
-  const egrHoy=STATE.movimientos.filter(m=>m.fecha===hoy&&m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
+  const ingHoy=STATE.movimientos.filter(m=>m.fecha===hoy&&m.tipo==='ingreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
   const citasHoy=STATE.appointments.filter(a=>a.fecha===hoy);
   $('content-area').innerHTML=`
-  <div class="bcv-strip">
-    <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Tasa BCV</span>
-    <span style="font-size:16px;font-weight:600;color:var(--gold)">1 USD = ${STATE.bcvRate} Bs</span>
-    <span style="font-size:11px;color:var(--text3)">· Paralelo ≈ ${(STATE.bcvRate*1.04).toFixed(1)} Bs</span>
-    <span style="font-size:10px;color:var(--text3);margin-left:auto">Hora Venezuela: <strong style="color:var(--gold)">${nowVET().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})}</strong></span>
-    <button class="icon-btn btn-sm" onclick="showToast('Tasa actualizada')">↻ Actualizar</button>
-  </div>
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Ingresos hoy</div><div class="kpi-value">${fmtUSD(ingHoy)}</div><div class="kpi-sub">${Math.round(ingHoy*STATE.bcvRate).toLocaleString('es-VE')} Bs</div></div>
-    <div class="kpi-card"><div class="kpi-label">Balance neto</div><div class="kpi-value">${fmtUSD(ingHoy-egrHoy)}</div><div class="kpi-sub">Egresos: ${fmtUSD(egrHoy)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${citasHoy.length}</div><div class="kpi-sub">${citasHoy.filter(a=>a.status==='confirmado').length} confirmadas · ${citasHoy.filter(a=>a.status==='pendiente').length} pendientes</div></div>
-    <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>(p.tags||[]).includes('VIP')).length} VIP · ${STATE.patients.filter(p=>(p.tags||[]).includes('Nueva')||(p.tags||[]).includes('Nuevo')).length} nuevos</div></div>
+    <div class="kpi-card"><div class="kpi-label">Ingresos hoy (USD)</div><div class="kpi-value">${fmtUSD(ingHoy)}</div><div class="kpi-sub">Solo en dólares</div></div>
+    <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${citasHoy.length}</div><div class="kpi-sub">${citasHoy.filter(a=>a.status==='confirmado').length} confirmadas</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>(p.tags||[]).includes('VIP')).length} VIP</div></div>
+    <div class="kpi-card"><div class="kpi-label">Hora Venezuela</div><div class="kpi-value" style="font-size:20px">${nowVET().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})}</div><div class="kpi-sub">VET (UTC-4)</div></div>
   </div>
   <div class="dashboard-grid">
     <div class="card">
-      <div class="card-title">Agenda de hoy — ${hoy} <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('agenda')">Ver completa →</span></div>
+      <div class="card-title">Agenda hoy — ${hoy} <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('agenda')">Ver →</span></div>
       ${citasHoy.length?citasHoy.map(a=>`
       <div class="agenda-item">
-        <span class="agenda-time">${a.time} <span style="font-size:9px;color:var(--text3)">VET</span></span>
+        <span class="agenda-time">${a.time}</span>
         <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
         <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc}</div></div>
         <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
-      </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:24px;font-size:13px">Sin citas para hoy.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="closeModal();showView('agenda');setTimeout(openNewCita,50)">+ Agendar cita</button></div>`}
+      </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:24px;font-size:13px">Sin citas hoy.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="showView('agenda');setTimeout(openNewCita,100)">+ Agendar</button></div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="card">
         <div class="card-title">Ingresos recientes</div>
-        ${STATE.movimientos.filter(m=>m.tipo==='ingreso').slice(0,4).map(m=>`
-        <div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${m.desc.length>28?m.desc.slice(0,28)+'…':m.desc}</span><span style="font-size:12px;color:var(--green);font-weight:600">+${fmtUSD(m.monto)}</span></div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin movimientos registrados.</div>`}
+        ${STATE.movimientos.filter(m=>m.tipo==='ingreso').slice(0,4).map(m=>`<div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${(m.desc||'').slice(0,28)}</span><span style="font-size:12px;color:var(--green);font-weight:600">+${m.moneda==='BS'?Number(m.monto).toFixed(2)+' Bs':fmtUSD(Number(m.monto))}</span></div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin movimientos.</div>`}
       </div>
       <div class="card">
-        <div class="card-title">Pacientes recientes <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('pacientes')">Ver todos →</span></div>
+        <div class="card-title">Pacientes recientes <span style="font-size:11px;color:var(--gold);cursor:pointer" onclick="showView('pacientes')">Ver →</span></div>
         ${STATE.patients.slice(0,3).map(p=>`
         <div class="agenda-item" style="cursor:pointer" onclick="showView('hc');setTimeout(()=>openHCPatient('${p.id}'),50)">
-          <div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div>
-          <div style="flex:1"><div class="agenda-name">${p.name}</div><div class="agenda-proc">${p.procedures} procedimientos</div></div>
-        </div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin pacientes registrados.</div>`}
+          <div class="patient-avatar">${initials(p.name)}</div>
+          <div style="flex:1"><div class="agenda-name">${p.name}</div><div class="agenda-proc">${p.procedures||0} procedimientos</div></div>
+        </div>`).join('')||`<div style="color:var(--text3);font-size:13px">Sin pacientes.</div>`}
       </div>
     </div>
   </div>`;
 }
 
 // ── AGENDA ────────────────────────────────────────────────────────────────────
-let agendaWeekOffset = 0; // semanas desde hoy
-
 function renderAgenda(){
   const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const todayVet=nowVET();
@@ -705,131 +477,98 @@ function renderAgenda(){
   const weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+6);
   const times=['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
   const hoy=todayVET();
-
   const evMap={};
   STATE.appointments.forEach(a=>{
     const dt=new Date(a.fecha+'T12:00:00');
     const diff=Math.round((dt-weekStart)/86400000);
-    if(diff<0||diff>6) return;
-    const ti=times.indexOf(a.time);
-    if(ti<0) return;
-    if(!evMap[diff]) evMap[diff]={};
-    if(!evMap[diff][ti]) evMap[diff][ti]=[];
+    if(diff<0||diff>6)return;
+    const ti=times.indexOf(a.time);if(ti<0)return;
+    if(!evMap[diff])evMap[diff]={};
+    if(!evMap[diff][ti])evMap[diff][ti]=[];
     evMap[diff][ti].push(a);
   });
-
-  const citasSemana=STATE.appointments.filter(a=>{
-    const d=a.fecha;
-    const ws=weekStart.toISOString().split('T')[0];
-    const we=weekEnd.toISOString().split('T')[0];
-    return d>=ws&&d<=we;
-  });
-
-  const labelSemana=weekStart.toLocaleDateString('es-VE',{day:'2-digit',month:'short',timeZone:'America/Caracas'})+' – '+weekEnd.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'});
-  const esHoy=agendaWeekOffset===0;
-
+  const ws=weekStart.toISOString().split('T')[0];
+  const we=weekEnd.toISOString().split('T')[0];
+  const citasSemana=STATE.appointments.filter(a=>a.fecha>=ws&&a.fecha<=we);
+  const label=weekStart.toLocaleDateString('es-VE',{day:'2-digit',month:'short',timeZone:'America/Caracas'})+' – '+weekEnd.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Caracas'});
   $('content-area').innerHTML=`
   <div class="agenda-controls">
     <div style="display:flex;align-items:center;gap:8px">
-      <button class="icon-btn" onclick="cambiarSemana(-1)">‹ Anterior</button>
-      <div class="date-display">${labelSemana}</div>
-      <button class="icon-btn" onclick="cambiarSemana(1)">Siguiente ›</button>
-      ${!esHoy?`<button class="icon-btn btn-sm" onclick="irHoy()">Hoy</button>`:''}
+      <button class="icon-btn" onclick="agendaWeekOffset--;renderAgenda()">‹ Anterior</button>
+      <div class="date-display">${label}</div>
+      <button class="icon-btn" onclick="agendaWeekOffset++;renderAgenda()">Siguiente ›</button>
+      ${agendaWeekOffset!==0?`<button class="icon-btn btn-sm" onclick="agendaWeekOffset=0;renderAgenda()">Hoy</button>`:''}
     </div>
-    <span class="tz-badge">🕐 Hora Venezuela (VET)</span>
+    <span class="tz-badge">🕐 VET</span>
     <div style="display:flex;gap:8px;margin-left:auto">
       <button class="doc-chip active">Todos</button>
-      <button class="doc-chip">Dr. Higuerey</button>
       <button class="btn btn-gold btn-sm" onclick="openNewCita()">+ Nueva cita</button>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
     <div class="calendar-grid">
       <div class="cal-header" style="background:var(--bg2)"></div>
-      ${days.map((d,i)=>{
-        const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);
-        const isToday=dt.toISOString().split('T')[0]===hoy;
-        return`<div class="cal-header${isToday?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;
-      }).join('')}
+      ${days.map((d,i)=>{const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);const isT=dt.toISOString().split('T')[0]===hoy;return`<div class="cal-header${isT?' today':''}">${d}<br><span style="font-size:14px;font-weight:600">${dt.getDate()}</span></div>`;}).join('')}
       ${times.map((t,ti)=>`<div class="cal-time">${t}</div>${days.map((d,di)=>{
         const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+di);
-        const isToday=dt.toISOString().split('T')[0]===hoy;
+        const isT=dt.toISOString().split('T')[0]===hoy;
         const evs=(evMap[di]||{})[ti]||[];
-        return`<div class="cal-cell${isToday?' today-col':''}">${evs.map(ev=>`
-          <div class="cal-event" 
-            title="Doble clic para abrir HC" 
-            ondblclick="abrirHCDesdeCita('${ev.id}')"
-            onclick="showToast('Doble clic para abrir HC de ${ev.patient}')">
-            <div class="cal-event-name">${ev.patient.split(' ')[0]}</div>
-            <div class="cal-event-proc">${ev.proc.split('—')[0].trim().slice(0,16)}</div>
-            <div style="font-size:9px;color:var(--text3)">${ev.time} VET</div>
-          </div>`).join('')}</div>`;
+        return`<div class="cal-cell${isT?' today-col':''}">${evs.map(ev=>`<div class="cal-event" ondblclick="abrirHCDesdeCita('${ev.id}')" onclick="showToast('Doble clic → HC de ${ev.patient}')"><div class="cal-event-name">${ev.patient.split(' ')[0]}</div><div class="cal-event-proc">${ev.proc.split('—')[0].trim().slice(0,16)}</div></div>`).join('')}</div>`;
       }).join('')}`).join('')}
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Citas — semana del ${labelSemana} <span style="font-size:11px;color:var(--text3)">(${citasSemana.length} citas)</span></div>
+    <div class="card-title">Citas — ${label} (${citasSemana.length})</div>
     ${citasSemana.length?citasSemana.sort((a,b)=>a.fecha===b.fecha?a.time.localeCompare(b.time):a.fecha.localeCompare(b.fecha)).map(a=>`
     <div class="agenda-item">
-      <div style="min-width:80px">
-        <div class="agenda-time">${a.time} <span style="font-size:9px;color:var(--text3)">VET</span></div>
-        <div style="font-size:10px;color:var(--text3)">${fmtDateVET(a.fecha)}</div>
-      </div>
+      <div style="min-width:80px"><div class="agenda-time">${a.time} <span style="font-size:9px;color:var(--text3)">VET</span></div><div style="font-size:10px;color:var(--text3)">${fmtDateVET(a.fecha)}</div></div>
       <span class="agenda-dot dot-${a.status==='en_consulta'?'gold':a.status==='confirmado'?'green':a.status==='completado'?'blue':'gray'}"></span>
-      <div style="flex:1">
-        <div class="agenda-name" style="cursor:pointer" ondblclick="abrirHCDesdeCita('${a.id}')">${a.patient}</div>
-        <div class="agenda-proc">${a.proc} · ${a.consultorio} · ${a.doc}</div>
-      </div>
+      <div style="flex:1"><div class="agenda-name">${a.patient}</div><div class="agenda-proc">${a.proc} · ${a.consultorio} · ${a.doc}</div></div>
       <div style="display:flex;gap:6px;align-items:center">
         <span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span>
         <button class="icon-btn btn-sm" onclick="cycleStatus('${a.id}')">↺</button>
-        <button class="icon-btn btn-sm" onclick="abrirHCDesdeCita('${a.id}')" title="Abrir Historia Clínica">📋 HC</button>
-        <button class="icon-btn btn-sm" onclick="showToast('Recordatorio enviado a ${a.patient}')">📲</button>
+        <button class="icon-btn btn-sm" onclick="abrirHCDesdeCita('${a.id}')">📋 HC</button>
+        <button class="icon-btn btn-sm" onclick="enviarRecordatorioWA('${a.id}')">📲</button>
         <button class="icon-btn btn-sm" onclick="openRegistrarCobro('${a.patient}','${a.proc}')">💰</button>
-        <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="eliminarCita('${a.id}')">✕</button>
+        <button class="icon-btn btn-sm" style="color:var(--red)" onclick="eliminarCita('${a.id}')">✕</button>
       </div>
     </div>`).join(''):`<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Sin citas esta semana.</div>`}
   </div>`;
 }
 
-function cambiarSemana(dir){ agendaWeekOffset+=dir; renderAgenda(); }
-function irHoy(){ agendaWeekOffset=0; renderAgenda(); }
-
-function abrirHCDesdeCita(citaId){
+function enviarRecordatorioWA(citaId){
   const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
   const p=STATE.patients.find(x=>x.name===a.patient);
-  if(p){
-    STATE.activeHCPatient=p.id;
-    STATE.activeHCTab='consultas';
-    showView('hc');
-    // Abrir directamente modal de nueva consulta pre-cargada
-    setTimeout(()=>openNewConsulta(p.id), 300);
-  } else {
-    showToast('Paciente no encontrado — regístralo primero en Pacientes');
-  }
+  const tel=(p?.phone||'').replace(/\D/g,'');
+  const msg=`Hola ${a.patient} 👋\n\nLe recordamos su cita en *Elite Plastic Center*:\n\n📅 *Fecha:* ${fmtDateVET(a.fecha)}\n🕐 *Hora:* ${a.time} VET\n💉 *Procedimiento:* ${a.proc}\n👨‍⚕️ *Médico:* ${a.doc}\n📍 C.C. Trinidad Tepuy, Consultorio 1-13, Baruta, Caracas\n\n¡Nos vemos pronto! ✨`;
+  window.open(tel?`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+  showToast('Abriendo WhatsApp…');
 }
 
 function cycleStatus(id){
   const a=STATE.appointments.find(x=>x.id===id);if(!a)return;
   const c=['pendiente','confirmado','en_consulta','completado','cancelado'];
   a.status=c[(c.indexOf(a.status)+1)%c.length];
+  syncToSheet('Citas',STATE.appointments);
   showToast('Estado: '+statusMap[a.status].label);renderAgenda();
 }
 
+function abrirHCDesdeCita(citaId){
+  const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
+  const p=STATE.patients.find(x=>x.name===a.patient);
+  if(p){STATE.activeHCPatient=p.id;STATE.activeHCTab='consultas';showView('hc');setTimeout(()=>openNewConsulta(p.id),300);}
+  else showToast('Paciente no encontrado');
+}
+
 function eliminarCita(id){
-  openModal(`
-  <div class="modal-title" style="color:var(--red)">Eliminar cita</div>
-  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">
-    ¿Confirmas que deseas eliminar esta cita? Esta acción no se puede deshacer.
-  </div>
-  <div class="modal-actions">
-    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarCita('${id}')">Eliminar</button>
-  </div>`);
+  openModal(`<div class="modal-title" style="color:var(--red)">Eliminar cita</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Eliminar esta cita? No se puede deshacer.</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff;font-family:Montserrat,sans-serif;font-size:12px;padding:8px 18px;border-radius:var(--radius);cursor:pointer;border:none" onclick="confirmarEliminarCita('${id}')">Eliminar</button></div>`);
 }
 function confirmarEliminarCita(id){
   STATE.appointments=STATE.appointments.filter(a=>a.id!==id);
   $('badge-agenda').textContent=STATE.appointments.length;
+  syncToSheet('Citas',STATE.appointments);
   closeModal();showToast('Cita eliminada');renderAgenda();
 }
 
@@ -838,103 +577,83 @@ function renderPacientes(filter=''){
   const pts=filter?STATE.patients.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase())||p.cedula.includes(filter)):STATE.patients;
   $('content-area').innerHTML=`
   <div class="section-header">
-    <div class="section-title">Pacientes <span style="font-size:14px;color:var(--text3);font-family:Montserrat">(${STATE.patients.length})</span></div>
+    <div class="section-title">Pacientes (${STATE.patients.length})</div>
     <button class="btn btn-gold" onclick="openNewPatient()">+ Nuevo paciente</button>
   </div>
   <div class="search-bar"><input class="search-input" placeholder="Buscar por nombre o cédula…" value="${filter}" oninput="renderPacientes(this.value)"></div>
-  ${STATE.patients.length===0?`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;margin-bottom:12px;opacity:.3">👤</div><div style="font-size:14px;margin-bottom:16px">No hay pacientes registrados</div><button class="btn btn-gold" onclick="openNewPatient()">+ Registrar primer paciente</button></div>`:`
+  ${!STATE.patients.length?`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">👤</div><div style="margin-bottom:16px">No hay pacientes registrados</div><button class="btn btn-gold" onclick="openNewPatient()">+ Registrar primer paciente</button></div>`:`
   <div class="card" style="padding:0;overflow:hidden">
     <table class="patients-table">
       <thead><tr><th>Paciente</th><th>Cédula</th><th>Teléfono</th><th>Etiquetas</th><th>Última visita</th><th style="text-align:center">Procs.</th><th></th></tr></thead>
       <tbody>${pts.map(p=>`
       <tr>
-        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email}</div></div></div></td>
-        <td style="color:var(--text2);font-size:12px">${p.cedula}</td>
-        <td style="color:var(--text2);font-size:12px">${p.phone}</td>
-        <td><div style="display:flex;gap:4px;flex-wrap:wrap">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div></td>
+        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email||''}</div></div></div></td>
+        <td style="color:var(--text2);font-size:12px">${p.cedula||''}</td>
+        <td style="color:var(--text2);font-size:12px">${p.phone||''}</td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">${(p.tags||[]).map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div></td>
         <td style="font-size:12px;color:var(--text2)">${p.lastVisit||'—'}</td>
-        <td style="font-size:13px;font-weight:500;color:var(--gold);text-align:center">${p.procedures}</td>
+        <td style="font-size:13px;font-weight:500;color:var(--gold);text-align:center">${p.procedures||0}</td>
         <td><div style="display:flex;gap:5px">
           <button class="icon-btn btn-sm" onclick="showView('hc');setTimeout(()=>openHCPatient('${p.id}'),50)">HC</button>
           <button class="icon-btn btn-sm" onclick="openEditarPaciente('${p.id}')">✏</button>
           <button class="icon-btn btn-sm" onclick="openNewPresupuestoForPat('${p.id}')">Presup.</button>
-          <button class="icon-btn btn-sm" style="color:var(--red);border-color:rgba(226,75,74,.3)" onclick="confirmarEliminarPaciente('${p.id}','${p.name}')">✕</button>
+          <button class="icon-btn btn-sm" style="color:var(--red)" onclick="confirmarEliminarPaciente('${p.id}','${p.name}')">✕</button>
         </div></td>
       </tr>`).join('')}</tbody>
     </table>
   </div>`}`;
 }
 
-// ── EDITAR PACIENTE ───────────────────────────────────────────────────────────
+function openNewPatient(){
+  openModal(`<div class="modal-title">Nuevo paciente</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-nombre" placeholder="Nombre completo"></div><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="f-cedula" placeholder="V-00.000.000"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" placeholder="+58 412 000 0000"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" placeholder="correo@email.com"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="f-dob"></div><div class="form-group"><label class="form-label">Etiqueta</label><select class="form-input" id="f-tag"><option>Nueva</option><option>Recurrente</option><option>VIP</option><option>Cirugía</option></select></div></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveNewPatient()">Guardar</button></div>`);
+}
+function saveNewPatient(){
+  const n=$('f-nombre').value.trim(),c=$('f-cedula').value.trim();
+  if(!n||!c){showToast('Nombre y cédula obligatorios');return;}
+  STATE.patients.unshift({id:'P'+Date.now(),name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:'',procedures:0});
+  closeModal();showToast('Paciente registrado');
+  syncToSheet('Pacientes',STATE.patients);
+  if(STATE.view==='pacientes')renderPacientes();else renderDashboard();
+}
+
 function openEditarPaciente(id){
   const p=STATE.patients.find(x=>x.id===id);if(!p)return;
-  openModal(`
-  <div class="modal-title">Editar paciente</div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="ep-nombre" value="${p.name}"></div>
-    <div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="ep-cedula" value="${p.cedula}"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="ep-phone" value="${p.phone}"></div>
-    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ep-email" value="${p.email}"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="ep-dob" value="${p.dob||''}"></div>
-    <div class="form-group"><label class="form-label">Etiqueta</label>
-      <select class="form-input" id="ep-tag">
-        ${['Nueva','Recurrente','VIP','Cirugía'].map(t=>`<option${(p.tags||[]).includes(t)?' selected':''}>${t}</option>`).join('')}
-      </select>
-    </div>
-  </div>
-  <div class="modal-actions">
-    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-gold" onclick="guardarEdicionPaciente('${id}')">Guardar cambios</button>
-  </div>`);
+  openModal(`<div class="modal-title">Editar paciente</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="ep-nombre" value="${p.name||''}"></div><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="ep-cedula" value="${p.cedula||''}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="ep-phone" value="${p.phone||''}"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="ep-email" value="${p.email||''}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="ep-dob" value="${p.dob||''}"></div><div class="form-group"><label class="form-label">Etiqueta</label><select class="form-input" id="ep-tag">${['Nueva','Recurrente','VIP','Cirugía'].map(t=>`<option${(p.tags||[]).includes(t)?' selected':''}>${t}</option>`).join('')}</select></div></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="guardarEdicionPaciente('${id}')">Guardar</button></div>`);
 }
-
 function guardarEdicionPaciente(id){
   const p=STATE.patients.find(x=>x.id===id);if(!p)return;
-  const nombre=$('ep-nombre').value.trim();const cedula=$('ep-cedula').value.trim();
-  if(!nombre||!cedula){showToast('Nombre y cédula son obligatorios');return;}
-  p.name=nombre;p.cedula=cedula;p.phone=$('ep-phone').value;p.email=$('ep-email').value;p.dob=$('ep-dob').value;p.tags=[$('ep-tag').value];
-  closeModal();showToast('Paciente actualizado correctamente');
-  syncToSheet('Pacientes', STATE.patients);
-  renderPacientes();
+  p.name=$('ep-nombre').value.trim();p.cedula=$('ep-cedula').value.trim();p.phone=$('ep-phone').value;p.email=$('ep-email').value;p.dob=$('ep-dob').value;p.tags=[$('ep-tag').value];
+  closeModal();showToast('Paciente actualizado');
+  syncToSheet('Pacientes',STATE.patients);renderPacientes();
 }
-
-// ── ELIMINAR PACIENTE ─────────────────────────────────────────────────────────
 function confirmarEliminarPaciente(id,nombre){
-  openModal(`
-  <div class="modal-title" style="color:var(--red)">Eliminar paciente</div>
-  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:16px;margin-bottom:18px;font-size:13px;color:var(--text2)">
-    ¿Eliminar a <strong style="color:var(--text)">${nombre}</strong>?<br>
-    <span style="font-size:11px;color:var(--text3);margin-top:6px;display:block">Se eliminarán su ficha, historia clínica y consentimientos. No se puede deshacer.</span>
-  </div>
-  <div class="modal-actions">
-    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
-    <button class="btn" style="background:var(--red);color:#fff" onclick="eliminarPaciente('${id}')">Sí, eliminar</button>
-  </div>`);
+  openModal(`<div class="modal-title" style="color:var(--red)">Eliminar paciente</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Eliminar a <strong>${nombre}</strong>? No se puede deshacer.</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff;font-family:Montserrat,sans-serif;font-size:12px;padding:8px 18px;border-radius:var(--radius);cursor:pointer;border:none" onclick="eliminarPaciente('${id}')">Eliminar</button></div>`);
 }
 function eliminarPaciente(id){
   STATE.patients=STATE.patients.filter(p=>p.id!==id);
-  if(STATE.hcData[id]) delete STATE.hcData[id];
+  if(STATE.hcData[id])delete STATE.hcData[id];
   closeModal();showToast('Paciente eliminado');
-  syncToSheet('Pacientes', STATE.patients);
-  renderPacientes();
+  syncToSheet('Pacientes',STATE.patients);renderPacientes();
 }
 
 // ── HISTORIA CLÍNICA ─────────────────────────────────────────────────────────
 function renderHC(){
-  if(!STATE.patients.length){
-    $('content-area').innerHTML=`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📋</div><div style="font-size:14px;margin-bottom:16px">No hay pacientes registrados</div><button class="btn btn-gold" onclick="showView('pacientes')">Registrar paciente</button></div>`;
-    return;
-  }
+  if(!STATE.patients.length){$('content-area').innerHTML=`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📋</div><div style="margin-bottom:16px">No hay pacientes</div><button class="btn btn-gold" onclick="showView('pacientes')">Ir a Pacientes</button></div>`;return;}
   STATE.activeHCPatient=STATE.activeHCPatient||STATE.patients[0].id;
-  $('content-area').innerHTML=`
-  <div class="hc-grid">
+  $('content-area').innerHTML=`<div class="hc-grid">
     <div>
       <div class="search-bar" style="margin-bottom:10px"><input class="search-input" placeholder="Buscar paciente…" oninput="filterHCList(this.value)"></div>
-      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('')}</div>
+      <div id="hc-list">${STATE.patients.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula||''} · ${p.procedures||0} procs.</div></div></div></div>`).join('')}</div>
     </div>
     <div id="hc-panel">${buildHCPanel(STATE.activeHCPatient)}</div>
   </div>`;
@@ -942,7 +661,7 @@ function renderHC(){
 
 function filterHCList(q){
   const pts=q?STATE.patients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())):STATE.patients;
-  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name||p.nombre||'?')}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula} · ${p.procedures} procs.</div></div></div></div>`).join('');
+  $('hc-list').innerHTML=pts.map(p=>`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.cedula||''} · ${p.procedures||0} procs.</div></div></div></div>`).join('');
 }
 
 function openHCPatient(id){
@@ -958,10 +677,10 @@ function buildHCPanel(id){
   return`<div class="hc-panel">
     <div class="hc-section" style="padding:14px 18px">
       <div style="display:flex;align-items:center;gap:14px">
-        <div class="patient-avatar" style="width:46px;height:46px;font-size:14px">${initials(p.name||p.nombre||'?')}</div>
-        <div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold)">${p.name}</div><div style="font-size:12px;color:var(--text3)">${p.cedula} · ${p.phone}</div></div>
-        <div style="display:flex;gap:6px">${p.tags.map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div>
-        <button class="icon-btn btn-sm" onclick="openEditarPaciente('${id}')">✏ Editar</button>
+        <div class="patient-avatar" style="width:46px;height:46px;font-size:14px">${initials(p.name)}</div>
+        <div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold)">${p.name}</div><div style="font-size:12px;color:var(--text3)">${p.cedula||''} · ${p.phone||''}</div></div>
+        <div style="display:flex;gap:6px">${(p.tags||[]).map(t=>`<span class="tag tag-${tagCls(t)}">${t}</span>`).join('')}</div>
+        <button class="icon-btn btn-sm" onclick="openEditarPaciente('${id}')">✏</button>
         <button class="btn btn-gold btn-sm" onclick="openNewConsulta('${id}')">+ Consulta</button>
       </div>
     </div>
@@ -979,8 +698,8 @@ function switchHCTab(tab){STATE.activeHCTab=tab;const el=$('hc-tab-content');if(
 function buildHCTab(id,tab){
   const hc=STATE.hcData[id]||{antecedentes:{},consultas:[],consentimientos:[]};
   const ant=hc.antecedentes||{};
-  if(tab==='antecedentes') return`<div class="hc-section"><div class="hc-section-title">Antecedentes <button class="icon-btn btn-sm" onclick="openEditAntecedentes('${id}')">✏ Editar</button></div>${[['Alergias',ant.alergias||'—'],['Medicamentos',ant.medicamentos||'—'],['Antec. personales',ant.antPersonales||'—'],['Antec. familiares',ant.antFamiliares||'—'],['Cirugías previas',ant.cirugiasPrevias||'—']].map(([l,v])=>`<div class="hc-field"><span class="hc-field-label">${l}</span><span class="hc-field-value">${v}</span></div>`).join('')}</div>`;
-  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas registradas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${c.productos&&c.productos.length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}</div>`).join('');}
+  if(tab==='antecedentes')return`<div class="hc-section"><div class="hc-section-title">Antecedentes <button class="icon-btn btn-sm" onclick="openEditAntecedentes('${id}')">✏ Editar</button></div>${[['Alergias',ant.alergias||'—'],['Medicamentos',ant.medicamentos||'—'],['Antec. personales',ant.antPersonales||'—'],['Antec. familiares',ant.antFamiliares||'—'],['Cirugías previas',ant.cirugiasPrevias||'—']].map(([l,v])=>`<div class="hc-field"><span class="hc-field-label">${l}</span><span class="hc-field-value">${v}</span></div>`).join('')}</div>`;
+  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${(c.productos||[]).length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}</div>`).join('');}
   if(tab==='consentimientos'){const cs=hc.consentimientos||[];return`<div class="hc-section"><div class="hc-section-title">Consentimientos <button class="icon-btn btn-sm" onclick="openAddConsentimiento('${id}')">+ Agregar</button></div>${cs.length?cs.map(c=>`<div class="consent-item"><div class="consent-check${c.firmado?' done':''}">${c.firmado?'✓':''}</div><div style="flex:1;font-size:13px;color:var(--text)">${c.nombre}</div><div style="font-size:11px;color:var(--text3)">${c.firmado?'Firmado '+c.fecha:'Pendiente'}</div>${!c.firmado?`<button class="icon-btn btn-sm" onclick="firmarConsentimiento('${id}','${c.nombre}')">Firmar</button>`:''}</div>`).join(''):'<div style="color:var(--text3);font-size:13px">Sin consentimientos.</div>'}</div>`;}
   return'';
 }
@@ -1000,12 +719,11 @@ function saveAntecedentes(id){
   STATE.hcData[id].antecedentes={alergias:$('fa-alergias').value,medicamentos:$('fa-meds').value,antPersonales:$('fa-pers').value,antFamiliares:$('fa-fam').value,cirugiasPrevias:$('fa-cir').value};
   closeModal();showToast('Antecedentes guardados');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'antecedentes');
 }
-
 function openNewConsulta(id){
   id=id||STATE.activeHCPatient||STATE.patients[0]?.id;
   if(!id){showToast('Registra un paciente primero');return;}
   openModal(`<div class="modal-title">Registrar Consulta</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fc-pat',id)}</div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="fc-fecha" value="${todayVET()}"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fc-pat',id)}</div><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="fc-fecha" value="${todayVET()}"></div></div>
   <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('fc-proc')}</div>
   <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
   <div class="form-group"><label class="form-label">Nota clínica</label><textarea class="form-input" id="fc-nota" style="min-height:90px" placeholder="Evolución, técnica, observaciones…"></textarea></div>
@@ -1015,15 +733,15 @@ function openNewConsulta(id){
     <div class="form-row" style="margin-top:10px"><div class="form-group" style="margin-bottom:0"><label class="form-label">Dosis</label><input class="form-input" id="fp-dosis" placeholder="20U…"></div><div class="form-group" style="margin-bottom:0"><label class="form-label">Zona</label><input class="form-input" id="fp-zona" placeholder="Glabela…"></div></div>
     <div style="margin-top:10px"><label class="form-label">Lote</label><input class="form-input" id="fp-lote" style="margin-top:6px" placeholder="ALG2025-441"></div>
   </div>
-  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveConsulta()">Guardar consulta</button></div>`);
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveConsulta()">Guardar</button></div>`);
 }
 function saveConsulta(){
   const patId=$('fc-pat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
   if(!STATE.hcData[patId])STATE.hcData[patId]={antecedentes:{},consultas:[],consentimientos:[]};
-  const prods=[];const m=$('fp-marca').value,pr=$('fp-prod').value;
-  if(m||pr)prods.push({marca:m,prod:pr,dosis:$('fp-dosis').value,zona:$('fp-zona').value,lote:$('fp-lote').value});
+  const m=$('fp-marca').value,pr=$('fp-prod').value;
+  const prods=(m||pr)?[{marca:m,prod:pr,dosis:$('fp-dosis').value,zona:$('fp-zona').value,lote:$('fp-lote').value}]:[];
   STATE.hcData[patId].consultas.unshift({fecha:$('fc-fecha').value,proc:$('fc-proc').value,doc:getMedicoLabel(),nota:$('fc-nota').value,productos:prods});
-  p.procedures++;p.lastVisit=$('fc-fecha').value;
+  p.procedures=(p.procedures||0)+1;p.lastVisit=$('fc-fecha').value;
   STATE.activeHCPatient=patId;STATE.activeHCTab='consultas';
   closeModal();showToast('Consulta registrada');renderHC();
 }
@@ -1051,21 +769,21 @@ function saveConsentimiento(id){
 function renderTratamientos(){
   const cats=Object.keys(SERVICIOS);
   $('content-area').innerHTML=`
-  <div class="section-header"><div class="section-title">Catálogo de Servicios</div><input class="search-input" style="width:220px;margin-bottom:0" placeholder="Buscar servicio…" oninput="filterTratamientos(this.value)"></div>
+  <div class="section-header"><div class="section-title">Catálogo de Servicios</div><input class="search-input" style="width:220px;margin-bottom:0" placeholder="Buscar…" oninput="filterTratamientos(this.value)"></div>
   <div class="trat-grid">${cats.map(cat=>{const icons={'Medicina Estética':'💉','Sueroterapia & Wellness':'🧬','Cirugía Plástica & Reconstructiva':'🏥','Consultas & Valoraciones':'📋'};return`<div class="trat-cat-card${cat===STATE.activeTratCat?' active':''}" onclick="selectTratCat('${cat}')"><div style="font-size:20px;margin-bottom:6px">${icons[cat]||'⚕'}</div><div style="font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px">${cat}</div><div style="font-size:10px;color:var(--text3)">${SERVICIOS[cat].length} servicios</div></div>`;}).join('')}</div>
   <div class="trat-list" id="trat-list-container">${buildTratList(STATE.activeTratCat,SERVICIOS[STATE.activeTratCat]||[])}</div>`;
 }
 function buildTratList(cat,items){
   const sc=cat.replace(/\W/g,'');
-  return`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">${cat} <span style="color:var(--text3);font-size:12px">${items.length} servicios</span></div><span style="font-size:11px;color:var(--text3)">Clic en precio para editar</span></div>
-  ${items.map((s,i)=>`<div class="trat-row"><div class="trat-name">${s.n}</div><div class="trat-price" id="price-display-${sc}-${i}" onclick="editPrice('${cat}',${i})">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsultaFromTrat('${s.n}')">Sesión</button></div>`).join('')}`;
+  return`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">${cat} (${items.length})</div><span style="font-size:11px;color:var(--text3)">Clic en precio para editar</span></div>
+  ${items.map((s,i)=>`<div class="trat-row"><div class="trat-name">${s.n}</div><div class="trat-price" id="price-display-${sc}-${i}" onclick="editPrice('${cat}',${i})">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsulta(STATE.activeHCPatient)">Sesión</button></div>`).join('')}`;
 }
 function selectTratCat(cat){STATE.activeTratCat=cat;const c=$('trat-list-container');if(c)c.innerHTML=buildTratList(cat,SERVICIOS[cat]||[]);document.querySelectorAll('.trat-cat-card').forEach(el=>el.classList.toggle('active',el.querySelector('div:nth-child(2)')?.textContent===cat));}
 function filterTratamientos(q){
   if(!q){renderTratamientos();return;}
   const all=[];Object.entries(SERVICIOS).forEach(([cat,items])=>items.forEach(s=>all.push({...s,cat})));
   const filtered=all.filter(s=>s.n.toLowerCase().includes(q.toLowerCase()));
-  const c=$('trat-list-container');if(c)c.innerHTML=`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">"${q}" — ${filtered.length} resultados</div></div>${filtered.map(s=>`<div class="trat-row"><div class="trat-name">${s.n}</div><span style="font-size:10px;padding:2px 8px;background:rgba(176,184,193,.1);border-radius:4px;color:var(--text3)">${s.cat.split('&')[0].trim()}</span><div class="trat-price">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsultaFromTrat('${s.n}')">Sesión</button></div>`).join('')}`;
+  const c=$('trat-list-container');if(c)c.innerHTML=`<div class="trat-list-header"><div style="font-size:13px;font-weight:500;color:var(--text)">"${q}" — ${filtered.length} resultados</div></div>${filtered.map(s=>`<div class="trat-row"><div class="trat-name">${s.n}</div><span style="font-size:10px;padding:2px 8px;background:rgba(176,184,193,.1);border-radius:4px;color:var(--text3)">${s.cat.split('&')[0].trim()}</span><div class="trat-price">${fmtUSD(s.p)}</div><button class="icon-btn btn-sm" onclick="openNewConsulta(STATE.activeHCPatient)">Sesión</button></div>`).join('')}`;
 }
 function editPrice(cat,idx){
   const sc=cat.replace(/\W/g,'');const item=SERVICIOS[cat][idx];const el=$(`price-display-${sc}-${idx}`);if(!el)return;
@@ -1074,21 +792,20 @@ function editPrice(cat,idx){
 }
 function savePrice(cat,idx){const sc=cat.replace(/\W/g,'');const inp=$(`pinp-${sc}-${idx}`);if(!inp)return;const val=Math.max(0,parseInt(inp.value)||0);SERVICIOS[cat][idx].p=val;const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(val);showToast(`Precio → ${fmtUSD(val)}`);}
 function cancelPrice(cat,idx){const sc=cat.replace(/\W/g,'');const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(SERVICIOS[cat][idx].p);}
-function openNewConsultaFromTrat(servicio){STATE.activeHCTab='consultas';openNewConsulta(STATE.activeHCPatient);}
-function openNewSesion(){openNewConsulta(STATE.activeHCPatient);}
 
 // ── CAJA ─────────────────────────────────────────────────────────────────────
 function getCajaMovs(){
   const hoy=todayVET();
   if(STATE.activeCajaPeriodo==='hoy')return STATE.movimientos.filter(m=>m.fecha===hoy);
-  if(STATE.activeCajaPeriodo==='semana'){const d=new Date(hoy);d.setDate(d.getDate()-7);const sem=d.toISOString().split('T')[0];return STATE.movimientos.filter(m=>m.fecha>=sem&&m.fecha<=hoy);}
+  if(STATE.activeCajaPeriodo==='semana'){const d=new Date(hoy);d.setDate(d.getDate()-7);return STATE.movimientos.filter(m=>m.fecha>=d.toISOString().split('T')[0]&&m.fecha<=hoy);}
   return STATE.movimientos;
 }
 function renderCaja(){
   const movs=getCajaMovs();
-  const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
-  const egr=movs.filter(m=>m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
-  const byMetodo={};movs.filter(m=>m.tipo==='ingreso').forEach(m=>{byMetodo[m.metodo]=(byMetodo[m.metodo]||0)+m.monto;});
+  const ingUSD=movs.filter(m=>m.tipo==='ingreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+  const ingBS=movs.filter(m=>m.tipo==='ingreso'&&m.moneda==='BS').reduce((a,m)=>a+Number(m.monto),0);
+  const egrUSD=movs.filter(m=>m.tipo==='egreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+  const egrBS=movs.filter(m=>m.tipo==='egreso'&&m.moneda==='BS').reduce((a,m)=>a+Number(m.monto),0);
   $('content-area').innerHTML=`
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
     <div class="section-title">Caja</div>
@@ -1097,99 +814,96 @@ function renderCaja(){
       <button class="btn btn-gold btn-sm" onclick="openNewMovimiento()">+ Movimiento</button>
     </div>
   </div>
-  <div class="balance-bar">
-    <div class="balance-row"><span class="balance-label">💚 Ingresos</span><span style="font-size:14px;font-weight:600;color:var(--green)">${fmtUSD(ing)} <span style="font-size:11px;color:var(--text3);font-weight:400">/ ${Math.round(ing*STATE.bcvRate).toLocaleString('es-VE')} Bs</span></span></div>
-    <div class="balance-row"><span class="balance-label">🔴 Egresos</span><span style="font-size:14px;font-weight:600;color:var(--red)">${fmtUSD(egr)}</span></div>
-    <div class="balance-row"><span class="balance-label" style="font-weight:600;color:var(--text)">Balance neto</span><span class="balance-total">${fmtUSD(ing-egr)}</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:18px">
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:600">💵 Dólares (USD)</div>
+      <div class="balance-row"><span class="balance-label">Ingresos</span><span style="font-size:14px;font-weight:600;color:var(--green)">$${ingUSD.toFixed(2)}</span></div>
+      <div class="balance-row"><span class="balance-label">Egresos</span><span style="font-size:14px;font-weight:600;color:var(--red)">$${egrUSD.toFixed(2)}</span></div>
+      <div class="balance-row"><span class="balance-label" style="font-weight:600;color:var(--text)">Balance</span><span style="font-size:18px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--gold)">$${(ingUSD-egrUSD).toFixed(2)}</span></div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:18px">
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:600">🇻🇪 Bolívares (Bs)</div>
+      <div class="balance-row"><span class="balance-label">Ingresos</span><span style="font-size:14px;font-weight:600;color:var(--green)">${ingBS.toFixed(2)} Bs</span></div>
+      <div class="balance-row"><span class="balance-label">Egresos</span><span style="font-size:14px;font-weight:600;color:var(--red)">${egrBS.toFixed(2)} Bs</span></div>
+      <div class="balance-row"><span class="balance-label" style="font-weight:600;color:var(--text)">Balance</span><span style="font-size:18px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--gold)">${(ingBS-egrBS).toFixed(2)} Bs</span></div>
+    </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text2)">Movimientos (${movs.length})</div>
-      ${movs.length?movs.map(m=>`<div class="movimiento-row"><div class="mov-tipo ${m.tipo==='ingreso'?'mov-ingreso':'mov-egreso'}"></div><div style="flex:1"><div style="font-size:13px;color:var(--text)">${m.desc}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(m.fecha)} · ${m.metodo}</div></div><div class="${m.tipo==='ingreso'?'mov-monto-pos':'mov-monto-neg'}">${m.tipo==='ingreso'?'+':'-'}${fmtUSD(m.monto)}</div><button class="icon-btn btn-sm" style="margin-left:6px;color:var(--red)" onclick="eliminarMovimiento('${m.id}')">✕</button></div>`).join(''):`<div style="padding:32px;text-align:center;color:var(--text3)">Sin movimientos</div>`}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div class="card">
-        <div class="card-title">Por método de pago</div>
-        ${Object.entries(byMetodo).sort((a,b)=>b[1]-a[1]).map(([met,tot])=>`<div class="proc-item"><span style="font-size:12px;color:var(--text);flex:1">${met}</span><div class="proc-bar-wrap"><div class="proc-bar" style="width:${ing>0?Math.round(tot/ing*100):0}%"></div></div><span style="font-size:12px;color:var(--gold);min-width:60px;text-align:right">${fmtUSD(tot)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}
-      </div>
-      <div class="card">
-        <div class="card-title">Equivalencia Bs <span style="font-size:11px;color:var(--text3)">Tasa ${STATE.bcvRate}</span></div>
-        ${[['Ingresos',ing],['Balance',ing-egr]].map(([l,v])=>`<div class="balance-row"><span class="balance-label">${l}</span><span style="font-size:13px;font-weight:600;color:var(--gold)">${Math.round(v*STATE.bcvRate).toLocaleString('es-VE')} Bs</span></div>`).join('')}
-      </div>
-    </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text2)">Movimientos (${movs.length})</div>
+    ${movs.length?movs.map(m=>`<div class="movimiento-row"><div class="mov-tipo ${m.tipo==='ingreso'?'mov-ingreso':'mov-egreso'}"></div><div style="flex:1"><div style="font-size:13px;color:var(--text)">${m.desc||''}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(m.fecha||'')} · <span style="color:var(--gold)">${m.metodo||''}</span></div></div><div class="${m.tipo==='ingreso'?'mov-monto-pos':'mov-monto-neg'}">${m.tipo==='ingreso'?'+':'-'}${m.moneda==='BS'?Number(m.monto).toFixed(2)+' Bs':'$'+Number(m.monto).toFixed(2)}</div><button class="icon-btn btn-sm" style="margin-left:6px;color:var(--red)" onclick="eliminarMovimiento('${m.id}')">✕</button></div>`).join(''):`<div style="padding:32px;text-align:center;color:var(--text3)">Sin movimientos</div>`}
   </div>`;
 }
 function setPeriodo(p){STATE.activeCajaPeriodo=p;renderCaja();}
 function openNewMovimiento(){
   openModal(`<div class="modal-title">Registrar Movimiento</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fm-tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="fm-fecha" value="${todayVET()}"></div></div>
-  <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="fm-desc" placeholder="Concepto del movimiento…"></div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fm-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método de pago</label><select class="form-input" id="fm-metodo">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fm-tipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select></div><div class="form-group"><label class="form-label">Moneda</label><select class="form-input" id="fm-moneda" onchange="toggleMonedaLabel(this.value)"><option value="USD">Dólares (USD)</option><option value="BS">Bolívares (Bs)</option></select></div></div>
+  <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="fm-desc" placeholder="Concepto…"></div>
+  <div class="form-row"><div class="form-group"><label class="form-label" id="fm-monto-label">Monto (USD)</label><input class="form-input" type="number" id="fm-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método de pago</label><select class="form-input" id="fm-metodo">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
+  <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="fm-fecha" value="${todayVET()}"></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveMovimiento()">Guardar</button></div>`);
 }
+function toggleMonedaLabel(v){const l=$('fm-monto-label');if(l)l.textContent=v==='BS'?'Monto (Bs)':'Monto (USD)';}
 function saveMovimiento(){
   const desc=$('fm-desc').value.trim();const monto=parseFloat($('fm-monto').value);
-  if(!desc||isNaN(monto)||monto<=0){showToast('Descripción y monto son obligatorios');return;}
-  STATE.movimientos.unshift({id:'M'+(Date.now()),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:'USD'});
-  closeModal();showToast('Movimiento registrado');renderCaja();
+  if(!desc||isNaN(monto)||monto<=0){showToast('Descripción y monto obligatorios');return;}
+  STATE.movimientos.unshift({id:'M'+Date.now(),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:$('fm-moneda').value});
+  closeModal();showToast('Movimiento registrado');
+  syncToSheet('Movimientos',STATE.movimientos);renderCaja();
 }
-function eliminarMovimiento(id){
-  openModal(`<div class="modal-title" style="color:var(--red)">Eliminar movimiento</div>
-  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Confirmas eliminar este movimiento? No se puede deshacer.</div>
-  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff" onclick="confirmarEliminarMov('${id}')">Eliminar</button></div>`);
-}
-function confirmarEliminarMov(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);closeModal();showToast('Movimiento eliminado');renderCaja();}
+function eliminarMovimiento(id){STATE.movimientos=STATE.movimientos.filter(m=>m.id!==id);syncToSheet('Movimientos',STATE.movimientos);showToast('Eliminado');renderCaja();}
 function openRegistrarCobro(paciente,proc){
   openModal(`<div class="modal-title">Registrar Cobro</div>
   <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text2)"><strong style="color:var(--gold)">${paciente}</strong><br>${proc}</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fc-monto" placeholder="0.00" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Método</label><select class="form-input" id="fc-metpago">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Moneda</label><select class="form-input" id="cobro-moneda" onchange="toggleMonedaCobro(this.value)"><option value="USD">USD</option><option value="BS">Bs</option></select></div><div class="form-group"><label class="form-label" id="cobro-monto-label">Monto (USD)</label><input class="form-input" type="number" id="fc-monto" placeholder="0.00" min="0" step="0.01"></div></div>
+  <div class="form-group"><label class="form-label">Método</label><select class="form-input" id="fc-metpago">${METODOS_PAGO.map(m=>`<option>${m}</option>`).join('')}</select></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCobro('${paciente}','${proc}')">Registrar</button></div>`);
 }
+function toggleMonedaCobro(v){const l=$('cobro-monto-label');if(l)l.textContent=v==='BS'?'Monto (Bs)':'Monto (USD)';}
 function saveCobro(paciente,proc){
   const monto=parseFloat($('fc-monto').value);if(isNaN(monto)||monto<=0){showToast('Monto inválido');return;}
-  STATE.movimientos.unshift({id:'M'+Date.now(),fecha:todayVET(),tipo:'ingreso',desc:`${proc} — ${paciente}`,metodo:$('fc-metpago').value,monto,moneda:'USD'});
-  closeModal();showToast(`Cobro registrado: ${fmtUSD(monto)}`);
+  STATE.movimientos.unshift({id:'M'+Date.now(),fecha:todayVET(),tipo:'ingreso',desc:`${proc} — ${paciente}`,metodo:$('fc-metpago').value,monto,moneda:$('cobro-moneda')?.value||'USD'});
+  syncToSheet('Movimientos',STATE.movimientos);
+  closeModal();showToast(`Cobro registrado`);
 }
 
 // ── PRESUPUESTOS ──────────────────────────────────────────────────────────────
 function renderPresupuestos(){
   $('content-area').innerHTML=`
-  <div class="section-header"><div class="section-title">Presupuestos <span style="font-size:14px;color:var(--text3);font-family:Montserrat">(${STATE.presupuestos.length})</span></div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Nuevo presupuesto</button></div>
-  ${STATE.presupuestos.length?`<div class="presup-list">${STATE.presupuestos.map(pr=>{const total=pr.items.reduce((a,i)=>a+i.monto,0);return`<div class="presup-card" onclick="verPresupuesto('${pr.id}')"><div><div style="font-size:11px;color:var(--text3)">${pr.id}</div><div style="display:flex;gap:6px;margin-top:4px"><span class="tag ${pr.tipo==='quirurgico'?'tag-surg':'tag-rec'}">${pr.tipo==='quirurgico'?'Quirúrgico':'Estética'}</span></div></div><div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${pr.paciente}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${pr.items.map(i=>i.desc.split('—')[0].trim()).join(' · ')}</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--gold)">${total>0?fmtUSD(total):'Consultar'}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(pr.fecha)}</div></div><button class="icon-btn btn-sm" onclick="event.stopPropagation();eliminarPresupuesto('${pr.id}')">✕</button></div>`;}).join('')}</div>`:`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📄</div><div style="font-size:14px;margin-bottom:16px">Sin presupuestos generados</div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Crear primer presupuesto</button></div>`}`;
+  <div class="section-header"><div class="section-title">Presupuestos (${STATE.presupuestos.length})</div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Nuevo presupuesto</button></div>
+  ${STATE.presupuestos.length?`<div class="presup-list">${STATE.presupuestos.map(pr=>{const total=(pr.items||[]).reduce((a,i)=>a+i.monto,0);return`<div class="presup-card" onclick="verPresupuesto('${pr.id}')"><div><div style="font-size:11px;color:var(--text3)">${pr.id}</div><span class="tag ${pr.tipo==='quirurgico'?'tag-surg':'tag-rec'}" style="margin-top:4px;display:inline-block">${pr.tipo==='quirurgico'?'Quirúrgico':'Estética'}</span></div><div style="flex:1"><div style="font-size:14px;font-weight:500;color:var(--text)">${pr.paciente||''}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${(pr.items||[]).map(i=>(i.desc||'').split('—')[0].trim()).join(' · ')}</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600;color:var(--gold)">${total>0?fmtUSD(total):'Consultar'}</div><div style="font-size:11px;color:var(--text3)">${fmtDateVET(pr.fecha||'')}</div></div><button class="icon-btn btn-sm" onclick="event.stopPropagation();eliminarPresupuesto('${pr.id}')">✕</button></div>`;}).join('')}</div>`:`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">📄</div><div style="margin-bottom:16px">Sin presupuestos</div><button class="btn btn-gold" onclick="openNewPresupuesto()">+ Crear primero</button></div>`}`;
 }
-function eliminarPresupuesto(id){STATE.presupuestos=STATE.presupuestos.filter(p=>p.id!==id);showToast('Presupuesto eliminado');renderPresupuestos();}
+function eliminarPresupuesto(id){STATE.presupuestos=STATE.presupuestos.filter(p=>p.id!==id);syncToSheet('Presupuestos',STATE.presupuestos);showToast('Eliminado');renderPresupuestos();}
 function verPresupuesto(id){
   const pr=STATE.presupuestos.find(x=>x.id===id);if(!pr)return;
-  const total=pr.items.reduce((a,i)=>a+i.monto,0);const esCir=pr.tipo==='quirurgico';
-  const exp=new Date(pr.fecha+'T12:00:00');exp.setDate(exp.getDate()+pr.vigencia);
+  const total=(pr.items||[]).reduce((a,i)=>a+i.monto,0);const esCir=pr.tipo==='quirurgico';
+  const exp=new Date((pr.fecha||todayVET())+'T12:00:00');exp.setDate(exp.getDate()+(pr.vigencia||90));
   openModal(`<div class="presup-preview">
-    <div class="presup-preview-header"><div><div class="presup-clinic-name">Elite Plastic Center</div><div style="font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px">C.C. Trinidad Tepuy · Consultorio 1-13 · Baruta, Caracas</div></div><div style="text-align:right;font-size:11px;color:#555;line-height:1.8"><div><strong>${pr.id}</strong></div><div>Fecha: ${fmtDateVET(pr.fecha)}</div><div>Médico: ${pr.doc}</div></div></div>
-    <div style="background:#f8f7f5;border-radius:8px;padding:14px 18px;margin-bottom:20px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Paciente</div><div style="font-size:16px;font-weight:600;color:#2C3740">${pr.paciente}</div><div style="font-size:12px;color:#666;margin-top:2px">${pr.cedula}</div></div>
+    <div class="presup-preview-header"><div><div class="presup-clinic-name">Elite Plastic Center</div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-top:3px">C.C. Trinidad Tepuy · Consultorio 1-13 · Baruta, Caracas</div></div><div style="text-align:right;font-size:11px;color:#555;line-height:1.8"><div><strong>${pr.id}</strong></div><div>Fecha: ${fmtDateVET(pr.fecha||'')}</div><div>Médico: ${pr.doc||'Dr. Higuerey'}</div></div></div>
+    <div style="background:#f8f7f5;border-radius:8px;padding:14px 18px;margin-bottom:20px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Paciente</div><div style="font-size:16px;font-weight:600;color:#2C3740">${pr.paciente||''}</div><div style="font-size:12px;color:#666;margin-top:2px">${pr.cedula||''}</div></div>
     <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Procedimientos</div>
-    ${pr.items.map((item,i)=>`<div class="presup-item-row"><div style="font-size:11px;color:#999;min-width:20px">${i+1}.</div><div style="font-size:13px;color:#1a1a1a;flex:1">${item.desc}</div><div style="font-size:13px;font-weight:600;color:#2C3740;min-width:80px;text-align:right">${item.monto>0?fmtUSD(item.monto):'Consultar'}</div></div>`).join('')}
+    ${(pr.items||[]).map((item,i)=>`<div class="presup-item-row"><div style="font-size:11px;color:#999;min-width:20px">${i+1}.</div><div style="font-size:13px;color:#1a1a1a;flex:1">${item.desc||''}</div><div style="font-size:13px;font-weight:600;color:#2C3740;min-width:80px;text-align:right">${item.monto>0?fmtUSD(item.monto):'Consultar'}</div></div>`).join('')}
     <hr style="border:none;border-top:1px solid #ddd;margin:14px 0">
-    ${esCir?`<div style="font-size:12px;color:#555;margin-bottom:8px">Abono (30%): <strong>${total>0?fmtUSD(Math.round(total*.3)):'-'}</strong> &nbsp; Saldo (70%): <strong>${total>0?fmtUSD(Math.round(total*.7)):'-'}</strong></div>`:`<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px"><span style="font-size:12px;color:#888">Total</span><span style="font-size:20px;font-weight:600;color:#2C3740;font-family:'Cormorant Garamond',serif">${total>0?fmtUSD(total):'Consultar'}</span></div>`}
-    <div style="font-size:11px;color:#888;line-height:1.7;margin-top:16px;padding-top:14px;border-top:1px solid #eee">Precios en USD. Vigencia ${pr.vigencia} días. Vence: ${exp.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric',timeZone:'America/Caracas'})}.</div>
+    ${esCir?`<div style="font-size:12px;color:#555;margin-bottom:8px">Abono (30%): <strong>${total>0?fmtUSD(Math.round(total*.3)):'-'}</strong> · Saldo (70%): <strong>${total>0?fmtUSD(Math.round(total*.7)):'-'}</strong></div>`:`<div style="display:flex;justify-content:flex-end;align-items:baseline;gap:8px"><span style="font-size:12px;color:#888">Total</span><span style="font-size:20px;font-weight:600;color:#2C3740;font-family:'Cormorant Garamond',serif">${total>0?fmtUSD(total):'Consultar'}</span></div>`}
+    <div style="font-size:11px;color:#888;line-height:1.7;margin-top:16px;padding-top:14px;border-top:1px solid #eee">Precios en USD. Vigencia ${pr.vigencia||90} días. Vence: ${exp.toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric',timeZone:'America/Caracas'})}.</div>
   </div>
-  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button><button class="btn btn-gold" onclick="showToast('PDF próximamente')">🖨 Imprimir</button></div>`);
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button><button class="btn btn-gold" onclick="window.print()">🖨 Imprimir</button></div>`);
 }
-let presupItemCount=1;
 function openNewPresupuesto(patId=''){
   if(!STATE.patients.length){showToast('Registra un paciente primero');return;}
   presupItemCount=1;
   openModal(`<div class="modal-title">Nuevo Presupuesto</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fp-pat',patId)}</div><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fp-tipo"><option value="estetica">Medicina Estética (90 días)</option><option value="quirurgico">Quirúrgico (30 días)</option></select></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fp-pat',patId)}</div><div class="form-group"><label class="form-label">Tipo</label><select class="form-input" id="fp-tipo"><option value="estetica">Estética (90 días)</option><option value="quirurgico">Quirúrgico (30 días)</option></select></div></div>
   <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
   <div style="background:var(--bg3);border-radius:var(--radius);padding:14px;margin-bottom:14px">
     <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Procedimientos</div>
     <div id="presup-items"><div class="form-row presup-item-entry" style="margin-bottom:8px"><div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-0')}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto USD</label><input class="form-input" id="pitem-monto-0" type="number" min="0" placeholder="0"></div></div></div>
-    <button class="btn-outline btn-sm" style="margin-top:8px" onclick="addPresupItem()">+ Agregar ítem</button>
+    <button class="btn-outline btn-sm" style="margin-top:8px" onclick="addPresupItem()">+ Agregar</button>
   </div>
-  <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="fp-notas" style="min-height:60px" placeholder="Condiciones, aclaraciones…"></textarea></div>
+  <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="fp-notas" style="min-height:60px" placeholder="Condiciones…"></textarea></div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="savePresupuesto()">Generar</button></div>`);
 }
 function addPresupItem(){
-  const i=presupItemCount++;const wrap=$('presup-items');if(!wrap)return;
+  const i=presupItemCount++;const wrap=$('presup-items');if('wrap)return;
   const div=document.createElement('div');div.className='form-row presup-item-entry';div.style.marginBottom='8px';
   div.innerHTML=`<div class="form-group" style="margin-bottom:0;flex:3">${buildServiciosSelect('pitem-desc-'+i)}</div><div class="form-group" style="margin-bottom:0;flex:1"><label class="form-label">Monto</label><input class="form-input" id="pitem-monto-${i}" type="number" min="0" placeholder="0"></div><button class="icon-btn btn-sm" style="align-self:flex-end;padding:10px 12px" onclick="this.parentElement.remove()">✕</button>`;
   wrap.appendChild(div);
@@ -1198,43 +912,25 @@ function savePresupuesto(){
   const patId=$('fp-pat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
   const tipo=$('fp-tipo').value;const vigencia=tipo==='quirurgico'?30:90;
   const items=[];
-  document.querySelectorAll('.presup-item-entry').forEach(row=>{const descEl=row.querySelector('select');const montoEl=row.querySelector('input[type="number"]');if(descEl&&montoEl&&descEl.value)items.push({desc:descEl.value,monto:parseFloat(montoEl.value)||0});});
+  document.querySelectorAll('.presup-item-entry').forEach(row=>{const d=row.querySelector('select');const m=row.querySelector('input[type="number"]');if(d&&m&&d.value)items.push({desc:d.value,monto:parseFloat(m.value)||0});});
   if(!items.length){showToast('Agrega al menos un procedimiento');return;}
   const id='PRES-'+String(STATE.presupuestos.length+1).padStart(3,'0');
-  STATE.presupuestos.unshift({id,fecha:todayVET(),paciente:p.name,cedula:p.cedula,tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value});
+  STATE.presupuestos.unshift({id,fecha:todayVET(),paciente:p.name,cedula:p.cedula||'',tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value});
   presupItemCount=1;closeModal();showToast(`Presupuesto ${id} generado`);
-  syncToSheet('Presupuestos', STATE.presupuestos);
-  renderPresupuestos();
+  syncToSheet('Presupuestos',STATE.presupuestos);renderPresupuestos();
 }
 function openNewPresupuestoForPat(id){showView('presupuestos');setTimeout(()=>openNewPresupuesto(id),50);}
 
-// ── MODALES PACIENTE / CITA ───────────────────────────────────────────────────
-function openNewPatient(){
-  openModal(`<div class="modal-title">Nuevo paciente</div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="f-nombre" placeholder="Nombre completo"></div><div class="form-group"><label class="form-label">Cédula</label><input class="form-input" id="f-cedula" placeholder="V-00.000.000"></div></div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" placeholder="+58 412 000 0000"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" placeholder="correo@email.com"></div></div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Fecha de nacimiento</label><input class="form-input" type="date" id="f-dob"></div><div class="form-group"><label class="form-label">Etiqueta</label><select class="form-input" id="f-tag"><option>Nueva</option><option>Recurrente</option><option>VIP</option><option>Cirugía</option></select></div></div>
-  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveNewPatient()">Guardar</button></div>`);
-}
-function saveNewPatient(){
-  const n=$('f-nombre').value.trim(),c=$('f-cedula').value.trim();
-  if(!n||!c){showToast('Nombre y cédula obligatorios');return;}
-  const id='P'+Date.now();
-  STATE.patients.unshift({id,name:n,cedula:c,phone:$('f-phone').value||'—',email:$('f-email').value||'—',dob:$('f-dob').value||'—',tags:[$('f-tag').value],lastVisit:'',procedures:0});
-  closeModal();showToast('Paciente registrado');
-  syncToSheet('Pacientes', STATE.patients);
-  if(STATE.view==='pacientes')renderPacientes();else renderDashboard();
-}
+// ── NUEVA CITA ────────────────────────────────────────────────────────────────
 function openNewCita(){
   if(!STATE.patients.length){showToast('Registra un paciente primero');return;}
-  openModal(`<div class="modal-title">Nueva cita <span class="tz-badge" style="font-size:10px">🕐 Hora Venezuela</span></div>
-  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">⚠️ La hora se guarda en <strong style="color:var(--gold)">hora Venezuela (VET, UTC-4)</strong> sin importar desde dónde se agende.</div>
+  openModal(`<div class="modal-title">Nueva cita <span class="tz-badge" style="font-size:10px">🕐 VET</span></div>
+  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)">⚠️ La hora se guarda en <strong style="color:var(--gold)">hora Venezuela (VET)</strong> sin importar desde dónde se agende.</div>
   <div class="form-row"><div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('f-cpat')}</div><div class="form-group"><label class="form-label">Fecha (VET)</label><input class="form-input" type="date" id="f-cdate" value="${todayVET()}"></div></div>
-  <div class="form-row"><div class="form-group"><label class="form-label">Hora Venezuela (VET)</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</label>${buildConsultorioSelect('f-ccons')}</div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Hora VET</label><input class="form-input" type="time" id="f-ctime" value="09:00"></div><div class="form-group"><label class="form-label">Consultorio</sabel>${buildConsultorioSelect('f-ccons')}</div></div>
   <div class="form-group"><label class="form-label">Procedimiento</label>${buildServiciosSelect('f-cproc')}</div>
   <div class="form-group"><label class="form-label">Médico</label>${buildMedicoField()}</div>
-  <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="f-cnotes" placeholder="Indicaciones adicionales…"></div>
-  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCita()">Confirmar cita</button></div>`);
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="saveCita()">Confirmar</button></div>`);
 }
 function saveCita(){
   const patId=$('f-cpat').value;const p=STATE.patients.find(x=>x.id===patId);if(!p)return;
@@ -1243,96 +939,248 @@ function saveCita(){
   STATE.appointments.push({id:'A'+Date.now(),fecha,time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel,timezone:'VET'});
   STATE.appointments.sort((a,b)=>a.fecha===b.fecha?a.time.localeCompare(b.time):a.fecha.localeCompare(b.fecha));
   $('badge-agenda').textContent=STATE.appointments.length;
-  closeModal();showToast(`Cita registrada: ${p.name} · ${fecha} ${time} VET`);
-  syncToSheet('Citas', STATE.appointments);
+  closeModal();showToast(`Cita: ${p.name} · ${fecha} ${time} VET`);
+  syncToSheet('Citas',STATE.appointments);
   if(STATE.view==='agenda')renderAgenda();else renderDashboard();
+}
+
+// ── FORMACIONES ───────────────────────────────────────────────────────────────
+function renderFormaciones(){
+  const fs=STATE.formaciones||[];
+  const inscritos=fs.reduce((a,f)=>a+(f.participantes||[]).length,0);
+  const recaudado=fs.reduce((a,f)=>a+(f.participantes||[]).filter(p=>p.pagado).reduce((b,p)=>b+Number(p.monto),0),0);
+  const pendiente=fs.reduce((a,f)=>a+(f.participantes||[]).filter(p=>!p.pagado).reduce((b,p)=>b+Number(p.monto),0),0);
+  $('content-area').innerHTML=`
+  <div class="section-header"><div class="section-title">Formaciones</div><button class="btn btn-gold" onclick="openNuevaFormacion()">+ Nueva formación</button></div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Formaciones</div><div class="kpi-value">${fs.length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Inscritos</div><div class="kpi-value">${inscritos}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Recaudado</div><div class="kpi-value" style="font-size:22px">${fmtUSD(recaudado)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Por cobrar</div><div class="kpi-value" style="font-size:22px;color:var(--red)">${fmtUSD(pendiente)}</div></div>
+  </div>
+  ${!fs.length?`<div class="card" style="text-align:center;padding:48px;color:var(--text3)"><div style="font-size:40px;opacity:.3;margin-bottom:12px">🎓</div><div style="margin-bottom:16px">No hay formaciones</div><button class="btn btn-gold" onclick="openNuevaFormacion()">+ Registrar primera</button></div>`:`
+  <div style="display:flex;flex-direction:column;gap:14px">${fs.map(f=>{
+    const tp=(f.participantes||[]).length,pg=(f.participantes||[]).filter(p=>p.pagado).length;
+    const rc=(f.participantes||[]).filter(p=>p.pagado).reduce((a,p)=>a+Number(p.monto),0);
+    const pct=tp>0?Math.round(pg/tp*100):0;
+    return`<div class="card"><div style="display:flex;align-items:flex-start;gap:16px">
+      <div style="width:48px;height:48px;border-radius:12px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎓</div>
+      <div style="flex:1">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text);margin-bottom:4px">${f.nombre||''}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">📅 ${fmtDateVET(f.fecha||'')} · ${f.lugar||'—'} · ${fmtUSD(Number(f.precio)||0)}/persona</div>
+        <div style="display:flex;gap:16px;margin-bottom:8px"><span style="font-size:12px;color:var(--text2)">👥 ${tp} inscritos</span><span style="font-size:12px;color:var(--green)">✅ ${pg} pagados</span><span style="font-size:12px;color:var(--red)">⏳ ${tp-pg} pendientes</span></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;color:var(--text3)">${pct}%</span><span style="font-size:10px;color:var(--gold)">${fmtUSD(rc)} cobrado</span></div><div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--gold);border-radius:2px"></div></div></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="icon-btn btn-sm" onclick="openAgregarParticipante('${f.id}')">+ Participante</button>
+        <button class="icon-btn btn-sm" onclick="verFormacion('${f.id}')">Ver →</button>
+        <button class="icon-btn btn-sm" style="color:var(--red)" onclick="eliminarFormacion('${f.id}')">✕</button>
+      </div>
+    </div></div>`;}).join('')}</div>`}`;
+}
+function openNuevaFormacion(){
+  openModal(`<div class="modal-title">Nueva Formación</div>
+  <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="ff-nombre" placeholder="Masterclass Técnica 1:5…"></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="ff-fecha" value="${todayVET()}"></div><div class="form-group"><label class="form-label">Modalidad</label><select class="form-input" id="ff-modalidad"><option value="online">Online</option><option value="presencial">Presencial</option></select></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Precio (USD)</label><input class="form-input" type="number" id="ff-precio" placeholder="350" min="0"></div><div class="form-group"><label class="form-label">Lugar / Plataforma</label><input class="form-input" id="ff-lugar" placeholder="Zoom / Caracas…"></div></div>
+  <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input" id="ff-desc" placeholder="Técnicas, nivel…" style="min-height:70px"></textarea></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="guardarFormacion()">Crear</button></div>`);
+}
+function guardarFormacion(){
+  const nombre=$('ff-nombre').value.trim();if(!nombre){showToast('El nombre es obligatorio');return;}
+  STATE.formaciones.unshift({id:'F'+Date.now(),nombre,fecha:$('ff-fecha').value,modalidad:$('ff-modalidad').value,precio:parseFloat($('ff-precio').value)||0,lugar:$('ff-lugar').value,desc:$('ff-desc').value,participantes:[]});
+  closeModal();showToast('Formación creada');syncToSheet('Formaciones',STATE.formaciones);renderFormaciones();
+}
+function verFormacion(id){
+  const f=STATE.formaciones.find(x=>x.id===id);if(!f)return;
+  const pg=(f.participantes||[]).filter(p=>p.pagado).reduce((a,p)=>a+Number(p.monto),0);
+  const pnd=(f.participantes||[]).filter(p=>!p.pagado).reduce((a,p)=>a+Number(p.monto),0);
+  openModal(`<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px"><div style="width:52px;height:52px;border-radius:12px;background:rgba(201,164,82,.12);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px">🎓</div><div><div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold)">${f.nombre||''}</div><div style="font-size:12px;color:var(--text3)">📅 ${fmtDateVET(f.fecha||'')} · ${f.lugar||'—'} · ${fmtUSD(Number(f.precio)||0)}/persona</div></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Inscritos</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--text)">${(f.participantes||[]).length}</div></div>
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Recaudado</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--green)">${fmtUSD(pg)}</div></div>
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Por cobrar</div><div style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',serif;color:var(--red)">${fmtUSD(pnd)}</div></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-size:12px;font-weight:500;color:var(--text2)">Participantes (${(f.participantes||[]).length})</div><button class="btn btn-gold btn-sm" onclick="closeModal();openAgregarParticipante('${f.id}')">+ Agregar</button></div>
+  ${!(f.participantes||[]).length?`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Sin participantes aún.</div>`:`<div style="background:var(--bg3);border-radius:var(--radius);overflow:hidden">${(f.participantes||[]).map((p,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:${i<f.participantes.length-1?'1px solid var(--border)':'none'}"><div style="width:30px;height:30px;border-radius:50%;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gold);flex-shrink:0">${initials(p.nombre||'')}</div><div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${p.nombre||''}</div><div style="font-size:11px;color:var(--text3)">${p.pais||'—'} · ${p.whatsapp||'—'}</div></div><div style="text-align:right;margin-right:8px"><div style="font-size:13px;font-weight:600;color:var(--gold)">${fmtUSD(Number(p.monto)||0)}</div><div style="font-size:10px;color:${p.pagado?'var(--green)':'var(--red)'}">● ${p.pagado?'Pagado':'Pendiente'}</div></div>${!p.pagado?`<button class="icon-btn btn-sm" style="color:var(--green)" onclick="marcarPagado('${f.id}','${p.id}')">✓</button>`:''}<button class="icon-btn btn-sm" style="color:var(--red)" onclick="eliminarParticipante('${f.id}','${p.id}')">✕</button></div>`).join('')}</div>`}
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button></div>`);
+}
+function openAgregarParticipante(formId){
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  openModal(`<div class="modal-title">Agregar Participante</div>
+  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--text2)"><strong style="color:var(--gold)">${f.nombre||''}</strong> · Base: ${fmtUSD(Number(f.precio)||0)}</div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="fpar-nombre" placeholder="Nombre del profesional"></div><div class="form-group"><label class="form-label">País</label><input class="form-input" id="fpar-pais" placeholder="Venezuela…"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">WhatsApp</label><input class="form-input" id="fpar-ws" placeholder="+58 412…"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="fpar-email" placeholder="correo@…"></div></div>
+  <div class="form-row"><div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" id="fpar-monto" value="${f.precio||0}" min="0"></div><div class="form-group"><label class="form-label">Estado de pago</label><select class="form-input" id="fpar-pagado"><option value="0">Pendiente</option><option value="1">Ya pagó</option></select></div></div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="guardarParticipante('${formId}')">Agregar</button></div>`);
+}
+function guardarParticipante(formId){
+  const nombre=$('fpar-nombre').value.trim();if(!nombre){showToast('Nombre obligatorio');return;}
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  if(!f.participantes)f.participantes=[];
+  f.participantes.push({id:'PAR'+Date.now(),nombre,pais:$('fpar-pais').value,whatsapp:$('fpar-ws').value,email:$('fpar-email').value,monto:parseFloat($('fpar-monto').value)||0,pagado:$('fpar-pagado').value==='1',fechaInscripcion:todayVET()});
+  closeModal();showToast(`${nombre} agregado`);syncToSheet('Formaciones',STATE.formaciones);renderFormaciones();
+}
+function marcarPagado(formId,parId){
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  const p=(f.participantes||[]).find(x=>x.id===parId);if(!p)return;
+  p.pagado=true;closeModal();showToast(`Pago registrado — ${p.nombre}`);syncToSheet('Formaciones',STATE.formaciones);renderFormaciones();
+}
+function eliminarParticipante(formId,parId){
+  const f=STATE.formaciones.find(x=>x.id===formId);if(!f)return;
+  f.participantes=(f.participantes||[]).filter(x=>x.id!==parId);
+  closeModal();showToast('Participante eliminado');syncToSheet('Formaciones',STATE.formaciones);renderFormaciones();
+}
+function eliminarFormacion(id){
+  openModal(`<div class="modal-title" style="color:var(--red)">Eliminar formación</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Confirmas eliminar esta formación y sus participantes?</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff;font-family:Montserrat,sans-serif;font-size:12px;padding:8px 18px;border-radius:var(--radius);cursor:pointer;border:none" onclick="confirmarEliminarFormacion('${id}')">Eliminar</button></div>`);
+}
+function confirmarEliminarFormacion(id){STATE.formaciones=STATE.formaciones.filter(f=>f.id!==id);closeModal();showToast('Formación eliminada');syncToSheet('Formaciones',STATE.formaciones);renderFormaciones();}
+
+// ── MARKETING ─────────────────────────────────────────────────────────────────
+function renderMarketing(){
+  $('content-area').innerHTML=`
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">Base activa</div></div>
+    <div class="kpi-card"><div class="kpi-label">Con WhatsApp</div><div class="kpi-value">${STATE.patients.filter(p=>p.phone&&p.phone!=='—').length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Con Email</div><div class="kpi-value">${STATE.patients.filter(p=>p.email&&p.email.includes('@')).length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Cuenta</div><div class="kpi-value" style="font-size:13px;margin-top:4px">eliteplasticcenter</div><div class="kpi-sub">@gmail.com</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div>
+      <div class="section-title" style="margin-bottom:16px">📲 WhatsApp</div>
+      ${WA_PLANTILLAS.map(pl=>`<div class="mkt-card" onclick="abrirPlantillaWA('${pl.id}')"><div class="mkt-icon">${pl.icono}</div><div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${pl.nombre}</div><div style="font-size:11px;color:var(--text3)">${pl.desc}</div></div><button class="btn btn-gold btn-sm">Usar →</button></div>`).join('')}
+    </div>
+    <div>
+      <div class="section-title" style="margin-bottom:16px">📧 Email</div>
+      ${Object.entries(EMAIL_PLANTILLAS).map(([k,e])=>`<div class="mkt-card" onclick="abrirPlantillaEmail('${k}')"><div class="mkt-icon">${{email_recordatorio:'📅',email_bienvenida:'💌',email_promo:'🌟',email_post:'💉',email_cumple:'🎂',email_news:'📊'}[k]||'📧'}</div><div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${e.nombre}</div></div><button class="btn btn-gold btn-sm">Enviar →</button></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function abrirPlantillaWA(id){
+  const pl=WA_PLANTILLAS.find(x=>x.id===id);if(!pl)return;
+  const patOpts=!STATE.patients.length?`<div style="color:var(--text3);font-size:13px">Sin pacientes</div>`:buildPacienteSelect('mkt-pat');
+  openModal(`<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px"><div class="mkt-icon">${pl.icono}</div><div><div class="modal-title" style="margin-bottom:2px">${pl.nombre}</div><div style="font-size:12px;color:var(--text3)">Plantilla WhatsApp · EPC</div></div></div>
+  <div class="form-group"><label class="form-label">Paciente</label>${patOpts}</div>
+  <div class="form-group"><label class="form-label">Mensaje (editable)</label><textarea class="form-input" id="mkt-preview" style="min-height:180px;font-size:12px;line-height:1.6">${pl.texto}</textarea></div>
+  <div style="background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.25);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2)">💡 Edita el mensaje y haz clic en "Abrir WhatsApp" — se abrirá con el número y mensaje listos.</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:#25D366;color:#fff;font-family:Montserrat,sans-serif;font-size:12px;font-weight:500;padding:8px 18px;border-radius:var(--radius);cursor:pointer;border:none" onclick="enviarWAMarketing('${id}')">📲 Abrir WhatsApp</button></div>`);
+  setTimeout(()=>previewWA(id),100);
+  if(STATE.patients.length){const sel=$('mkt-pat');if(sel)sel.addEventListener('change',()=>previewWA(id));}
+}
+function previewWA(plId){
+  const pl=WA_PLANTILLAS.find(x=>x.id===plId);if(!pl)return;
+  const sel=$('mkt-pat');if(!sel)return;
+  const p=STATE.patients.find(x=>x.id===sel.value);if(!p)return;
+  const cita=STATE.appointments.filter(a=>a.patient===p.name).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  const prev=$('mkt-preview');if(!prev)return;
+  prev.value=pl.texto.replace(/\[NOMBRE\]/g,p.name).replace(/\[HORA\]/g,cita?cita.time:'[HORA]').replace(/\[FECHA\]/g,cita?fmtDateVET(cita.fecha):'[FECHA]').replace(/\[PROC\]/g,cita?cita.proc:'[PROCEDIMIENTO]');
+}
+function enviarWAMarketing(plId){
+  const sel=$('mkt-pat');const p=sel?STATE.patients.find(x=>x.id===sel.value):null;
+  const tel=(p?.phone||'').replace(/\D/g,'');
+  const msg=$('mkt-preview')?.value||'';
+  window.open(tel?`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+  closeModal();showToast(`WhatsApp abierto${p?' para '+p.name:''}`);
+}
+function abrirPlantillaEmail(id){
+  const pl=EMAIL_PLANTILLAS[id];if(!pl)return;
+  const patOpts=!STATE.patients.length?`<div style="color:var(--text3);font-size:13px">Sin pacientes</div>`:buildPacienteSelect('email-pat');
+  openModal(`<div class="modal-title">📧 ${pl.nombre}</div>
+  <div class="form-group"><label class="form-label">Destinatario</label>${patOpts}</div>
+  <div class="form-group"><label class="form-label">Asunto</label><input class="form-input" id="email-asunto" value="${pl.asunto}"></div>
+  <div class="form-group"><label class="form-label">Mensaje</label><textarea class="form-input" id="email-cuerpo" style="min-height:200px;font-size:12px;line-height:1.6">${pl.cuerpo}</textarea></div>
+  <div style="background:rgba(55,138,221,.08);border:1px solid rgba(55,138,221,.25);border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2)">💡 Se abrirá Gmail con el correo listo desde eliteplasticcenter@gmail.com</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="enviarEmailMarketing()">📧 Abrir Gmail</button></div>`);
+  if(STATE.patients.length){setTimeout(()=>{const sel=$('email-pat');if(sel)sel.addEventListener('change',()=>previewEmail(id));previewEmail(id);},100);}
+}
+function previewEmail(plId){
+  const sel=$('email-pat');if(!sel)return;
+  const p=STATE.patients.find(x=>x.id===sel.value);if(!p)return;
+  const cita=STATE.appointments.filter(a=>a.patient===p.name).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  const cb=$('email-cuerpo');const as=$('email-asunto');
+  if(cb)cb.value=cb.value.replace(/\[NOMBRE\]/g,p.name).replace(/\[HORA\]/g,cita?cita.time:'[HORA]').replace(/\[FECHA\]/g,cita?fmtDateVET(cita.fecha):'[FECHA]').replace(/\[PROC\]/g,cita?cita.proc:'[PROCEDIMIENTO]');
+  if(as)as.value=as.value.replace(/\[NOMBRE\]/g,p.name);
+}
+function enviarEmailMarketing(){
+  const sel=$('email-pat');const p=sel?STATE.patients.find(x=>x.id===sel.value):null;
+  const url=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(p?.email||'')}&su=${encodeURIComponent($('email-asunto')?.value||'')}&body=${encodeURIComponent($('email-cuerpo')?.value||'')}&from=eliteplasticcenter@gmail.com`;
+  window.open(url,'_blank');
+  closeModal();showToast(`Gmail abierto${p?' para '+p.name:''}`);
 }
 
 // ── REPORTES ──────────────────────────────────────────────────────────────────
 function renderReportes(){
+  const movs=STATE.movimientos;
+  const ing=movs.filter(m=>m.tipo==='ingreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+  const egr=movs.filter(m=>m.tipo==='egreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
   $('content-area').innerHTML=`
-  <div class="section-header"><div class="section-title">Reportes & Analítica</div></div>
   <div class="rep-tabs">
-    ${['financiero','pacientes','procedimientos','agenda'].map(t=>`<button class="rep-tab${STATE.activeRepTab===t?' active':''}" onclick="switchRepTab('${t}')">${{financiero:'💰 Financiero',pacientes:'👥 Pacientes',procedimientos:'💉 Procedimientos',agenda:'📅 Agenda'}[t]}</button>`).join('')}
+    ${['financiero','pacientes','agenda'].map(t=>`<button class="rep-tab${STATE.activeRepTab===t?' active':''}" onclick="switchRepTab('${t}')">${{financiero:'💰 Financiero',pacientes:'👥 Pacientes',agenda:'📅 Agenda'}[t]}</button>`).join('')}
   </div>
   <div id="rep-content">${buildRepTab(STATE.activeRepTab)}</div>`;
   setTimeout(()=>drawRepCharts(STATE.activeRepTab),120);
 }
 function switchRepTab(tab){
   STATE.activeRepTab=tab;Object.keys(chartsInstances).forEach(destroyChart);
+  document.querySelectorAll('.rep-tab').forEach(b=>b.classList.toggle('active',b.textContent.includes(tab==='financiero'?'💰':tab==='pacientes'?'👥':'📅')));
   const el=$('rep-content');if(el)el.innerHTML=buildRepTab(tab);
-  document.querySelectorAll('.rep-tab').forEach(b=>b.classList.toggle('active',b.onclick?.toString().includes(`'${tab}'`)));
   setTimeout(()=>drawRepCharts(tab),120);
 }
 function buildRepTab(tab){
   const movs=STATE.movimientos;
-  const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
-  const egr=movs.filter(m=>m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
-  if(tab==='financiero') return`
+  const ing=movs.filter(m=>m.tipo==='ingreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+  const egr=movs.filter(m=>m.tipo==='egreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+  if(tab==='financiero')return`
     <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Total ingresos</div><div class="rep-kpi-value">${fmtUSD(ing)}</div><div class="rep-kpi-sub">Registrados en sistema</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Total egresos</div><div class="rep-kpi-value">${fmtUSD(egr)}</div><div class="rep-kpi-sub">Registrados en sistema</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Balance neto</div><div class="rep-kpi-value">${fmtUSD(ing-egr)}</div><div class="rep-kpi-sub">Ingresos − Egresos</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Movimientos</div><div class="rep-kpi-value">${movs.length}</div><div class="rep-kpi-sub">Total registrados</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Ingresos USD</div><div class="rep-kpi-value">${fmtUSD(ing)}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Egresos USD</div><div class="rep-kpi-value">${fmtUSD(egr)}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Balance</div><div class="rep-kpi-value">${fmtUSD(ing-egr)}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Movimientos</div><div class="rep-kpi-value">${movs.length}</div></div>
     </div>
     <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Ingresos vs Egresos</div><div class="chart-subtitle">Total acumulado</div><div class="chart-wrap"><canvas id="chart-ing-egr"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Por método de pago</div><div class="chart-subtitle">Distribución de ingresos</div><div class="chart-wrap"><canvas id="chart-metodos"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Ingresos vs Egresos</div><div class="chart-subtitle">USD acumulado</div><div class="chart-wrap"><canvas id="chart-ing-egr"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Por método de pago</div><div class="chart-subtitle">Distribución</div><div class="chart-wrap"><canvas id="chart-metodos"></canvas></div></div>
     </div>`;
-  if(tab==='pacientes') return`
+  if(tab==='pacientes')return`
     <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Total pacientes</div><div class="rep-kpi-value">${STATE.patients.length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Total</div><div class="rep-kpi-value">${STATE.patients.length}</div></div>
       <div class="rep-kpi"><div class="rep-kpi-label">VIP</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).includes('VIP')).length}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).includes('Nueva')||(p.tags||[]).includes('Nuevo')).length}</div></div>
+      <div class="rep-kpi"><div class="rep-kpi-label">Nuevos</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).some(t=>t==='Nueva'||t==='Nuevo')).length}</div></div>
       <div class="rep-kpi"><div class="rep-kpi-label">Cirugía</div><div class="rep-kpi-value">${STATE.patients.filter(p=>(p.tags||[]).includes('Cirugía')).length}</div></div>
     </div>
-    <div class="rep-grid">
-      <div class="chart-card"><div class="chart-title">Distribución por tipo</div><div class="chart-subtitle">Etiquetas de pacientes</div><div class="chart-wrap"><canvas id="chart-pac-tipo"></canvas></div></div>
-      <div class="card"><div class="card-title">Pacientes por procedimientos</div>${STATE.patients.sort((a,b)=>b.procedures-a.procedures).map((p,i)=>`<div class="rank-item"><div class="rank-num">#${i+1}</div><div style="font-size:12px;color:var(--text);flex:1">${p.name}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${STATE.patients[0].procedures>0?Math.round(p.procedures/STATE.patients[0].procedures*100):0}%"></div></div><div style="font-size:12px;font-weight:600;color:var(--text2)">${p.procedures}</div></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}</div>
-    </div>`;
-  if(tab==='procedimientos') return`
-    <div class="rep-kpi-grid">
-      <div class="rep-kpi"><div class="rep-kpi-label">Total consultas</div><div class="rep-kpi-value">${Object.values(STATE.hcData).reduce((a,hc)=>a+(hc.consultas||[]).length,0)}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Citas agendadas</div><div class="rep-kpi-value">${STATE.appointments.length}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Consentimientos</div><div class="rep-kpi-value">${Object.values(STATE.hcData).reduce((a,hc)=>a+(hc.consentimientos||[]).length,0)}</div></div>
-      <div class="rep-kpi"><div class="rep-kpi-label">Firmados</div><div class="rep-kpi-value">${Object.values(STATE.hcData).reduce((a,hc)=>a+(hc.consentimientos||[]).filter(c=>c.firmado).length,0)}</div></div>
-    </div>
-    <div class="card"><div class="card-title">Detalle de consultas registradas</div>${Object.values(STATE.hcData).flatMap(hc=>hc.consultas||[]).map(c=>`<div class="rank-item"><div style="font-size:11px;color:var(--gold);min-width:80px">${c.fecha}</div><div style="font-size:12px;color:var(--text);flex:1">${c.proc}</div><div style="font-size:11px;color:var(--text3)">${c.doc}</div></div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:16px 0">Sin consultas registradas.</div>'}</div>`;
-  if(tab==='agenda') return`
+    <div class="card"><div class="card-title">Por procedimientos</div>${STATE.patients.sort((a,b)=>(b.procedures||0)-(a.procedures||0)).map((p,i)=>`<div class="rank-item"><div class="rank-num">#${i+1}</div><div style="font-size:12px;color:var(--text);flex:1">${p.name}</div><div class="rank-bar-wrap"><div class="rank-bar" style="width:${STATE.patients[0]?.procedures>0?Math.round((p.procedures||0)/STATE.patients[0].procedures*100):0}%"></div></div><div style="font-size:12px;font-weight:600;color:var(--text2)">${p.procedures||0}</div></div>`).join('')||'<div style="color:var(--text3);font-size:13px">Sin datos</div>'}</div>`;
+  if(tab==='agenda')return`
     <div class="rep-kpi-grid">
       <div class="rep-kpi"><div class="rep-kpi-label">Total citas</div><div class="rep-kpi-value">${STATE.appointments.length}</div></div>
       <div class="rep-kpi"><div class="rep-kpi-label">Confirmadas</div><div class="rep-kpi-value">${STATE.appointments.filter(a=>a.status==='confirmado').length}</div></div>
       <div class="rep-kpi"><div class="rep-kpi-label">Pendientes</div><div class="rep-kpi-value">${STATE.appointments.filter(a=>a.status==='pendiente').length}</div></div>
       <div class="rep-kpi"><div class="rep-kpi-label">Completadas</div><div class="rep-kpi-value">${STATE.appointments.filter(a=>a.status==='completado').length}</div></div>
     </div>
-    <div class="card"><div class="card-title">Todas las citas</div>${STATE.appointments.map(a=>`<div class="rank-item"><div style="font-size:11px;color:var(--gold);min-width:80px">${a.fecha}</div><div style="font-size:11px;color:var(--text3);min-width:50px">${a.time} VET</div><div style="font-size:12px;color:var(--text);flex:1">${a.patient}</div><div style="font-size:11px;color:var(--text3)">${a.proc.split('—')[0].trim().slice(0,20)}</div><span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:16px 0">Sin citas registradas.</div>'}</div>`;
+    <div class="card"><div class="card-title">Todas las citas</div>${STATE.appointments.map(a=>`<div class="rank-item"><div style="font-size:11px;color:var(--gold);min-width:80px">${a.fecha}</div><div style="font-size:11px;color:var(--text3);min-width:50px">${a.time} VET</div><div style="font-size:12px;color:var(--text);flex:1">${a.patient}</div><span class="status-badge ${statusMap[a.status].cls}">${statusMap[a.status].label}</span></div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:16px 0">Sin citas.</div>'}</div>`;
   return'';
 }
 function drawRepCharts(tab){
   const cd={color:'#a0b0bc',grid:'rgba(176,184,193,0.08)',gold:'#C9A452',green:'#1D9E75',blue:'#378ADD',red:'#E24B4A'};
   const movs=STATE.movimientos;
   if(tab==='financiero'){
-    const ing=movs.filter(m=>m.tipo==='ingreso').reduce((a,m)=>a+m.monto,0);
-    const egr=movs.filter(m=>m.tipo==='egreso').reduce((a,m)=>a+m.monto,0);
-    const c1=$('chart-ing-egr');if(c1){chartsInstances['c1']=new Chart(c1,{type:'bar',data:{labels:['Ingresos','Egresos','Balance'],datasets:[{data:[ing,egr,ing-egr],backgroundColor:[`rgba(29,158,117,0.6)`,`rgba(226,75,74,0.5)`,`rgba(201,164,82,0.6)`],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color},grid:{color:cd.grid}},y:{ticks:{color:cd.color,callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
-    const byMetodo={};movs.filter(m=>m.tipo==='ingreso').forEach(m=>{byMetodo[m.metodo]=(byMetodo[m.metodo]||0)+m.monto;});
-    const c2=$('chart-metodos');if(c2&&Object.keys(byMetodo).length){chartsInstances['c2']=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(byMetodo),datasets:[{data:Object.values(byMetodo),backgroundColor:[cd.gold,'rgba(201,164,82,0.6)',cd.blue,cd.green,'#7F77DD'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
-  }
-  if(tab==='pacientes'){
-    const tipos={VIP:0,Recurrente:0,Nueva:0,Cirugía:0};
-    STATE.patients.forEach(p=>p.tags.forEach(t=>{if(tipos[t]!==undefined)tipos[t]++;}));
-    const c=$('chart-pac-tipo');if(c){chartsInstances['cp']=new Chart(c,{type:'pie',data:{labels:Object.keys(tipos),datasets:[{data:Object.values(tipos),backgroundColor:[cd.gold,cd.blue,cd.green,'#7F77DD'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
+    const ing=movs.filter(m=>m.tipo==='ingreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+    const egr=movs.filter(m=>m.tipo==='egreso'&&(m.moneda==='USD'||!m.moneda)).reduce((a,m)=>a+Number(m.monto),0);
+    const c1=$('chart-ing-egr');if(c1){chartsInstances['c1']=new Chart(c1,{type:'bar',data:{labels:['Ingresos','Egresos','Balance'],datasets:[{data:[ing,egr,ing-egr],backgroundColor:['rgba(29,158,117,0.6)','rgba(226,75,74,0.5)','rgba(201,164,82,0.6)'],borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:cd.color},grid:{color:cd.grid}},y:{ticks:{color:cd.color,callback:v=>'$'+v},grid:{color:cd.grid}}}}});}
+    const byM={};movs.filter(m=>m.tipo==='ingreso').forEach(m=>{byM[m.metodo||'']=(byM[m.metodo||'']||0)+Number(m.monto);});
+    const c2=$('chart-metodos');if(c2&&Object.keys(byM).length){chartsInstances['c2']=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(byM),datasets:[{data:Object.values(byM),backgroundColor:[cd.gold,'rgba(201,164,82,0.6)',cd.blue,cd.green,'#7F77DD'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:cd.color,font:{size:11},boxWidth:12}}}}});}
   }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function updateClock(){
-  const now=nowVET();
-  $('fecha-hoy').textContent=now.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})+' · '+now.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})+' VET';
+  const n=nowVET();
+  $('fecha-hoy').textContent=n.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})+' · '+n.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'})+' VET';
 }
 updateClock();
-setInterval(updateClock, 60000);
-// Cargar datos desde Google Sheets al iniciar
+setInterval(updateClock,60000);
 loadAllData();
 </script>
 </body>
