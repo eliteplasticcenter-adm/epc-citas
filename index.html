@@ -19,16 +19,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-window.fsLoad = async function(col){
-  try{ const s=await db.collection(col).get(); return s.docs.map(d=>({id:d.id,...d.data()})); }catch(e){ return []; }
-};
-window.fsSave = async function(col,arr){
-  try{
-    const b=db.batch();
-    arr.forEach(item=>{ if(item.id) b.set(db.collection(col).doc(String(item.id)),item); });
-    await b.commit(); return true;
-  }catch(e){ return false; }
-};
+try{ db.settings({ignoreUndefinedProperties:true}); }catch(e){}
+// Caché offline oficial de Firestore (IndexedDB): si se cae internet, los cambios quedan en cola
+// y se envían solos al reconectar. Sustituye al antiguo localStorage, que "resucitaba" datos borrados.
+window.FS_PERSIST = db.enablePersistence({synchronizeTabs:true}).then(()=>true).catch(e=>{console.warn('Persistencia offline no disponible:',e&&e.code);return false;});
 window.firebaseReady=true;
 window.dispatchEvent(new Event('firebase-ready'));
 </script>
@@ -166,7 +160,11 @@ nav{padding:18px 0;flex:1;overflow-y:auto}
 .form-label{font-size:10.5px;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;font-weight:500}
 .form-input{padding:10px 14px;background:var(--bg3);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'Montserrat',sans-serif;outline:none;width:100%;transition:border-color .15s}
 .form-input:focus{border-color:var(--gold)}.form-input::placeholder{color:var(--text3)}
-select.form-input option{background:var(--bg2);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur))}
+.form-input{color-scheme:dark}
+select.form-input{cursor:pointer}
+select.form-input option{background:#1C2229;color:#F1ECE0;padding:6px}
+select.form-input option:checked{background:#8E7038;color:#FFFFFF}
+select.form-input optgroup{background:#12161B;color:#D4AD68;font-style:normal;font-weight:600}
 textarea.form-input{resize:vertical;min-height:80px;line-height:1.55}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 .icon-btn{background:transparent;border:1px solid var(--border);border-radius:var(--radius);padding:7px 13px;cursor:pointer;color:var(--text2);font-size:12px;transition:border-color .15s,color .15s;font-family:'Montserrat',sans-serif}
@@ -427,67 +425,287 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.55}
 function saveLocal(k,d){try{localStorage.setItem('epc_'+k,JSON.stringify(d));}catch(e){}}
 function loadLocal(k){try{const d=localStorage.getItem('epc_'+k);return d?JSON.parse(d):null;}catch(e){return null;}}
 
-async function syncToSheet(col,arr){
-  saveLocal(col,arr);
-  showSyncBadge('↻ Guardando…');
-  if(window.firebaseReady){
-    const ok=await window.fsSave(col,arr);
-    showSyncBadge(ok?'✓ Sincronizado':'⚠ Solo local');
-  } else {
-    showSyncBadge('● Local');
+// ═══════════════════════════════════════════════════════════════════════════
+// CAPA DE DATOS — Firestore es la ÚNICA fuente de verdad.
+//  • Cada cambio se escribe documento por documento (crear / modificar / BORRAR).
+//  • Cada equipo escucha la base de datos en tiempo real (onSnapshot): lo que se
+//    hace en Venezuela aparece en España al instante, y viceversa.
+//  • Un equipo solo envía lo que ÉL cambió: nunca reescribe la colección entera,
+//    así un equipo con datos viejos no puede resucitar citas borradas ni pisar
+//    cambios de otro.
+// ═══════════════════════════════════════════════════════════════════════════
+const COLECCIONES=['Pacientes','Citas','Movimientos','Presupuestos','Formaciones','HistoriaClinica','Config','Inventario'];
+const SYNC={base:{},last:{},raw:{},docIds:{},anomalias:{},loaded:{},fromCache:{},pending:0,error:null,persist:false,migrated:false};
+const FOTO_CACHE={};
+const LIMITE_DOC=950000;      // Firestore rechaza documentos > 1 MB
+const AVISO_DOC=700000;
+
+function sanitizeDoc(o){return JSON.parse(JSON.stringify(o));}
+function canon(v){
+  if(Array.isArray(v))return '['+v.map(canon).join(',')+']';
+  if(v&&typeof v==='object')return '{'+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}';
+  return JSON.stringify(v===undefined?null:v);
+}
+
+// Guarda en Firestore SOLO las diferencias entre lo que hay en pantalla y lo último
+// que llegó de la base de datos. opts.partial = no borra documentos ausentes (Config).
+async function syncToSheet(col,arr,opts){
+  opts=opts||{};
+  const base=SYNC.base[col]||(SYNC.base[col]={});
+  const next={};
+  (arr||[]).forEach(item=>{
+    if(!item||item.id===undefined||item.id===null||item.id==='')return;
+    next[String(item.id)]=sanitizeDoc(item);
+  });
+  const ops=[];
+  Object.keys(next).forEach(id=>{const s=canon(next[id]);if(base[id]!==s)ops.push({t:'set',id,data:next[id],s});});
+  if(!opts.partial)Object.keys(base).forEach(id=>{if(!(id in next))ops.push({t:'del',id});});
+  if(!ops.length)return true;
+
+  // CANDADO DE SEGURIDAD: ninguna acción de la app borra más de 1 registro a la vez,
+  // salvo que se autorice explícitamente (eliminar paciente con sus citas).
+  const borrados=ops.filter(o=>o.t==='del').length;
+  const maxBorrados=opts.maxBorrados!==undefined?opts.maxBorrados:1;
+  if(borrados>maxBorrados){
+    console.error('[EPC] Borrado masivo bloqueado',col,borrados);
+    revertirColeccion(col);
+    alertaDatos('Operación bloqueada por seguridad',`La app intentó eliminar <strong>${borrados} registros</strong> de <strong>${col}</strong> en una sola acción. Esto no es normal, así que se bloqueó y <strong>no se borró nada</strong>. Recarga la app; si vuelve a ocurrir, avísame.`);
+    return false;
+  }
+
+  const grande=ops.find(o=>o.t==='set'&&o.s.length>LIMITE_DOC);
+  if(grande){
+    revertirColeccion(col);
+    alertaDatos('No se guardó',`El registro <strong>${grande.id}</strong> de <strong>${col}</strong> supera el tamaño máximo permitido por la base de datos (normalmente por demasiadas fotos en una misma historia clínica).<br><br><strong>El último cambio NO se guardó.</strong> Quita alguna foto de esa consulta e inténtalo de nuevo.`);
+    return false;
+  }
+  const cerca=ops.find(o=>o.t==='set'&&o.s.length>AVISO_DOC);
+  if(cerca)setTimeout(()=>showToast('⚠ Esta historia clínica está cerca del límite de fotos'),3400);
+
+  const mapa=SYNC.docIds[col]||(SYNC.docIds[col]={});
+  ops.forEach(o=>{o.doc=mapa[o.id]||o.id;});
+  ops.forEach(o=>{if(o.t==='set'){base[o.id]=o.s;mapa[o.id]=o.doc;}else{delete base[o.id];delete mapa[o.id];}});
+  SYNC.pending++;updateSyncBadge();
+  try{
+    for(let i=0;i<ops.length;i+=400){
+      const b=db.batch();
+      ops.slice(i,i+400).forEach(o=>{
+        const ref=db.collection(col).doc(o.doc);
+        if(o.t==='set'){if(opts.partial)b.set(ref,o.data,{merge:true});else b.set(ref,o.data);}
+        else b.delete(ref);
+      });
+      await b.commit();
+    }
+    SYNC.pending--;updateSyncBadge();
+    return true;
+  }catch(e){
+    SYNC.pending--;
+    reportarErrorDatos(col,e,true);
+    return false;
   }
 }
 
-async function loadFromSheet(col){
-  if(window.firebaseReady){
-    try{
-      const data=await window.fsLoad(col);
-      if(data&&data.length>0){saveLocal(col,data);return data;}
-    }catch(e){}
+// Rellena campos faltantes SOLO en memoria para que un registro incompleto no rompa
+// la pantalla. No se escribe nada en Firebase por esto.
+function normalizarDoc(col,d){
+  const str=k=>{if(d[k]===undefined||d[k]===null)d[k]='';else if(typeof d[k]!=='string')d[k]=String(d[k]);};
+  if(col==='Citas'){['patient','proc','time','fecha','consultorio','doc'].forEach(str);if(!statusMap[d.status])d.status='pendiente';}
+  else if(col==='Pacientes'){['name'].forEach(str);if(!Array.isArray(d.tags))d.tags=d.tags?[String(d.tags)]:[];}
+  else if(col==='Movimientos'){['desc','fecha','tipo'].forEach(str);}
+  else if(col==='Inventario'){['producto','lote'].forEach(str);}
+  else if(col==='Presupuestos'){['paciente','fecha'].forEach(str);if(!Array.isArray(d.items))d.items=[];}
+  else if(col==='HistoriaClinica'){
+    if(!Array.isArray(d.consultas))d.consultas=[];
+    if(!Array.isArray(d.consentimientos))d.consentimientos=[];
+    d.consultas.forEach(c=>{if(c&&typeof c==='object')['fecha','proc','nota','doc'].forEach(k=>{if(c[k]===undefined||c[k]===null)c[k]='';else if(typeof c[k]!=='string')c[k]=String(c[k]);});});
   }
-  return loadLocal(col)||[];
+  return d;
+}
+function aplicarColeccion(col,docs){
+  docs=sanitizeDoc(docs); // copia independiente: editar en pantalla no altera la última copia del servidor
+  const num=id=>{const m=String(id).match(/\d+/g);return m?Number(m.join('').slice(0,15)):0;};
+  const porIdDesc=(a,b)=>num(b.id)-num(a.id);
+  if(col==='Pacientes')STATE.patients=docs.slice().sort(porIdDesc);
+  else if(col==='Citas')STATE.appointments=docs.slice().sort((a,b)=>(a.fecha||'')===(b.fecha||'')?String(a.time||'').localeCompare(String(b.time||'')):String(a.fecha||'').localeCompare(String(b.fecha||'')));
+  else if(col==='Movimientos')STATE.movimientos=docs.slice().sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||''))||porIdDesc(a,b));
+  else if(col==='Presupuestos')STATE.presupuestos=docs.slice().sort(porIdDesc);
+  else if(col==='Formaciones')STATE.formaciones=docs.slice();
+  else if(col==='Inventario')STATE.inventario=docs.slice().sort(porIdDesc);
+  else if(col==='HistoriaClinica')STATE.hcData=hcArrayToMap(docs);
+  else if(col==='Config'){
+    const c=docs.find(x=>x.id==='main');STATE.bcvRate=c?Number(c.bcvRate)||0:0;
+    const pr=docs.find(x=>x.id==='precios');STATE.precios=(pr&&pr.map)||{};
+    aplicarPreciosGuardados();
+  }
+  const bd=$('badge-agenda');if(bd)bd.textContent=STATE.appointments.length;
+}
+function revertirColeccion(col){
+  if(SYNC.last[col]){aplicarColeccion(col,SYNC.last[col]);programarRefresco();}
 }
 
-function showSyncBadge(msg){
+function escucharColeccion(col){
+  db.collection(col).onSnapshot({includeMetadataChanges:true},snap=>{
+    SYNC.fromCache[col]=snap.metadata.fromCache;
+    const primera=!SYNC.loaded[col];
+    if(primera||snap.docChanges().length){
+      // Identidad = documento real de Firestore. Si un registro tiene un campo "id"
+      // distinto de su documento (p.ej. datos cargados por script) se respeta ese id
+      // para no romper vínculos, pero se escribe siempre en SU documento original.
+      // Si dos documentos comparten el mismo "id", el segundo se distingue por su
+      // documento para que nunca se confundan ni se borren juntos.
+      const docs=[],mapa={},vistos={};let anom=0;
+      SYNC.raw[col]=snap.docs.map(d=>({docId:d.id,data:d.data()}));
+      snap.docs.forEach(d=>{
+        const data=d.data();
+        let id=(data.id!==undefined&&data.id!==null&&data.id!=='')?data.id:d.id;
+        if(vistos[String(id)]){id=d.id;anom++;}
+        if(vistos[String(id)]){id=d.id+'#'+docs.length;anom++;}
+        if(String(id)!==d.id)anom++;
+        vistos[String(id)]=true;mapa[String(id)]=d.id;
+        docs.push(normalizarDoc(col,sanitizeDoc({...data,id})));
+      });
+      SYNC.docIds[col]=mapa;SYNC.anomalias[col]=anom;
+      SYNC.last[col]=docs;
+      const base={};docs.forEach(d=>{base[d.id]=canon(sanitizeDoc(d));});
+      SYNC.base[col]=base;
+      aplicarColeccion(col,docs);
+      SYNC.loaded[col]=true;
+      if(primera)verificarCargaInicial();else programarRefresco();
+    }
+    if(SYNC.error&&SYNC.error.lectura&&!snap.metadata.fromCache){SYNC.error=null;ocultarBannerDatos();}
+    vincularCitasHuerfanas();
+    updateSyncBadge();
+  },err=>{reportarErrorDatos(col,err,false);});
+}
+
+function todasCargadas(){return COLECCIONES.every(c=>SYNC.loaded[c]);}
+function verificarCargaInicial(){
+  if(!todasCargadas())return;
+  if(!SYNC.inicioHecho){SYNC.inicioHecho=true;const o=$('carga-overlay');if(o)o.remove();showView(STATE.view);checkAutoBackup();}
+}
+
+let _refT=null;
+function programarRefresco(){clearTimeout(_refT);_refT=setTimeout(refrescarVista,150);}
+function refrescarVista(){
+  if(!SYNC.inicioHecho)return;
+  const area=$('content-area');const ae=document.activeElement;
+  // No interrumpir a quien está escribiendo en un buscador o campo de la vista
+  if(area&&ae&&area.contains(ae)&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)){
+    ae.addEventListener('blur',programarRefresco,{once:true});return;
+  }
+  const sy=window.scrollY,st=area?area.scrollTop:0;
+  showView(STATE.view);
+  window.scrollTo(0,sy);if(area)area.scrollTop=st;
+}
+
+function updateSyncBadge(){
   const el=$('sync-badge');if(!el)return;
-  el.textContent=msg;
-  el.style.color=msg.includes('✓')?'var(--green)':msg.includes('↻')?'var(--gold)':'var(--red)';
-  if(msg.includes('✓'))setTimeout(()=>{el.textContent='● En línea';el.style.color='var(--green)';},2500);
+  let txt,color;
+  if(SYNC.error){txt='⚠ Error de datos';color='var(--red)';}
+  else if(!todasCargadas()){txt='↻ Cargando datos…';color='var(--gold)';}
+  else if(SYNC.pending>0){
+    if(navigator.onLine){txt='↻ Guardando…';color='var(--gold)';}
+    else{txt=`⚠ Sin internet · ${SYNC.pending} cambio(s) en cola`;color='var(--red)';}
+  }
+  else if(!navigator.onLine||COLECCIONES.some(c=>SYNC.fromCache[c])){txt='⚠ Sin conexión · mostrando última copia';color='var(--red)';}
+  else{txt='● En línea · sincronizado';color='var(--green)';}
+  el.textContent=txt;el.style.color=color;
+}
+function showSyncBadge(){updateSyncBadge();}
+window.addEventListener('online',updateSyncBadge);
+window.addEventListener('offline',updateSyncBadge);
+window.addEventListener('beforeunload',e=>{
+  if(SYNC.pending>0&&!SYNC.persist){e.preventDefault();e.returnValue='Hay cambios que aún no se han guardado en la base de datos.';}
+});
+
+function reportarErrorDatos(col,e,escritura){
+  const code=(e&&e.code)||'';
+  console.error('[EPC datos]',col,code,e);
+  let msg;
+  if(code==='permission-denied')msg='Firebase está rechazando el acceso a la base de datos (reglas de seguridad vencidas o cambiadas). <strong>Los cambios NO se están guardando.</strong> Revisa las reglas en la consola de Firebase.';
+  else if(code==='resource-exhausted')msg='Se alcanzó el límite de uso de Firebase. Los cambios pueden no estar guardándose.';
+  else msg=`${escritura?'No se pudo guardar':'No se pudo leer'} <strong>${col}</strong> (${code||'error desconocido'}).${escritura?' <strong>El último cambio no quedó guardado.</strong>':''}`;
+  SYNC.error={msg,lectura:!escritura};
+  mostrarBannerDatos(msg);updateSyncBadge();
+  if(escritura)revertirColeccion(col);
+}
+function mostrarBannerDatos(html){
+  let b=$('data-banner');
+  if(!b){
+    b=document.createElement('div');b.id='data-banner';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#8B1E1E;color:#fff;font-family:Montserrat,sans-serif;font-size:13px;line-height:1.5;padding:12px 20px;display:flex;gap:14px;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(0,0,0,.4)';
+    document.body.appendChild(b);
+  }
+  b.innerHTML=`<span>⚠ ${html}</span><button onclick="location.reload()" style="background:#fff;color:#8B1E1E;border:none;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;font-family:inherit">Recargar</button><button onclick="ocultarBannerDatos()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:6px 10px;cursor:pointer;font-family:inherit">✕</button>`;
+}
+function ocultarBannerDatos(){const b=$('data-banner');if(b)b.remove();}
+function alertaDatos(titulo,html){
+  openModal(`<div class="modal-title" style="color:var(--red)">⚠ ${titulo}</div><div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:18px">${html}</div><div class="modal-actions"><button class="btn btn-gold" onclick="closeModal()">Entendido</button></div>`);
 }
 
 async function loadAllData(){
-  showSyncBadge('↻ Cargando…');
-  const lp=loadLocal('Pacientes');if(lp&&lp.length)STATE.patients=lp;
-  const lc=loadLocal('Citas');if(lc&&lc.length)STATE.appointments=lc;
-  const lm=loadLocal('Movimientos');if(lm&&lm.length)STATE.movimientos=lm;
-  const lpr=loadLocal('Presupuestos');if(lpr&&lpr.length)STATE.presupuestos=lpr;
-  const lf=loadLocal('Formaciones');if(lf&&lf.length)STATE.formaciones=lf;
-  const lhc=loadLocal('HistoriaClinica');if(lhc&&lhc.length)STATE.hcData=hcArrayToMap(lhc);
-  const lcfg=loadLocal('Config');if(lcfg&&lcfg.length){const c=lcfg.find(x=>x.id==='main');if(c)STATE.bcvRate=Number(c.bcvRate)||0;}
-  const linv=loadLocal('Inventario');if(linv&&linv.length)STATE.inventario=linv;
-  $('badge-agenda').textContent=STATE.appointments.length;
-  renderDashboard();
-  const doLoad=async()=>{
-    try{
-      const[p,c,m,pr,f,hc,cfg,inv]=await Promise.all([
-        loadFromSheet('Pacientes'),loadFromSheet('Citas'),loadFromSheet('Movimientos'),
-        loadFromSheet('Presupuestos'),loadFromSheet('Formaciones'),loadFromSheet('HistoriaClinica'),loadFromSheet('Config'),loadFromSheet('Inventario')
-      ]);
-      let u=false;
-      if(p.length){STATE.patients=p;u=true;}
-      if(c.length){STATE.appointments=c;u=true;}
-      if(m.length){STATE.movimientos=m;u=true;}
-      if(pr.length){STATE.presupuestos=pr;u=true;}
-      if(f.length){STATE.formaciones=f;u=true;}
-      if(hc.length){STATE.hcData=hcArrayToMap(hc);u=true;}
-      if(cfg.length){const c2=cfg.find(x=>x.id==='main');if(c2){STATE.bcvRate=Number(c2.bcvRate)||0;u=true;}}
-      if(inv.length){STATE.inventario=inv;u=true;}
-      if(u){$('badge-agenda').textContent=STATE.appointments.length;if(STATE.view==='dashboard')renderDashboard();showSyncBadge('✓ Sincronizado');checkAutoBackup();}
-      else showSyncBadge('● En línea');
-    }catch(e){showSyncBadge('● Local');}
-  };
-  if(window.firebaseReady)doLoad();
-  else window.addEventListener('firebase-ready',doLoad,{once:true});
+  // Nota: las copias antiguas epc_* de localStorage NO se leen (eran las que hacían
+  // reaparecer datos borrados) pero tampoco se borran: quedan como respaldo en cada equipo.
+  updateSyncBadge();
+  const ov=document.createElement('div');ov.id='carga-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(18,22,27,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:Montserrat,sans-serif;color:#F1ECE0;text-align:center;padding:24px';
+  ov.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:28px;color:#D4AD68">Elite Plastic Center</div><div id="carga-msg" style="font-size:13px;color:#ADB4B8">Cargando datos de la clínica…</div>';
+  document.body.appendChild(ov);
+  setTimeout(()=>{const m=$('carga-msg');if(m&&!SYNC.inicioHecho)m.innerHTML='La conexión está tardando más de lo normal.<br>Revisa el internet. No cierres esta ventana.';},15000);
+  try{SYNC.persist=await window.FS_PERSIST;}catch(e){SYNC.persist=false;}
+  COLECCIONES.forEach(escucharColeccion);
+}
+
+// ── VÍNCULO CITA ↔ PACIENTE (por ID, no por nombre escrito) ────────────────────
+function normName(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();}
+function pacienteDeCita(a){
+  if(!a)return null;
+  if(a.patientId){const p=STATE.patients.find(x=>x.id===a.patientId);if(p)return p;}
+  const n=normName(a.patient);if(!n)return null;
+  const c=STATE.patients.filter(p=>normName(p.name)===n);
+  // Si hay 2+ pacientes con el mismo nombre NO se adivina: la cita queda "por vincular"
+  // (así, borrar un paciente duplicado nunca arrastra citas que no son suyas).
+  return c.length===1?c[0]:null;
+}
+function citasDePaciente(p){
+  if(!p)return[];
+  return STATE.appointments.filter(a=>{const q=pacienteDeCita(a);return q&&q.id===p.id;});
+}
+// Una sola vez por sesión, cuando hay datos reales del servidor: a las citas antiguas
+// (guardadas solo con el nombre) se les asigna el ID del paciente si el nombre coincide sin ambigüedad.
+function vincularCitasHuerfanas(){
+  if(SYNC.migrated||!SYNC.loaded.Pacientes||!SYNC.loaded.Citas||SYNC.fromCache.Pacientes||SYNC.fromCache.Citas)return;
+  SYNC.migrated=true;
+  let cambios=0;
+  STATE.appointments.forEach(a=>{
+    if(a.patientId&&STATE.patients.some(p=>p.id===a.patientId))return;
+    const n=normName(a.patient);
+    const c=STATE.patients.filter(p=>normName(p.name)===n);
+    if(c.length===1){a.patientId=c[0].id;cambios++;}
+  });
+  if(cambios)syncToSheet('Citas',STATE.appointments);
+}
+function abrirVincularCita(citaId){
+  const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
+  openModal(`<div class="modal-title">Vincular cita a un paciente</div>
+  <div style="background:rgba(201,164,82,.08);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--text2);line-height:1.55">La cita de <strong style="color:var(--text)">${a.patient||'(sin nombre)'}</strong> — ${a.fecha?fmtDateVET(a.fecha):''} ${a.time||''} · ${a.proc||''} — no está asociada a ningún paciente registrado (el paciente fue eliminado o su nombre se escribió distinto). Elige el paciente correcto o créalo.</div>
+  <div class="form-group"><label class="form-label">Paciente</label>${buildPacienteSelect('fv-pat','')}</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn-outline" onclick="crearPacienteDesdeCita('${citaId}')">Crear paciente nuevo</button><button class="btn btn-gold" onclick="guardarVinculoCita('${citaId}')">Vincular</button></div>`);
+}
+function guardarVinculoCita(citaId,patId){
+  const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
+  const pid=patId||($('fv-pat')&&$('fv-pat').value);
+  const p=STATE.patients.find(x=>x.id===pid);
+  if(!p){showToast('Selecciona un paciente de la lista');return;}
+  a.patientId=p.id;a.patient=p.name;
+  syncToSheet('Citas',STATE.appointments);
+  closeModal();showToast(`Cita vinculada a ${p.name}`);programarRefresco();
+}
+function crearPacienteDesdeCita(citaId){
+  const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
+  STATE._vincularCitaTras=citaId;
+  openNewPatient('paciente');
+  const f=$('f-nombre');if(f)f.value=a.patient||'';
 }
 
 // ── PERSISTENCIA DE HISTORIA CLÍNICA (antes NUNCA se guardaba — solo vivía en memoria) ──
@@ -495,12 +713,47 @@ function hcArrayToMap(arr){
   const map={};
   arr.forEach(item=>{
     const{id,...rest}=item;
-    map[id]={antecedentes:rest.antecedentes||{},consultas:rest.consultas||[],consentimientos:rest.consentimientos||[]};
+    map[id]={...rest,antecedentes:rest.antecedentes||{},consultas:rest.consultas||[],consentimientos:rest.consentimientos||[]};
   });
   return map;
 }
 function hcDataToArray(){
   return Object.keys(STATE.hcData).map(pid=>({id:pid,...STATE.hcData[pid]}));
+}
+function fotoSrc(f){return f.url||FOTO_CACHE[f.fotoId]||'';}
+async function obtenerFoto(id){
+  if(!id)return '';
+  if(FOTO_CACHE[id])return FOTO_CACHE[id];
+  try{const d=await db.collection('Fotos').doc(id).get();if(d.exists){FOTO_CACHE[id]=d.data().url||'';return FOTO_CACHE[id];}}catch(e){console.warn('Foto',id,e);}
+  return '';
+}
+function cargarFotosPendientes(){
+  document.querySelectorAll('img[data-foto-id]:not([src])').forEach(async img=>{
+    const id=img.getAttribute('data-foto-id');if(!id)return;
+    const u=await obtenerFoto(id);if(u)img.src=u;else img.alt='(no disponible)';
+  });
+}
+async function verFotoId(id){const u=await obtenerFoto(id);if(u)verFotoGrande(u);else showToast('Foto no disponible (sin conexión o aún subiendo)');}
+async function guardarFotos(lista){
+  if(!lista||!lista.length)return;
+  lista.forEach(f=>{FOTO_CACHE[f.id]=f.url;});
+  SYNC.pending++;updateSyncBadge();
+  try{
+    await Promise.all(lista.map(f=>db.collection('Fotos').doc(f.id).set(f)));
+    SYNC.pending--;updateSyncBadge();
+  }catch(e){
+    SYNC.pending--;
+    console.error('[EPC fotos]',e);
+    SYNC.error={msg:'fotos',lectura:false};updateSyncBadge();
+    mostrarBannerDatos(`No se pudieron guardar <strong>${lista.length} foto(s)</strong> de la consulta (${e&&e.code||'error'}). La consulta sí quedó registrada; vuelve a subir las fotos.`);
+  }
+}
+async function borrarFotosDePaciente(pid){
+  try{
+    const s=await db.collection('Fotos').where('patientId','==',pid).get();
+    if(s.empty)return;
+    const b=db.batch();s.docs.slice(0,450).forEach(d=>b.delete(d.ref));await b.commit();
+  }catch(e){console.warn('No se pudieron borrar fotos del paciente',pid,e);}
 }
 function verFotoGrande(url){
   openModal(`<div class="modal-title">Foto</div><img src="${url}" style="width:100%;border-radius:var(--radius2)"><div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button></div>`);
@@ -518,25 +771,24 @@ function guardarTasaBCV(){
   const v=parseFloat($('bcv-input')?.value);
   if(isNaN(v)||v<=0){showToast('Ingresa una tasa válida');return;}
   STATE.bcvRate=v;
-  syncToSheet('Config',[{id:'main',bcvRate:v}]);
+  syncToSheet('Config',[{id:'main',bcvRate:v}],{partial:true});
   showToast(`Tasa BCV actualizada: ${v} Bs/$`);renderCaja();
 }
 
 // ── RESPALDO AUTOMÁTICO (evita depender solo de "confiar" en que Firebase no falle) ──
-function exportarRespaldo(silent){
-  const data={
-    exportadoEl:new Date().toISOString(),
-    Pacientes:STATE.patients,Citas:STATE.appointments,Movimientos:STATE.movimientos,
-    Presupuestos:STATE.presupuestos,Formaciones:STATE.formaciones,HistoriaClinica:hcDataToArray(),
-    Config:{bcvRate:STATE.bcvRate},
-  };
+async function exportarRespaldo(silent){
   try{
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    if(!silent)showToast('Preparando respaldo…');
+    const data={exportadoEl:new Date().toISOString(),formato:'EPC-firestore-v2',colecciones:{}};
+    COLECCIONES.forEach(c=>{data.colecciones[c]=(SYNC.raw[c]||[]).map(r=>({docId:r.docId,data:r.data}));});
+    try{const s=await db.collection('Fotos').get();data.colecciones.Fotos=s.docs.map(d=>({docId:d.id,data:d.data()}));}
+    catch(e){data.colecciones.Fotos=[];data.avisoFotos='No se pudieron incluir las fotos: '+(e&&e.code||'');}
+    const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;a.download=`EPC-respaldo-${todayVET()}.json`;
     document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
     saveLocal('lastBackup',{fecha:todayVET()});
     if(!silent)showToast('📦 Respaldo descargado');
   }catch(e){if(!silent)showToast('No se pudo generar el respaldo');}
@@ -599,7 +851,7 @@ const EMAIL_PLANTILLAS={
 const STATE={
   view:'dashboard',activeTratCat:'Medicina Estética',
   activeHCPatient:null,activeHCTab:'timeline',activeCajaPeriodo:'hoy',activeRepTab:'financiero',bcvRate:0,
-  patients:[],movimientos:[],presupuestos:[],hcData:{},formaciones:[],appointments:[],inventario:[],activeProductosTab:'uso',
+  patients:[],movimientos:[],presupuestos:[],hcData:{},formaciones:[],appointments:[],inventario:[],precios:{},activeProductosTab:'uso',
 };
 let agendaWeekOffset=0;
 let chartsInstances={};
@@ -684,7 +936,7 @@ function buildPacienteSelect(id,selId=''){
 function filtrarPacienteSearch(id){
   const txt=$(id+'-txt');const box=$(id+'-results');if(!txt||!box)return;
   const q=txt.value.trim().toLowerCase();
-  const matches=(q?STATE.patients.filter(p=>p.name.toLowerCase().includes(q)):STATE.patients).slice(0,8);
+  const matches=(q?STATE.patients.filter(p=>(p.name||'').toLowerCase().includes(q)):STATE.patients).slice(0,8);
   box.innerHTML=matches.length?matches.map(p=>`<div class="patsearch-item" onclick="seleccionarPacienteSearch('${id}','${p.id}','${p.name.replace(/'/g,"\\'")}')"><div class="patient-avatar" style="width:26px;height:26px;font-size:10px;flex-shrink:0">${initials(p.name)}</div><div style="min-width:0"><div style="font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:10px;color:var(--text3)">${p.cedula&&p.cedula!=='—'?p.cedula:'Sin cédula'}</div></div></div>`).join(''):`<div class="patsearch-empty">Sin coincidencias</div>`;
   box.classList.remove('hidden');
 }
@@ -716,7 +968,7 @@ function marcarRecordatorioEnviado(citaId){
 }
 function enviarRecordatorio24h(citaId){
   const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
-  const p=STATE.patients.find(x=>x.name===a.patient);
+  const p=pacienteDeCita(a);
   abrirPlantillaWA('recordatorio',p?p.id:'');
   marcarRecordatorioEnviado(citaId);
 }
@@ -884,10 +1136,10 @@ function showEventPopover(evt,citaId){
   pop.style.top=Math.min(rect.bottom+6,window.innerHeight-220)+'px';
   pop.style.left=Math.min(rect.left,window.innerWidth-236)+'px';
   pop.innerHTML=`
-    <div class="event-popover-name">${a.patient}</div>
+    <div class="event-popover-name">${a.patient}</div>${pacienteDeCita(a)?'':`<div style="font-size:11px;color:var(--red);margin:2px 0 6px">⚠ No vinculada a un paciente registrado</div>`}
     <div class="event-popover-proc">${a.proc} · ${a.time} VET</div>
     <div class="event-popover-actions">
-      <button onclick="abrirHCDesdeCita('${a.id}');closeEventPopover()">📋 Ver historia clínica</button>
+      ${pacienteDeCita(a)?`<button onclick="abrirHCDesdeCita('${a.id}');closeEventPopover()">📋 Ver historia clínica</button>`:`<button onclick="abrirVincularCita('${a.id}');closeEventPopover()">🔗 Vincular a paciente</button>`}
       <button onclick="enviarRecordatorioWA('${a.id}');closeEventPopover()">📲 Enviar recordatorio</button>
       <button onclick="cycleStatus('${a.id}');closeEventPopover()">↺ Cambiar estado</button>
       <button onclick="openRegistrarCobro('${a.patient}','${a.proc}');closeEventPopover()">💰 Registrar cobro</button>
@@ -899,7 +1151,7 @@ function showEventPopover(evt,citaId){
 
 function enviarRecordatorioWA(citaId){
   const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
-  const p=STATE.patients.find(x=>x.name===a.patient);
+  const p=pacienteDeCita(a);
   const tel=(p?.phone||'').replace(/\D/g,'');
   const msg=`Hola ${a.patient} 👋\n\nLe recordamos su cita en *Elite Plastic Center*:\n\n📅 *Fecha:* ${fmtDateVET(a.fecha)}\n🕐 *Hora:* ${a.time} VET\n💉 *Procedimiento:* ${a.proc}\n👨‍⚕️ *Médico:* ${a.doc}\n📍 C.C. Trinidad Tepuy, Consultorio 1-13, Baruta, Caracas\n\n¡Nos vemos pronto! ✨`;
   window.open(tel?`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`:`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
@@ -916,9 +1168,9 @@ function cycleStatus(id){
 
 function abrirHCDesdeCita(citaId){
   const a=STATE.appointments.find(x=>x.id===citaId);if(!a)return;
-  const p=STATE.patients.find(x=>x.name===a.patient);
+  const p=pacienteDeCita(a);
   if(p){STATE.activeHCPatient=p.id;STATE.activeHCTab='consultas';showView('hc');setTimeout(()=>openNewConsulta(p.id),300);}
-  else showToast('Paciente no encontrado');
+  else abrirVincularCita(citaId);
 }
 
 function eliminarCita(id){
@@ -936,7 +1188,7 @@ function confirmarEliminarCita(id){
 // ── PACIENTES ─────────────────────────────────────────────────────────────────
 function renderPacientes(filter=''){
   const view=STATE.activePacientesView||'pipeline';
-  const pts=filter?STATE.patients.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase())||(p.cedula||'').includes(filter)):STATE.patients;
+  const pts=filter?STATE.patients.filter(p=>(p.name||'').toLowerCase().includes(filter.toLowerCase())||(p.cedula||'').includes(filter)):STATE.patients;
   $('content-area').innerHTML=`
   <div class="section-header">
     <div class="section-title">Pacientes (${STATE.patients.length})</div>
@@ -1045,6 +1297,7 @@ function saveNewPatient(){
   STATE.patients.unshift({id:'P'+Date.now(),name:n,cedula:c||'—',phone:$('f-phone').value||'—',email:$('f-email')?.value||'—',dob:$('f-dob')?.value||'—',tags:[$('f-tag')?.value||'Nueva'],lastVisit:'',procedures:0,etapa});
   closeModal();showToast(etapa==='lead'?'Lead registrado':'Paciente registrado');
   syncToSheet('Pacientes',STATE.patients);
+  if(STATE._vincularCitaTras){const cid=STATE._vincularCitaTras;STATE._vincularCitaTras=null;guardarVinculoCita(cid,STATE.patients[0].id);}
   if(STATE.view==='pacientes')renderPacientes();else renderDashboard();
 }
 
@@ -1058,21 +1311,30 @@ function openEditarPaciente(id){
 }
 function guardarEdicionPaciente(id){
   const p=STATE.patients.find(x=>x.id===id);if(!p)return;
-  p.name=$('ep-nombre').value.trim();p.cedula=$('ep-cedula').value.trim();p.phone=$('ep-phone').value;p.email=$('ep-email').value;p.dob=$('ep-dob').value;p.tags=[$('ep-tag').value];
+  const nuevoNombre=$('ep-nombre').value.trim();
+  if(!nuevoNombre){showToast('El nombre no puede quedar vacío');return;}
+  const citasP=citasDePaciente(p);
+  p.name=nuevoNombre;p.cedula=$('ep-cedula').value.trim();p.phone=$('ep-phone').value;p.email=$('ep-email').value;p.dob=$('ep-dob').value;p.tags=[$('ep-tag').value];
   closeModal();showToast('Paciente actualizado');
-  syncToSheet('Pacientes',STATE.patients);renderPacientes();
+  syncToSheet('Pacientes',STATE.patients);
+  let cc=0;citasP.forEach(a=>{if(a.patient!==p.name||a.patientId!==p.id){a.patient=p.name;a.patientId=p.id;cc++;}});
+  if(cc)syncToSheet('Citas',STATE.appointments);
+  renderPacientes();
 }
 function confirmarEliminarPaciente(id,nombre){
   openModal(`<div class="modal-title" style="color:var(--red)">Eliminar paciente</div>
-  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Eliminar a <strong>${nombre}</strong>? No se puede deshacer.</div>
+  <div style="background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius);padding:14px;margin-bottom:18px;font-size:13px;color:var(--text2)">¿Eliminar a <strong>${nombre}</strong>? No se puede deshacer.${(()=>{const n=citasDePaciente(STATE.patients.find(x=>x.id===id)).length;return n?`<br><br>También se eliminarán sus <strong>${n} cita(s)</strong> de la agenda y su historia clínica.`:'';})()}</div>
   <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn" style="background:var(--red);color:#fff;font-family:Montserrat,sans-serif;font-size:12px;padding:8px 18px;border-radius:var(--radius);cursor:pointer;border:none" onclick="eliminarPaciente('${id}')">Eliminar</button></div>`);
 }
 function eliminarPaciente(id){
+  const pac=STATE.patients.find(p=>p.id===id);
+  const idsCitas=new Set(citasDePaciente(pac).map(a=>a.id));
   STATE.patients=STATE.patients.filter(p=>p.id!==id);
+  if(idsCitas.size){STATE.appointments=STATE.appointments.filter(a=>!idsCitas.has(a.id));syncToSheet('Citas',STATE.appointments,{maxBorrados:idsCitas.size});}
+  borrarFotosDePaciente(id);
   if(STATE.hcData[id]){
     delete STATE.hcData[id];
     persistHCData();
-    try{db.collection('HistoriaClinica').doc(id).delete();}catch(e){}
   }
   closeModal();showToast('Paciente eliminado');
   syncToSheet('Pacientes',STATE.patients);renderPacientes();
@@ -1097,7 +1359,7 @@ function hcPatientCardHtml(p){
   return`<div class="hc-patient-card${p.id===STATE.activeHCPatient?' active':''}" onclick="openHCPatient('${p.id}')"><div style="display:flex;align-items:center;gap:10px"><div class="patient-avatar">${initials(p.name)}</div><div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:5px">${p.name}${tieneAlergias?'<span title="Tiene alergias registradas" style="color:var(--red)">⚠️</span>':''}</div><div style="font-size:11px;color:var(--text3)">${p.cedula||''} · ${p.procedures||0} procs.</div></div></div></div>`;
 }
 function filterHCList(q){
-  const pts=q?STATE.patients.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())):STATE.patients;
+  const pts=q?STATE.patients.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase())):STATE.patients;
   $('hc-list').innerHTML=pts.map(p=>hcPatientCardHtml(p)).join('');
 }
 
@@ -1141,8 +1403,8 @@ function buildHCTab(id,tab){
   const ant=hc.antecedentes||{};
   if(tab==='timeline')return buildHCTimeline(id,hc);
   if(tab==='antecedentes')return`<div class="hc-section"><div class="hc-section-title">Antecedentes <button class="icon-btn btn-sm" onclick="openEditAntecedentes('${id}')">✏ Editar</button></div>${[['Alergias',ant.alergias||'—'],['Medicamentos',ant.medicamentos||'—'],['Antec. personales',ant.antPersonales||'—'],['Antec. familiares',ant.antFamiliares||'—'],['Cirugías previas',ant.cirugiasPrevias||'—']].map(([l,v])=>`<div class="hc-field"><span class="hc-field-label">${l}</span><span class="hc-field-value">${v}</span></div>`).join('')}</div>`;
-  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${(c.productos||[]).length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}${(c.fotos||[]).length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${c.fotos.map(f=>`<div style="position:relative;cursor:pointer" onclick="verFotoGrande('${f.url}')"><img src="${f.url}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border2)"><span style="position:absolute;bottom:1px;left:1px;background:rgba(0,0,0,.65);color:#fff;font-size:8px;padding:1px 4px;border-radius:3px">${f.tipo}</span></div>`).join('')}</div>`:''}</div>`).join('');}
-  if(tab==='consentimientos'){const cs=hc.consentimientos||[];return`<div class="hc-section"><div class="hc-section-title">Consentimientos <button class="icon-btn btn-sm" onclick="openAddConsentimiento('${id}')">+ Agregar</button></div>${cs.length?cs.map(c=>`<div class="consent-item"><div class="consent-check${c.firmado?' done':''}">${c.firmado?'✓':''}</div><div style="flex:1;font-size:13px;color:var(--text)">${c.nombre}</div>${c.firma?`<img src="${c.firma}" style="height:26px;background:#fff;border-radius:4px;padding:2px" title="Firma del ${c.fecha}">`:''}<div style="font-size:11px;color:var(--text3)">${c.firmado?'Firmado '+c.fecha:'Pendiente'}</div>${!c.firmado?`<button class="icon-btn btn-sm" onclick="openFirmaModal('${id}','${(c.nombre||'').replace(/'/g,"\\'")}')">✍️ Firmar</button>`:''}</div>`).join(''):'<div style="color:var(--text3);font-size:13px">Sin consentimientos.</div>'}</div>`;}
+  if(tab==='consultas'){const cs=hc.consultas||[];if(!cs.length)return`<div class="hc-section" style="text-align:center;padding:28px;color:var(--text3)">Sin consultas.<br><button class="btn btn-gold btn-sm" style="margin-top:10px" onclick="openNewConsulta('${id}')">+ Primera consulta</button></div>`;return cs.map(c=>`<div class="consulta-card"><div class="consulta-date">📅 ${c.fecha} · ${c.doc}</div><div class="consulta-proc">${c.proc}</div><div class="consulta-note">${c.nota}</div>${(c.productos||[]).length?`<div class="consulta-prods">${c.productos.map(pr=>`<span class="prod-chip">💉 ${pr.prod} ${pr.dosis} — ${pr.zona} (${pr.lote})</span>`).join('')}</div>`:''}${(c.fotos||[]).length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${(setTimeout(cargarFotosPendientes,30),'')}${c.fotos.map(f=>`<div style="position:relative;cursor:pointer" onclick="${f.url?`verFotoGrande('${f.url}')`:`verFotoId('${f.fotoId}')`}"><img ${fotoSrc(f)?`src="${fotoSrc(f)}"`:''} data-foto-id="${f.url?'':(f.fotoId||'')}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border2)"><span style="position:absolute;bottom:1px;left:1px;background:rgba(0,0,0,.65);color:#fff;font-size:8px;padding:1px 4px;border-radius:3px">${f.tipo}</span></div>`).join('')}</div>`:''}</div>`).join('');}
+  if(tab==='consentimientos'){const cs=hc.consentimientos||[];return`<div class="hc-section"><div class="hc-section-title">Consentimientos <button class="icon-btn btn-sm" onclick="openAddConsentimiento('${id}')">+ Agregar</button></div>${cs.length?cs.map((c,ci)=>`<div class="consent-item"><div class="consent-check${c.firmado?' done':''}">${c.firmado?'✓':''}</div><div style="flex:1;font-size:13px;color:var(--text)">${c.nombre}</div>${c.firma?`<img src="${c.firma}" style="height:26px;background:#fff;border-radius:4px;padding:2px" title="Firma del ${c.fecha}">`:''}<div style="font-size:11px;color:var(--text3)">${c.firmado?'Firmado '+c.fecha:'Pendiente'}</div>${!c.firmado?`<button class="icon-btn btn-sm" onclick="openFirmaModal('${id}','${(c.nombre||'').replace(/'/g,"\\'")}',${ci})">✍️ Firmar</button>`:''}</div>`).join(''):'<div style="color:var(--text3);font-size:13px">Sin consentimientos.</div>'}</div>`;}
   return'';
 }
 
@@ -1150,7 +1412,7 @@ function buildHCTab(id,tab){
 function buildHCTimeline(id,hc){
   const p=STATE.patients.find(x=>x.id===id);if(!p)return'';
   const eventos=[];
-  STATE.appointments.filter(a=>a.patient===p.name).forEach(a=>{
+  citasDePaciente(p).forEach(a=>{
     eventos.push({fecha:a.fecha,time:a.time||'00:00',tipo:'cita',icono:'📅',clase:'cita',
       titulo:a.proc,sub:`Cita · ${a.time} · ${statusMap[a.status]?statusMap[a.status].label:a.status}`});
   });
@@ -1264,7 +1526,10 @@ function saveConsulta(){
   if(!STATE.hcData[patId])STATE.hcData[patId]={antecedentes:{},consultas:[],consentimientos:[]};
   const m=$('fp-marca').value,pr=$('fp-prod').value;
   const prods=(m||pr)?[{marca:m,prod:pr,dosis:$('fp-dosis').value,zona:$('fp-zona').value,lote:$('fp-lote').value}]:[];
-  STATE.hcData[patId].consultas.unshift({fecha:$('fc-fecha').value,proc:$('fc-proc').value,doc:getMedicoLabel(),nota:$('fc-nota').value,productos:prods,fotos:consultaFotosTemp.slice()});
+  const fechaC=$('fc-fecha').value;
+  const fotosNuevas=consultaFotosTemp.map((f,i)=>({id:'FOTO'+Date.now()+'_'+i,patientId:patId,fecha:fechaC,tipo:f.tipo,url:f.url}));
+  STATE.hcData[patId].consultas.unshift({fecha:fechaC,proc:$('fc-proc').value,doc:getMedicoLabel(),nota:$('fc-nota').value,productos:prods,fotos:fotosNuevas.map(f=>({tipo:f.tipo,fotoId:f.id}))});
+  guardarFotos(fotosNuevas);
   if(m&&pr&&$('fp-lote').value)descontarInventario($('fp-prod').value,$('fp-lote').value);
   p.procedures=(p.procedures||0)+1;p.lastVisit=$('fc-fecha').value;
   let subioEtapa=false;
@@ -1290,14 +1555,14 @@ function saveConsentimiento(id){
 
 // ── FIRMA REAL (canvas) — reemplaza el checkbox de "firmado" por una firma capturada de verdad ──
 let firmaCtx=null,firmaDrawing=false;
-function openFirmaModal(patientId,nombre){
+function openFirmaModal(patientId,nombre,idx){
   openModal(`<div class="modal-title">Firmar consentimiento</div>
   <div style="font-size:13px;color:var(--text2);margin-bottom:14px">${nombre}</div>
   <div style="background:#fff;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border2)">
     <canvas id="firma-canvas" width="600" height="180" style="width:100%;height:180px;display:block;touch-action:none;cursor:crosshair"></canvas>
   </div>
   <div style="font-size:11px;color:var(--text3);margin-top:8px">Firme dentro del recuadro con el mouse o el dedo.</div>
-  <div class="modal-actions"><button class="btn-outline" onclick="limpiarFirma()">Limpiar</button><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="guardarFirma('${patientId}','${nombre.replace(/'/g,"\\'")}')">Guardar firma</button></div>`);
+  <div class="modal-actions"><button class="btn-outline" onclick="limpiarFirma()">Limpiar</button><button class="btn-outline" onclick="closeModal()">Cancelar</button><button class="btn btn-gold" onclick="guardarFirma('${patientId}','${nombre.replace(/'/g,"\\'")}',${Number.isInteger(idx)?idx:-1})">Guardar firma</button></div>`);
   setTimeout(initFirmaCanvas,50);
 }
 function initFirmaCanvas(){
@@ -1312,11 +1577,14 @@ function initFirmaCanvas(){
   c.ontouchstart=start;c.ontouchmove=move;c.ontouchend=end;
 }
 function limpiarFirma(){const c=$('firma-canvas');if(c&&firmaCtx)firmaCtx.clearRect(0,0,c.width,c.height);}
-function guardarFirma(patientId,nombre){
+function guardarFirma(patientId,nombre,idx){
   const c=$('firma-canvas');if(!c)return;
   const dataUrl=c.toDataURL('image/png');
   const hc=STATE.hcData[patientId];if(!hc)return;
-  const con=(hc.consentimientos||[]).find(x=>x.nombre===nombre);if(!con)return;
+  const lista=hc.consentimientos||[];
+  let con=(idx>=0&&lista[idx]&&lista[idx].nombre===nombre&&!lista[idx].firmado)?lista[idx]:null;
+  if(!con)con=lista.find(x=>x.nombre===nombre&&!x.firmado);
+  if(!con){showToast('Este consentimiento ya estaba firmado');closeModal();return;}
   con.firmado=true;con.fecha=todayVET();con.firma=dataUrl;
   persistHCData();closeModal();showToast('Firma guardada');
   const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(patientId,'consentimientos');
@@ -1351,7 +1619,7 @@ function setProductosTab(t){STATE.activeProductosTab=t;renderProductos();}
 function renderProductosUso(filter=''){
   const all=getAllProductUsages();
   const q=filter.toLowerCase();
-  const filtered=filter?all.filter(u=>u.lote.toLowerCase().includes(q)||u.prod.toLowerCase().includes(q)||u.paciente.toLowerCase().includes(q)):all;
+  const filtered=filter?all.filter(u=>String(u.lote||'').toLowerCase().includes(q)||String(u.prod||'').toLowerCase().includes(q)||String(u.paciente||'').toLowerCase().includes(q)):all;
   const lotesUnicos=new Set(all.map(u=>u.lote)).size;
   const prodCounts={};all.forEach(u=>{prodCounts[u.prod]=(prodCounts[u.prod]||0)+1;});
   const masUsado=Object.entries(prodCounts).sort((a,b)=>b[1]-a[1])[0];
@@ -1377,7 +1645,7 @@ function renderProductosUso(filter=''){
 // ── INVENTARIO REAL DE INSUMOS (stock, no solo historial de uso) ───────────────
 function renderInventario(filter=''){
   const q=filter.toLowerCase();
-  const items=filter?STATE.inventario.filter(i=>i.producto.toLowerCase().includes(q)||i.lote.toLowerCase().includes(q)):STATE.inventario;
+  const items=filter?STATE.inventario.filter(i=>String(i.producto||'').toLowerCase().includes(q)||String(i.lote||'').toLowerCase().includes(q)):STATE.inventario;
   const stockBajo=STATE.inventario.filter(i=>Number(i.stock)<=Number(i.minimo||0));
   $('productos-tab-content').innerHTML=`
   <div class="section-header" style="margin-top:16px">
@@ -1425,7 +1693,7 @@ function ajustarStock(id,delta){
 }
 function eliminarInventario(id){STATE.inventario=STATE.inventario.filter(i=>i.id!==id);syncToSheet('Inventario',STATE.inventario);showToast('Eliminado');renderInventario();}
 function descontarInventario(producto,lote){
-  const item=STATE.inventario.find(i=>i.lote.toLowerCase()===lote.toLowerCase()&&i.producto.toLowerCase()===producto.toLowerCase());
+  const item=STATE.inventario.find(i=>String(i.lote||'').toLowerCase()===String(lote||'').toLowerCase()&&String(i.producto||'').toLowerCase()===String(producto||'').toLowerCase());
   if(!item)return;
   item.stock=Math.max(0,Number(item.stock)-1);
   syncToSheet('Inventario',STATE.inventario);
@@ -1457,7 +1725,11 @@ function editPrice(cat,idx){
   el.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><span style="color:var(--text3);font-size:12px">$</span><input id="pinp-${sc}-${idx}" type="number" min="0" step="1" value="${item.p}" style="width:82px;padding:4px 8px;background:var(--bg2);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--gold);border-radius:6px;color:var(--gold);font-size:13px;font-weight:600;font-family:'Montserrat',sans-serif;outline:none" onkeydown="if(event.key==='Enter')savePrice('${cat}',${idx});if(event.key==='Escape')cancelPrice('${cat}',${idx})" onblur="savePrice('${cat}',${idx})"><button class="icon-btn btn-sm" style="padding:3px 7px" onclick="savePrice('${cat}',${idx})">✓</button><button class="icon-btn btn-sm" style="padding:3px 7px" onclick="cancelPrice('${cat}',${idx})">✕</button></div>`;
   setTimeout(()=>{const i=$(`pinp-${sc}-${idx}`);if(i){i.focus();i.select();}},40);
 }
-function savePrice(cat,idx){const sc=cat.replace(/\W/g,'');const inp=$(`pinp-${sc}-${idx}`);if(!inp)return;const val=Math.max(0,parseInt(inp.value)||0);SERVICIOS[cat][idx].p=val;const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(val);showToast(`Precio → ${fmtUSD(val)}`);}
+function aplicarPreciosGuardados(){
+  const m=STATE.precios||{};
+  Object.values(SERVICIOS).forEach(items=>items.forEach(s=>{if(m[s.n]!==undefined&&m[s.n]!==null&&!isNaN(Number(m[s.n])))s.p=Number(m[s.n]);}));
+}
+function savePrice(cat,idx){const sc=cat.replace(/\W/g,'');const inp=$(`pinp-${sc}-${idx}`);if(!inp)return;const val=Math.max(0,parseInt(inp.value)||0);SERVICIOS[cat][idx].p=val;STATE.precios=Object.assign({},STATE.precios||{},{[SERVICIOS[cat][idx].n]:val});syncToSheet('Config',[{id:'precios',map:STATE.precios}],{partial:true});const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(val);showToast(`Precio → ${fmtUSD(val)}`);}
 function cancelPrice(cat,idx){const sc=cat.replace(/\W/g,'');const el=$(`price-display-${sc}-${idx}`);if(el)el.innerHTML=fmtUSD(SERVICIOS[cat][idx].p);}
 
 // ── CAJA ─────────────────────────────────────────────────────────────────────
@@ -1608,8 +1880,12 @@ function savePresupuesto(){
   const items=[];
   document.querySelectorAll('.presup-item-entry').forEach(row=>{const d=row.querySelector('select');const m=row.querySelector('input[type="number"]');if(d&&m&&d.value)items.push({desc:d.value,monto:parseFloat(m.value)||0});});
   if(!items.length){showToast('Agrega al menos un procedimiento');return;}
-  const id='PRES-'+String(STATE.presupuestos.length+1).padStart(3,'0');
-  STATE.presupuestos.unshift({id,fecha:todayVET(),paciente:p.name,cedula:p.cedula||'',tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value,bcvRate:STATE.bcvRate||0});
+  const usados=new Set(STATE.presupuestos.map(x=>String(x.id)));
+  let n=STATE.presupuestos.reduce((mx,x)=>{const m=String(x.id).match(/^PRES-(\d+)/);return m?Math.max(mx,Number(m[1])):mx;},0)+1;
+  const suf=()=>Math.random().toString(36).slice(2,5).toUpperCase();
+  let id='PRES-'+String(n).padStart(3,'0')+'-'+suf();
+  while(usados.has(id)){n++;id='PRES-'+String(n).padStart(3,'0')+'-'+suf();}
+  STATE.presupuestos.unshift({id,fecha:todayVET(),paciente:p.name,pacienteId:p.id,cedula:p.cedula||'',tipo,items,vigencia,doc:getMedicoLabel(),notas:$('fp-notas').value,bcvRate:STATE.bcvRate||0});
   presupItemCount=1;closeModal();showToast(`Presupuesto ${id} generado`);
   syncToSheet('Presupuestos',STATE.presupuestos);renderPresupuestos();
 }
@@ -1639,7 +1915,7 @@ function saveCita(force){
       return;
     }
   }
-  STATE.appointments.push({id:'A'+Date.now(),fecha,time,patient:p.name,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel,timezone:'VET'});
+  STATE.appointments.push({id:'A'+Date.now(),fecha,time,patient:p.name,patientId:p.id,proc,doc:getMedicoLabel(),status:'pendiente',consultorio:consLabel,timezone:'VET'});
   STATE.appointments.sort((a,b)=>a.fecha===b.fecha?a.time.localeCompare(b.time):a.fecha.localeCompare(b.fecha));
   $('badge-agenda').textContent=STATE.appointments.length;
   closeModal();showToast(`Cita: ${p.name} · ${fecha} ${time} VET`);
@@ -1846,7 +2122,7 @@ function previewWA(plId){
   const pl=WA_PLANTILLAS.find(x=>x.id===plId);if(!pl)return;
   const sel=$('mkt-pat');if(!sel)return;
   const p=STATE.patients.find(x=>x.id===sel.value);if(!p)return;
-  const cita=STATE.appointments.filter(a=>a.patient===p.name).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  const cita=citasDePaciente(p).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
   const prev=$('mkt-preview');if(!prev)return;
   prev.value=pl.texto.replace(/\[NOMBRE\]/g,p.name).replace(/\[HORA\]/g,cita?cita.time:'[HORA]').replace(/\[FECHA\]/g,cita?fmtDateVET(cita.fecha):'[FECHA]').replace(/\[PROC\]/g,cita?cita.proc:'[PROCEDIMIENTO]');
 }
@@ -1871,7 +2147,7 @@ function abrirPlantillaEmail(id){
 function previewEmail(plId){
   const sel=$('email-pat');if(!sel)return;
   const p=STATE.patients.find(x=>x.id===sel.value);if(!p)return;
-  const cita=STATE.appointments.filter(a=>a.patient===p.name).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  const cita=citasDePaciente(p).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
   const cb=$('email-cuerpo');const as=$('email-asunto');
   if(cb)cb.value=cb.value.replace(/\[NOMBRE\]/g,p.name).replace(/\[HORA\]/g,cita?cita.time:'[HORA]').replace(/\[FECHA\]/g,cita?fmtDateVET(cita.fecha):'[FECHA]').replace(/\[PROC\]/g,cita?cita.proc:'[PROCEDIMIENTO]');
   if(as)as.value=as.value.replace(/\[NOMBRE\]/g,p.name);
