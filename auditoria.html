@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPC — Auditoría de datos (solo lectura)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#12161B;color:#F1ECE0;font-family:Montserrat,system-ui,sans-serif;font-size:14px;line-height:1.55;padding:28px 18px 60px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-family:'Cormorant Garamond',serif;font-weight:600;color:#D4AD68;font-size:34px}
+.sub{color:#ADB4B8;margin:4px 0 22px}
+.lock{background:rgba(29,158,117,.12);border:1px solid rgba(29,158,117,.45);border-radius:10px;padding:12px 16px;margin-bottom:22px;font-size:13px}
+button{font-family:inherit;font-size:13px;font-weight:600;border:none;border-radius:8px;padding:11px 20px;cursor:pointer}
+.gold{background:#D4AD68;color:#12161B}.gold:disabled{opacity:.45;cursor:default}
+.card{background:rgba(255,247,232,.045);border:1px solid rgba(212,173,104,.22);border-radius:12px;padding:18px 20px;margin-top:16px}
+.card h2{font-family:'Cormorant Garamond',serif;font-size:22px;color:#E6C68A;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.07)}
+th{color:#ADB4B8;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+.ok{color:#3FC495}.warn{color:#E6B04A}.bad{color:#FF6B6A}
+.item{padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.06);font-size:13px}
+.muted{color:#767E82;font-size:12px}
+.big{font-size:17px;font-weight:600}
+details summary{cursor:pointer;color:#ADB4B8;font-size:12px;margin-top:6px}
+code{background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Auditoría de datos EPC</h1>
+  <div class="sub">Revisión de la base de datos real de Firebase antes de publicar la nueva versión.</div>
+  <div class="lock">🔒 <strong>Esta herramienta es de solo lectura.</strong> Solo consulta Firebase. No crea, modifica ni borra ningún dato.</div>
+  <button class="gold" id="btn-run" onclick="auditar()">Iniciar auditoría</button>
+  <button class="gold" id="btn-bk" onclick="descargarRespaldo()" disabled style="margin-left:8px">⬇ Descargar copia de seguridad completa</button>
+  <div id="out"></div>
+</div>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",authDomain:"epc-clinic.firebaseapp.com",projectId:"epc-clinic",
+  storageBucket:"epc-clinic.firebasestorage.app",messagingSenderId:"503441399542",appId:"1:503441399542:web:60fd39c9d3b6c8524716d7"
+});
+const db=firebase.firestore();
+const COLS=['Pacientes','Citas','Movimientos','Presupuestos','Formaciones','HistoriaClinica','Config','Inventario','Fotos'];
+const RAW={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+
+// Convierte tipos especiales de Firestore a JSON puro para el respaldo
+function aJSON(v){
+  if(v&&typeof v.toDate==='function')return{__timestamp:v.toDate().toISOString()};
+  if(Array.isArray(v))return v.map(aJSON);
+  if(v&&typeof v==='object'){const o={};Object.keys(v).forEach(k=>o[k]=aJSON(v[k]));return o;}
+  return v;
+}
+function tieneTiposEspeciales(v){
+  if(v&&typeof v.toDate==='function')return true;
+  if(Array.isArray(v))return v.some(tieneTiposEspeciales);
+  if(v&&typeof v==='object')return Object.values(v).some(tieneTiposEspeciales);
+  return false;
+}
+function card(titulo,html){return`<div class="card"><h2>${titulo}</h2>${html}</div>`;}
+function lista(items,max=40){
+  if(!items.length)return'<div class="ok">✓ Nada que reportar</div>';
+  return items.slice(0,max).map(i=>`<div class="item">${i}</div>`).join('')+(items.length>max?`<div class="muted">…y ${items.length-max} más</div>`:'');
+}
+
+async function auditar(){
+  $('btn-run').disabled=true;$('btn-run').textContent='Leyendo Firebase…';
+  const out=$('out');out.innerHTML='';
+  const errores={};
+  for(const c of COLS){
+    try{const s=await db.collection(c).get({source:'server'});RAW[c]=s.docs.map(d=>({docId:d.id,data:d.data()}));}
+    catch(e){errores[c]=e.code||e.message;RAW[c]=null;}
+  }
+  let html='';
+
+  // 1. Acceso
+  const denegadas=Object.keys(errores);
+  if(denegadas.length){
+    html+=card('⛔ Acceso a Firebase',`<div class="bad big">No se pudo leer: ${denegadas.map(c=>`${c} (${errores[c]})`).join(', ')}</div>
+    <div style="margin-top:8px">${errores.Fotos&&denegadas.length===1?'La colección nueva <code>Fotos</code> está bloqueada por las reglas. <strong>Hay que ampliar las reglas antes de publicar</strong>, o las fotos nuevas no se guardarán.':'Revisa las reglas de seguridad en la consola de Firebase. <strong>No publiques la nueva versión hasta que esto esté en verde.</strong>'}</div>`);
+  }else{
+    html+=card('Acceso a Firebase','<div class="ok big">✓ Todas las colecciones son legibles, incluida la nueva colección Fotos</div>');
+  }
+
+  // 2. Resumen
+  const filas=COLS.map(c=>{
+    const r=RAW[c];if(!r)return`<tr><td>${c}</td><td class="bad">sin acceso</td><td></td><td></td></tr>`;
+    const tam=r.map(x=>JSON.stringify(aJSON(x.data)).length);
+    const max=tam.length?Math.max(...tam):0;
+    return`<tr><td>${c}</td><td class="big">${r.length}</td><td>${(tam.reduce((a,b)=>a+b,0)/1024).toFixed(0)} KB</td><td class="${max>900000?'bad':max>700000?'warn':''}">${(max/1024).toFixed(0)} KB</td></tr>`;
+  }).join('');
+  html+=card('Resumen de la base de datos',`<table><tr><th>Colección</th><th>Registros</th><th>Tamaño total</th><th>Registro más grande</th></tr>${filas}</table>
+  <div class="muted" style="margin-top:8px">Compara estos números con lo que el equipo espera ver (por ejemplo, total de pacientes y de citas).</div>`);
+
+  // 3. Estructura de identificadores
+  const idIssues=[];let espec=[];
+  COLS.forEach(c=>{
+    const r=RAW[c];if(!r)return;
+    const cont={};
+    r.forEach(x=>{
+      const id=x.data.id;
+      if(id===undefined||id===null||id==='')idIssues.push(`<span class="warn">${c}</span> · documento <code>${esc(x.docId)}</code> no tiene campo id (la app usará el del documento)`);
+      else if(String(id)!==x.docId)idIssues.push(`<span class="warn">${c}</span> · documento <code>${esc(x.docId)}</code> tiene id <code>${esc(id)}</code> distinto (la app escribirá siempre en su documento original)`);
+      const k=String(id!=null&&id!==''?id:x.docId);(cont[k]=cont[k]||[]).push(x.docId);
+      if(tieneTiposEspeciales(x.data))espec.push(`${c} · ${esc(x.docId)}`);
+    });
+    Object.entries(cont).filter(([,v])=>v.length>1).forEach(([k,v])=>idIssues.push(`<span class="bad">${c}</span> · el id <code>${esc(k)}</code> está repetido en ${v.length} documentos: ${v.map(esc).join(', ')} (la app los mostrará como registros separados)`));
+  });
+  html+=card('Identificadores',lista(idIssues)+(espec.length?`<div class="muted" style="margin-top:8px">Registros con fechas de tipo Firebase (se respaldan convertidas): ${espec.slice(0,10).join(', ')}</div>`:''));
+
+  // 4. Citas y pacientes
+  if(RAW.Citas&&RAW.Pacientes){
+    const pacs=RAW.Pacientes.map(x=>({id:String(x.data.id!=null&&x.data.id!==''?x.data.id:x.docId),name:x.data.name}));
+    const porId=new Set(pacs.map(p=>p.id));
+    let vincPorId=0,seVincularan=0,ambiguas=[],huerfanas=[],fechas=[],incompletas=[];
+    RAW.Citas.forEach(x=>{
+      const a=x.data;
+      const desc=`<strong>${esc(a.patient)||'(sin nombre)'}</strong> · ${esc(a.fecha)} ${esc(a.time)} · ${esc(a.proc)} <span class="muted">(${esc(x.docId)})</span>`;
+      if(a.patientId&&porId.has(String(a.patientId)))vincPorId++;
+      else{
+        const m=pacs.filter(p=>norm(p.name)===norm(a.patient));
+        if(m.length===1)seVincularan++;
+        else if(m.length>1)ambiguas.push(desc+` → coincide con ${m.length} pacientes con el mismo nombre`);
+        else huerfanas.push(desc);
+      }
+      if(!/^20\d\d-\d\d-\d\d$/.test(String(a.fecha||'')))fechas.push(desc+` → fecha "${esc(a.fecha)}"`);
+      if(!a.time||!a.proc||!a.status)incompletas.push(desc+` → falta ${[!a.time&&'hora',!a.proc&&'procedimiento',!a.status&&'estado'].filter(Boolean).join(', ')}`);
+    });
+    html+=card('Citas ↔ Pacientes',`
+      <div class="item">Citas ya vinculadas por ID: <strong>${vincPorId}</strong></div>
+      <div class="item">Citas que la nueva versión <strong>vinculará automáticamente</strong> (nombre coincide con un único paciente): <strong class="ok">${seVincularan}</strong></div>
+      <div class="item">Citas <strong>sin paciente</strong> (mostrarán aviso y botón "Vincular a paciente"): <strong class="${huerfanas.length?'warn':'ok'}">${huerfanas.length}</strong></div>
+      <div class="item">Citas con nombre repetido en varios pacientes (hay que vincularlas a mano): <strong class="${ambiguas.length?'warn':'ok'}">${ambiguas.length}</strong></div>
+      ${huerfanas.length?`<details open><summary>Ver citas sin paciente</summary>${lista(huerfanas,200)}</details>`:''}
+      ${ambiguas.length?`<details open><summary>Ver citas ambiguas</summary>${lista(ambiguas,200)}</details>`:''}
+      ${fechas.length?`<div style="margin-top:10px" class="bad">Fechas con formato incorrecto (no aparecerán en la agenda):</div>${lista(fechas)}`:''}
+      ${incompletas.length?`<div style="margin-top:10px" class="warn">Citas incompletas (se mostrarán igual, sin romper la app):</div>${lista(incompletas)}`:''}`);
+  }
+
+  // 5. Historia clínica
+  if(RAW.HistoriaClinica&&RAW.Pacientes){
+    const ids=new Set(RAW.Pacientes.map(x=>String(x.data.id!=null&&x.data.id!==''?x.data.id:x.docId)));
+    const sinPac=[],grandes=[];
+    RAW.HistoriaClinica.forEach(x=>{
+      const k=String(x.data.id!=null&&x.data.id!==''?x.data.id:x.docId);
+      if(!ids.has(k))sinPac.push(`Historia <code>${esc(x.docId)}</code> sin paciente asociado (se conserva, no se borra)`);
+      const kb=JSON.stringify(aJSON(x.data)).length/1024;
+      if(kb>700)grandes.push(`Historia <code>${esc(x.docId)}</code>: ${kb.toFixed(0)} KB ${kb>900?'<span class="bad">— al límite: ya no admite cambios hasta aligerarla</span>':'<span class="warn">— cerca del límite de 1 MB</span>'}`);
+    });
+    html+=card('Historias clínicas',`<div class="muted" style="margin-bottom:6px">Desde la nueva versión, las fotos nuevas se guardan aparte y ya no hacen crecer la historia clínica.</div>`+lista(sinPac.concat(grandes)));
+  }
+
+  // 6. Caja y presupuestos
+  if(RAW.Movimientos&&RAW.Presupuestos){
+    const pres=new Set(RAW.Presupuestos.map(x=>String(x.data.id!=null&&x.data.id!==''?x.data.id:x.docId)));
+    const rotos=RAW.Movimientos.filter(x=>x.data.presupuestoId&&!pres.has(String(x.data.presupuestoId))).map(x=>`Pago <code>${esc(x.docId)}</code> (${esc(x.data.desc)}) apunta al presupuesto <code>${esc(x.data.presupuestoId)}</code>, que ya no existe`);
+    html+=card('Caja y presupuestos',lista(rotos));
+  }
+
+  // 7. Garantías de la nueva versión
+  html+=card('Qué hará la nueva versión al abrirse por primera vez',`
+    <div class="item">✓ <strong>No borra ningún registro.</strong> Borrar solo ocurre cuando una persona elimina algo, y nunca más de un registro a la vez (salvo al eliminar un paciente con sus citas, con confirmación).</div>
+    <div class="item">✓ Solo escribe una cosa automáticamente: añade el vínculo de paciente (<code>patientId</code>) a las citas que coinciden sin ambigüedad. No cambia fechas, horas, procedimientos ni nombres.</div>
+    <div class="item">✓ Registros con formatos antiguos se leen tal cual; los campos faltantes se rellenan solo en pantalla, sin escribirlos.</div>`);
+
+  out.innerHTML=html;
+  $('btn-run').disabled=false;$('btn-run').textContent='Repetir auditoría';
+  $('btn-bk').disabled=!!denegadas.filter(c=>c!=='Fotos').length;
+}
+
+function descargarRespaldo(){
+  const data={exportadoEl:new Date().toISOString(),formato:'EPC-firestore-v2',proyecto:'epc-clinic',colecciones:{}};
+  COLS.forEach(c=>{data.colecciones[c]=(RAW[c]||[]).map(x=>({docId:x.docId,data:aJSON(x.data)}));});
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download=`EPC-RESPALDO-COMPLETO-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+  const tot=COLS.reduce((s,c)=>s+((RAW[c]||[]).length),0);
+  alert(`Respaldo descargado: ${tot} registros en ${COLS.length} colecciones.\nGuárdalo en un lugar seguro (por ejemplo, Google Drive) antes de publicar.`);
+}
+</script>
+</body>
+</html>
