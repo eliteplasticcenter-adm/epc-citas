@@ -534,6 +534,7 @@ function aplicarColeccion(col,docs){
   else if(col==='HistoriaClinica')STATE.hcData=hcArrayToMap(docs);
   else if(col==='Config'){
     const c=docs.find(x=>x.id==='main');STATE.bcvRate=c?Number(c.bcvRate)||0:0;
+    STATE.bcvFecha=c&&c.bcvFecha||'';STATE.bcvFuente=c&&c.bcvFuente||'';
     const pr=docs.find(x=>x.id==='precios');STATE.precios=(pr&&pr.map)||{};
     aplicarPreciosGuardados();
   }
@@ -581,7 +582,7 @@ function escucharColeccion(col){
 function todasCargadas(){return COLECCIONES.every(c=>SYNC.loaded[c]);}
 function verificarCargaInicial(){
   if(!todasCargadas())return;
-  if(!SYNC.inicioHecho){SYNC.inicioHecho=true;const o=$('carga-overlay');if(o)o.remove();showView(STATE.view);checkAutoBackup();}
+  if(!SYNC.inicioHecho){SYNC.inicioHecho=true;const o=$('carga-overlay');if(o)o.remove();showView(STATE.view);checkAutoBackup();setTimeout(()=>actualizarTasaBCVAuto(false),1500);}
 }
 
 let _refT=null;
@@ -764,16 +765,48 @@ function persistHCData(){
 
 // ── TASA BCV (conversión USD↔Bs real, en vez de dos cajas que nunca se tocan) ──
 function montoEnUSD(m){
-  if(m.moneda==='BS')return STATE.bcvRate>0?Number(m.monto)/STATE.bcvRate:0;
+  // Cada pago en Bs se convierte con la tasa del DÍA en que se registró (si la tiene guardada)
+  const tasa=Number(m.tasaBCV)>0?Number(m.tasaBCV):STATE.bcvRate;
+  if(m.moneda==='BS')return tasa>0?Number(m.monto)/tasa:0;
   return Number(m.monto);
 }
 function guardarTasaBCV(){
   const v=parseFloat($('bcv-input')?.value);
   if(isNaN(v)||v<=0){showToast('Ingresa una tasa válida');return;}
-  STATE.bcvRate=v;
-  syncToSheet('Config',[{id:'main',bcvRate:v}],{partial:true});
+  STATE.bcvRate=v;STATE.bcvFecha=todayVET();STATE.bcvFuente='manual';
+  syncToSheet('Config',[{id:'main',bcvRate:v,bcvFecha:todayVET(),bcvFuente:'manual'}],{partial:true});
   showToast(`Tasa BCV actualizada: ${v} Bs/$`);renderCaja();
 }
+
+// ── TASA BCV AUTOMÁTICA: se busca sola una vez al día (fuente principal + respaldo).
+// Si ya se cargó hoy (automática o a mano) no se toca. Si falla, se mantiene la última conocida.
+const FUENTES_BCV=[
+  ['BCV · dolarapi',async()=>{const r=await fetch('https://ve.dolarapi.com/v1/dolares/oficial',{cache:'no-store'});const j=await r.json();return Number(j.promedio);}],
+  ['BCV · chitty-bcv',async()=>{const r=await fetch('https://chitty400.github.io/chitty-bcv-api/latest.json',{cache:'no-store'});const j=await r.json();return Number(j.tasa_bcv);}],
+];
+let _bcvEnCurso=false;
+async function actualizarTasaBCVAuto(forzar){
+  if(_bcvEnCurso)return false;
+  if(!forzar&&STATE.bcvFecha===todayVET()&&STATE.bcvRate>0)return true;
+  _bcvEnCurso=true;
+  try{
+    for(const[nombre,fn]of FUENTES_BCV){
+      let tasa=0;try{tasa=await fn();}catch(e){continue;}
+      if(!(tasa>0))continue;
+      // Control de cordura: un salto de más del 50% en un día se considera un dato erróneo
+      if(STATE.bcvRate>0&&(tasa>STATE.bcvRate*1.5||tasa<STATE.bcvRate/1.5)){console.warn('[BCV] tasa descartada',nombre,tasa);continue;}
+      tasa=Math.round(tasa*10000)/10000;
+      STATE.bcvRate=tasa;STATE.bcvFecha=todayVET();STATE.bcvFuente=nombre;
+      await syncToSheet('Config',[{id:'main',bcvRate:tasa,bcvFecha:todayVET(),bcvFuente:nombre}],{partial:true});
+      if(forzar)showToast(`Tasa BCV actualizada: ${tasa} Bs/$`);
+      if(STATE.view==='caja')programarRefresco();
+      return true;
+    }
+    if(forzar)showToast('No se pudo obtener la tasa BCV automáticamente. Ingrésala a mano.');
+    return false;
+  }finally{_bcvEnCurso=false;}
+}
+setInterval(()=>{if(SYNC.inicioHecho)actualizarTasaBCVAuto(false);},60*60*1000);
 
 // ── RESPALDO AUTOMÁTICO (evita depender solo de "confiar" en que Firebase no falle) ──
 async function exportarRespaldo(silent){
@@ -850,7 +883,7 @@ const EMAIL_PLANTILLAS={
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const STATE={
   view:'dashboard',activeTratCat:'Medicina Estética',
-  activeHCPatient:null,activeHCTab:'timeline',activeCajaPeriodo:'hoy',activeRepTab:'financiero',bcvRate:0,
+  activeHCPatient:null,activeHCTab:'timeline',activeCajaPeriodo:'hoy',activeRepTab:'financiero',bcvRate:0,bcvFecha:'',bcvFuente:'',
   patients:[],movimientos:[],presupuestos:[],hcData:{},formaciones:[],appointments:[],inventario:[],precios:{},activeProductosTab:'uso',
 };
 let agendaWeekOffset=0;
@@ -1188,10 +1221,12 @@ function confirmarEliminarCita(id){
 // ── PACIENTES ─────────────────────────────────────────────────────────────────
 function renderPacientes(filter=''){
   const view=STATE.activePacientesView||'pipeline';
-  const pts=filter?STATE.patients.filter(p=>(p.name||'').toLowerCase().includes(filter.toLowerCase())||(p.cedula||'').includes(filter)):STATE.patients;
+  let pts=filter?STATE.patients.filter(p=>(p.name||'').toLowerCase().includes(filter.toLowerCase())||(p.cedula||'').includes(filter)):STATE.patients;
+  const nPend=STATE.patients.filter(fichaIncompleta).length;
+  if(STATE.soloFichasPend)pts=pts.filter(fichaIncompleta);
   $('content-area').innerHTML=`
   <div class="section-header">
-    <div class="section-title">Pacientes (${STATE.patients.length})</div>
+    <div class="section-title">Pacientes (${STATE.patients.length})${nPend?` <span onclick="toggleFichasPend()" style="font-family:Montserrat,sans-serif;font-size:11px;font-weight:600;color:#E6B04A;background:rgba(230,176,74,${STATE.soloFichasPend?'.28':'.12'});border:1px solid rgba(230,176,74,.4);border-radius:12px;padding:3px 10px;cursor:pointer;vertical-align:middle">${STATE.soloFichasPend?'✕ Ver todas':'⚠ '+nPend+' fichas por completar'}</span>`:''}</div>
     <div style="display:flex;gap:8px;align-items:center">
       <div class="tab-bar" style="margin-bottom:0;width:auto">
         <div class="tab${view==='pipeline'?' active':''}" style="padding:8px 16px" onclick="setPacientesView('pipeline')">Pipeline</div>
@@ -1213,7 +1248,7 @@ function buildPacientesLista(pts,filter){
       <thead><tr><th>Paciente</th><th>Etapa</th><th>Cédula</th><th>Teléfono</th><th>Etiquetas</th><th>Última visita</th><th style="text-align:center">Procs.</th><th></th></tr></thead>
       <tbody>${pts.map(p=>`
       <tr>
-        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email||''}</div></div></div></td>
+        <td><div class="patient-name-cell"><div class="patient-avatar">${initials(p.name)}</div><div><div style="font-weight:500;color:var(--text)">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.email&&p.email!=='—'?p.email:''}</div>${badgeFichaPend(p)}</div></div></td>
         <td><span class="etapa-badge etapa-${p.etapa||'paciente'}">${etapaLabel(p.etapa||'paciente')}</span></td>
         <td style="color:var(--text2);font-size:12px">${p.cedula||'—'}</td>
         <td style="color:var(--text2);font-size:12px">${p.phone||''}</td>
@@ -1232,6 +1267,16 @@ function buildPacientesLista(pts,filter){
 }
 
 function setPacientesView(v){STATE.activePacientesView=v;renderPacientes();}
+// Ficha por completar: sin cédula real (vacía, "—" o solo ceros) o sin teléfono válido
+function fichaIncompleta(p){
+  const ced=String(p.cedula||'').replace(/\D/g,'');
+  const tel=String(p.phone||'').replace(/\D/g,'');
+  return !ced||/^0+$/.test(ced)||tel.length<7;
+}
+function badgeFichaPend(p){
+  return fichaIncompleta(p)?`<span onclick="event.stopPropagation();openEditarPaciente('${p.id}')" title="Faltan datos: cédula y/o teléfono" style="display:inline-block;margin-top:3px;font-size:10px;font-weight:600;color:#E6B04A;background:rgba(230,176,74,.12);border:1px solid rgba(230,176,74,.35);border-radius:10px;padding:1px 7px;cursor:pointer">⚠ Completar ficha</span>`:'';
+}
+function toggleFichasPend(){STATE.soloFichasPend=!STATE.soloFichasPend;renderPacientes();}
 function etapaLabel(e){return{lead:'Lead',paciente:'Paciente'}[e]||'Paciente';}
 
 // ── PIPELINE (Lead → Paciente) ──────────────────────────────────────────────
@@ -1263,7 +1308,7 @@ function buildPipelineCard(p){
   return`<div class="pipeline-card">
     <div style="display:flex;align-items:center;gap:9px">
       <div class="patient-avatar">${initials(p.name)}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.phone||'Sin teléfono'}</div></div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.phone&&p.phone!=='—'?p.phone:'Sin teléfono'}</div>${badgeFichaPend(p)}</div>
     </div>
     ${accion}
     <div style="display:flex;gap:5px;margin-top:6px">
@@ -1760,7 +1805,8 @@ function renderCaja(){
     <input id="bcv-input" class="form-input" style="width:100px;padding:6px 10px" type="number" min="0" step="0.01" value="${STATE.bcvRate||''}" placeholder="0.00">
     <span style="color:var(--text3)">Bs por $1</span>
     <button class="icon-btn btn-sm" onclick="guardarTasaBCV()">Guardar</button>
-    ${!STATE.bcvRate?'<span style="color:var(--gold);font-size:11px">⚠️ Sin tasa, el balance combinado no puede calcular Bs</span>':''}
+    <button class="icon-btn btn-sm" onclick="actualizarTasaBCVAuto(true)" title="Buscar la tasa oficial de hoy">↻ Actualizar</button>
+    ${!STATE.bcvRate?'<span style="color:var(--gold);font-size:11px">⚠️ Sin tasa, el balance combinado no puede calcular Bs</span>':STATE.bcvFecha===todayVET()?`<span style="color:var(--green);font-size:11px">✓ Tasa de hoy · ${STATE.bcvFuente==='manual'?'ingresada a mano':'automática ('+STATE.bcvFuente+')'}</span>`:`<span style="color:var(--gold);font-size:11px">⚠️ Tasa del ${STATE.bcvFecha?fmtDateVET(STATE.bcvFecha):'día anterior'} — pulsa ↻ Actualizar o ingrésala a mano</span>`}
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px">
     <div style="background:var(--bg3);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));border:1px solid var(--border);border-radius:var(--radius2);padding:18px">
@@ -1807,6 +1853,7 @@ function saveMovimiento(descFija=''){
   if(!desc||isNaN(monto)||monto<=0){showToast('Descripción y monto obligatorios');return;}
   const presupuestoId=$('fm-presup')?.value||'';
   const mov={id:'M'+Date.now(),fecha:$('fm-fecha').value,tipo:$('fm-tipo').value,desc,metodo:$('fm-metodo').value,monto,moneda:$('fm-moneda').value};
+  if(STATE.bcvRate>0)mov.tasaBCV=STATE.bcvRate; // se congela la tasa del día del pago
   if(presupuestoId)mov.presupuestoId=presupuestoId;
   STATE.movimientos.unshift(mov);
   closeModal();showToast('Movimiento registrado');
