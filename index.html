@@ -1082,7 +1082,7 @@ async function exportarRespaldo(silent){
     if(!silent)showToast('Preparando respaldo…');
     const data={exportadoEl:new Date().toISOString(),formato:'EPC-firestore-v2',colecciones:{}};
     COLECCIONES.forEach(c=>{data.colecciones[c]=(SYNC.raw[c]||[]).map(r=>({docId:r.docId,data:r.data}));});
-    try{const s=await db.collection('Fotos').get();data.colecciones.Fotos=s.docs.map(d=>({docId:d.id,data:d.data()}));}
+    try{if(!puedeLeer('Fotos'))throw 0;const s=await db.collection('Fotos').get();data.colecciones.Fotos=s.docs.map(d=>({docId:d.id,data:d.data()}));}
     catch(e){data.colecciones.Fotos=[];data.avisoFotos='No se pudieron incluir las fotos: '+(e&&e.code||'');}
     const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
@@ -1864,7 +1864,7 @@ function openAddConsentimiento(id){
 function saveConsentimiento(id){
   if(!STATE.hcData[id])STATE.hcData[id]={antecedentes:{},consultas:[],consentimientos:[]};
   STATE.hcData[id].consentimientos.push({nombre:$('fc-consent').value,fecha:'',firmado:false});
-  persistHCData();
+  persistConsentimientos(id);
   closeModal();showToast('Consentimiento agregado como pendiente');const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(id,'consentimientos');
 }
 
@@ -1901,7 +1901,7 @@ function guardarFirma(patientId,nombre,idx){
   if(!con)con=lista.find(x=>x.nombre===nombre&&!x.firmado);
   if(!con){showToast('Este consentimiento ya estaba firmado');closeModal();return;}
   con.firmado=true;con.fecha=todayVET();con.firma=dataUrl;
-  persistHCData();closeModal();showToast('Firma guardada');
+  persistConsentimientos(patientId);closeModal();showToast('Firma guardada');
   const el=$('hc-tab-content');if(el)el.innerHTML=buildHCTab(patientId,'consentimientos');
 }
 
@@ -4426,6 +4426,9 @@ function puedeVer(v){
 }
 // Sin acceso clínico la vista 'hc' es solo la ficha (actividad y cuenta): no aparece en el menú.
 function sinClinica(){return ACCESO.modo==='sesion'&&!puedeLeer('HistoriaClinica');}
+// Consentimientos: los gestionan Dirección, Médico y Recepción (colección propia, fuera de la historia).
+function puedeConsent(){return ACCESO.modo!=='sesion'||['direccion','medico','recepcion'].includes(rolActual());}
+function tabsFicha(){return puedeConsent()?['timeline','consentimientos','cuenta']:['timeline','cuenta'];}
 function enMenu(v){return puedeVer(v)&&!(v==='hc'&&sinClinica());}
 function puedeLeer(col){
   if(ACCESO.modo!=='sesion')return true;
@@ -4484,7 +4487,7 @@ function estilosAcceso(){
 .rol-op span{font-size:12px;color:var(--text3);line-height:1.4}
 .sesion-btn{margin-top:10px;width:100%;background:none;border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:8px;padding:7px;font:inherit;font-size:12px;cursor:pointer}
 .sesion-btn:hover{background:rgba(255,255,255,.08)}
-.sin-clinica .hc-panel .tab[onclick*="antecedentes"],.sin-clinica .hc-panel .tab[onclick*="'consultas'"],.sin-clinica .hc-panel .tab[onclick*="consentimientos"],.sin-clinica [onclick^="openNewConsulta"]{display:none!important}
+.sin-clinica .hc-panel .tab[onclick*="antecedentes"],.sin-clinica .hc-panel .tab[onclick*="'consultas'"],.sin-consent .hc-panel .tab[onclick*="consentimientos"],.sin-clinica [onclick^="openNewConsulta"]{display:none!important}
 `;
   document.head.appendChild(s);
 }
@@ -4578,6 +4581,7 @@ function entrarApp(){
   quitarCapaAcceso();
   aplicarAccesoUI();
   loadAllData();
+  escucharConsentimientos();
   if(esDireccion())escucharUsuarios();
 }
 function iniciarAcceso(){
@@ -4637,6 +4641,7 @@ function vistaDeNav(el){const m=(el.getAttribute('onclick')||'').match(/showView
 function aplicarAccesoUI(){
   estilosAcceso();
   document.body.classList.toggle('sin-clinica',sinClinica());
+  document.body.classList.toggle('sin-consent',!puedeConsent());
   const nav=document.querySelector('#sidebar nav');
   if(nav&&!$('nav-usuarios')){
     const d=document.createElement('div');d.className='nav-item';d.id='nav-usuarios';d.setAttribute('onclick',"showView('usuarios')");
@@ -4668,7 +4673,7 @@ showView=function(v){
     v='dashboard';
   }
   if(v!=='usuarios'){
-    if(v==='hc'&&sinClinica()&&!['timeline','cuenta'].includes(STATE.activeHCTab))STATE.activeHCTab='timeline';
+    if(v==='hc'&&sinClinica()&&!tabsFicha().includes(STATE.activeHCTab))STATE.activeHCTab='timeline';
     const r=_showViewBase(v);
     if(v==='hc'&&sinClinica()){$('page-title').textContent='Ficha del paciente';$('btn-top').textContent='+ Paciente';}
     return r;
@@ -4687,7 +4692,7 @@ openNewModal=function(){
   return _openNewModalBase();
 };
 const _switchHCTabBase=switchHCTab;
-switchHCTab=function(tab){if(sinClinica()&&!['timeline','cuenta'].includes(tab))tab='timeline';return _switchHCTabBase(tab);};
+switchHCTab=function(tab){if(sinClinica()&&!tabsFicha().includes(tab))tab='timeline';return _switchHCTabBase(tab);};
 
 function menuMas(){
   STATE._citaAbierta=null;
@@ -4709,7 +4714,8 @@ function protegerAccion(nombre,permitido,mensaje){
 }
 ['openNewMovimiento','saveMovimiento','eliminarMovimiento','openCobroCita','registrarPagoPresupuesto','cobrarAlumno','pagarTercero','pagarObligacion','registrarPagoObligacion','openCierreCaja','guardarCierreCaja','openVenderBono']
   .forEach(n=>protegerAccion(n,()=>puedeEscribir('Movimientos'),'Tu usuario no puede registrar cobros ni pagos'));
-['openNewConsulta','saveConsulta','openEditAntecedentes','saveAntecedentes','openAddConsentimiento','saveConsentimiento','agregarFotoConsulta'].forEach(n=>protegerAccion(n,()=>puedeEscribir('HistoriaClinica'),'Tu usuario no puede escribir en la historia clínica'));
+['openAddConsentimiento','saveConsentimiento','openFirmaModal','guardarFirma'].forEach(n=>protegerAccion(n,()=>puedeConsent(),'Tu usuario no puede gestionar consentimientos'));
+['openNewConsulta','saveConsulta','openEditAntecedentes','saveAntecedentes','agregarFotoConsulta'].forEach(n=>protegerAccion(n,()=>puedeEscribir('HistoriaClinica'),'Tu usuario no puede escribir en la historia clínica'));
 ['restaurarArchivado','editPrice','savePrice','openNuevoServicio','retirarServicio','activarServicio']
   .forEach(n=>protegerAccion(n,()=>esDireccion(),'Solo Dirección puede hacer esto'));
 // Al atender una cita: sin acceso a historia clínica no se abre la nota, y sin acceso
@@ -4861,6 +4867,61 @@ async function enviarEnlaceClave(correo){
   try{firebase.auth().languageCode='es';await firebase.auth().sendPasswordResetEmail(correo);closeModal();showToast('Enlace enviado a '+correo);}
   catch(e){errorUsuario(textoErrorAuth(e));}
 }
+
+// ── Consentimientos en colección propia ───────────────────────────────────────
+// Con sesión, la lista de cada paciente vive en Consentimientos/{pacienteId}, para que
+// Recepción la gestione sin recibir la historia clínica. En pantalla se sigue leyendo de
+// STATE.hcData[pid].consentimientos. Los que ya estaban dentro de la historia se copian
+// aquí (se copian, no se mueven) la primera vez que entra Dirección o Médico.
+STATE.consentDocs={};
+let _conEscucha=false,_conListo=false,_conMigrado=false;
+function aplicarConsentimientos(){
+  Object.keys(STATE.consentDocs).forEach(pid=>{
+    if(!STATE.hcData[pid])STATE.hcData[pid]={antecedentes:{},consultas:[],consentimientos:[]};
+    STATE.hcData[pid].consentimientos=JSON.parse(JSON.stringify(STATE.consentDocs[pid]));
+  });
+}
+function refrescarConsentimientos(){
+  const el=$('hc-tab-content');
+  if(el&&STATE.view==='hc'&&STATE.activeHCTab==='consentimientos'&&STATE.activeHCPatient&&$('modal-overlay').classList.contains('hidden'))el.innerHTML=buildHCTab(STATE.activeHCPatient,'consentimientos');
+}
+function escucharConsentimientos(){
+  if(_conEscucha||ACCESO.modo!=='sesion'||!puedeConsent())return;_conEscucha=true;
+  db.collection('Consentimientos').onSnapshot({includeMetadataChanges:false},s=>{
+    const m={};s.docs.forEach(d=>{const x=d.data();if(x&&Array.isArray(x.lista))m[d.id]=x.lista;});
+    STATE.consentDocs=m;_conListo=true;
+    aplicarConsentimientos();migrarConsentimientos();refrescarConsentimientos();
+  },()=>{_conEscucha=false;});
+}
+async function guardarConsentDoc(pid,silencio){
+  const lista=JSON.parse(JSON.stringify((STATE.hcData[pid]||{}).consentimientos||[]));
+  STATE.consentDocs[pid]=lista;
+  const d={id:pid,lista,modPor:autorAcceso(),modEl:new Date().toISOString()};
+  try{await db.collection('Consentimientos').doc(pid).set(d);return true;}
+  catch(e){if(!silencio)showToast('No se pudo guardar el consentimiento. Revisa la conexión.');return false;}
+}
+function migrarConsentimientos(){
+  if(_conMigrado||!_conListo||!SYNC.loaded.HistoriaClinica||ACCESO.modo!=='sesion'||!['direccion','medico'].includes(rolActual()))return;
+  _conMigrado=true;
+  Object.keys(STATE.hcData).forEach(pid=>{
+    const l=STATE.hcData[pid].consentimientos||[];
+    if(l.length&&!STATE.consentDocs[pid])guardarConsentDoc(pid,true);
+  });
+}
+function persistConsentimientos(pid){
+  if(ACCESO.modo!=='sesion'){persistHCData();return;}          // sin usuarios aún: como siempre
+  guardarConsentDoc(pid);
+  if(puedeEscribir('HistoriaClinica'))persistHCData();          // copia espejo dentro de la historia
+}
+const _aplicarColBase=aplicarColeccion;
+aplicarColeccion=function(col,docs){
+  const r=_aplicarColBase(col,docs);
+  if(col==='HistoriaClinica'){aplicarConsentimientos();migrarConsentimientos();}
+  return r;
+};
+// Sin acceso clínico nunca se escribe en la historia, ni siquiera por una acción indirecta.
+const _persistHCBase=persistHCData;
+persistHCData=function(){if(!puedeEscribir('HistoriaClinica'))return;return _persistHCBase();};
 
 updateClock();
 setInterval(updateClock,60000);
