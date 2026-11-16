@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCfxR_QeyJuFQD2EJlZOdcTu4idQeFmtCM",
@@ -724,6 +725,8 @@ async function syncToSheet(col,arr,opts){
   });
   if(!ops.length)return true;
 
+  if(!accesoEscritura(col,ops.map(o=>o.id))){revertirColeccion(col);return false;}
+  sellarOps(ops);
   // CANDADO DE SEGURIDAD: ninguna acción de la app borra más de 1 registro a la vez,
   // salvo que se autorice explícitamente (eliminar paciente con sus citas).
   const borrados=ops.filter(o=>o.arch).length;
@@ -922,7 +925,8 @@ async function loadAllData(){
   document.body.appendChild(ov);
   setTimeout(()=>{const m=$('carga-msg');if(m&&!SYNC.inicioHecho)m.innerHTML='La conexión está tardando más de lo normal.<br>Revisa el internet. No cierres esta ventana.';},15000);
   try{SYNC.persist=await window.FS_PERSIST;}catch(e){SYNC.persist=false;}
-  COLECCIONES.forEach(escucharColeccion);
+  COLECCIONES.forEach(c=>{if(puedeLeer(c))escucharColeccion(c);else{SYNC.loaded[c]=true;SYNC.base[c]={};SYNC.last[c]=[];SYNC.arch[c]={};aplicarColeccion(c,[]);}});
+  verificarCargaInicial();
 }
 
 // ── VÍNCULO CITA ↔ PACIENTE (por ID, no por nombre escrito) ────────────────────
@@ -1318,9 +1322,9 @@ function renderDashboard(){
       <button class="btn btn-gold btn-sm" onclick="enviarRecordatorio24h('${a.id}')">Enviar recordatorio</button>
     </div>`).join('')}
   </div>`:''}
-  ${tarjetaPorCobrar()}
+  ${puedeVer('caja')?tarjetaPorCobrar():''}
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Ingresos hoy (USD)</div><div class="kpi-value">${fmtMonto(ingHoy)}</div><div class="kpi-sub">Solo en dólares</div></div>
+    <div class="kpi-card"${puedeVer('caja')?'':' style="display:none"'}><div class="kpi-label">Ingresos hoy (USD)</div><div class="kpi-value">${fmtMonto(ingHoy)}</div><div class="kpi-sub">Solo en dólares</div></div>
     <div class="kpi-card"><div class="kpi-label">Citas hoy</div><div class="kpi-value">${citasHoy.length}</div><div class="kpi-sub">${citasHoy.filter(a=>a.status==='confirmado').length} confirmadas</div></div>
     <div class="kpi-card"><div class="kpi-label">Por confirmar</div><div class="kpi-value" style="${pendientesHoy?'color:var(--gold)':''}">${pendientesHoy}</div><div class="kpi-sub">${pendientesHoy?'Envía recordatorio →':'Todo al día'}</div></div>
     <div class="kpi-card"><div class="kpi-label">Pacientes</div><div class="kpi-value">${STATE.patients.length}</div><div class="kpi-sub">${STATE.patients.filter(p=>(p.tags||[]).includes('VIP')).length} VIP</div></div>
@@ -4374,9 +4378,493 @@ function savePrice(cat,idx){
 }
 function cancelPrice(cat,idx){if(STATE.view==='tratamientos')renderTratamientos();}
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v11 · ACCESO — usuarios, 4 roles y permisos
+//  • Cada persona entra con su correo y su contraseña (Firebase Authentication).
+//  • El perfil vive en Usuarios/{uid}: nombre, correo, rol, activo.
+//  • Mientras no exista ningún usuario, la app funciona abierta como hasta ahora:
+//    el inicio de sesión se activa solo al crear el primer usuario de Dirección.
+//  • Lo que se oculta aquí es comodidad; la protección real son las reglas de
+//    Firestore (archivo firestore.rules), que aplican estos mismos permisos.
+//  • Nada se borra: un usuario se desactiva, nunca se elimina.
+// ═══════════════════════════════════════════════════════════════════════════
+const ROLES={
+  direccion:{n:'Dirección',d:'Todo el sistema, usuarios, precios y archivados'},
+  recepcion:{n:'Recepción',d:'Agenda, pacientes, cobros, presupuestos, cirugías y formaciones'},
+  medico:{n:'Médico',d:'Agenda, pacientes, historia clínica, cirugías y presupuestos'},
+  administracion:{n:'Administración',d:'Caja, libros, impuestos, inventario, reportes, pagos de cirugías y formaciones'}
+};
+const VISTAS_ROL={
+  direccion:null,
+  recepcion:['dashboard','agenda','cirugias','formaciones','pacientes','caja','presupuestos','hc'],
+  medico:['dashboard','agenda','cirugias','pacientes','presupuestos','hc','productos'],
+  administracion:['dashboard','agenda','cirugias','pacientes','formaciones','caja','presupuestos','productos','obligaciones','reportes','hc']
+};
+const LEE_ROL={HistoriaClinica:['direccion','medico'],Fotos:['direccion','medico']};
+const ESCRIBE_ROL={
+  Movimientos:['direccion','recepcion','administracion'],
+  Formaciones:['direccion','recepcion','administracion'],
+  HistoriaClinica:['direccion','medico'],
+  Fotos:['direccion','medico']
+};
+const ESCRIBE_CONFIG={precios:['direccion'],servicios:['direccion'],recetas:['direccion','medico'],obligaciones:['direccion','administracion']};
+const NOMBRE_VISTA={dashboard:'Inicio',agenda:'Agenda',cirugias:'Cirugías',formaciones:'Formaciones',pacientes:'Pacientes',caja:'Caja',presupuestos:'Presupuestos',hc:'Historia clínica',productos:'Productos y lotes',marketing:'Marketing',tratamientos:'Precios',obligaciones:'Impuestos y pagos',reportes:'Reportes',archivados:'Archivados',usuarios:'Usuarios'};
+const NOMBRE_COL={Movimientos:'la caja',Formaciones:'las formaciones',HistoriaClinica:'la historia clínica',Fotos:'las fotos',Config:'la configuración'};
+
+// modo: 'abierto' (sin usuarios todavía) | 'sesion' (entró con su cuenta)
+const ACCESO={modo:null,perfil:null,user:null,dentro:false,silencio:false,activando:false};
+STATE.usuarios=[];STATE.solicitudes=[];
+
+function rolActual(){return ACCESO.modo==='sesion'&&ACCESO.perfil?ACCESO.perfil.rol:null;}
+function esDireccion(){return ACCESO.modo!=='sesion'||rolActual()==='direccion';}
+function puedeVer(v){
+  if(ACCESO.modo!=='sesion')return true;
+  if(v==='usuarios')return rolActual()==='direccion';
+  const l=VISTAS_ROL[rolActual()];
+  return l===null||(Array.isArray(l)&&l.includes(v));
+}
+// Sin acceso clínico la vista 'hc' es solo la ficha (actividad y cuenta): no aparece en el menú.
+function sinClinica(){return ACCESO.modo==='sesion'&&!puedeLeer('HistoriaClinica');}
+function enMenu(v){return puedeVer(v)&&!(v==='hc'&&sinClinica());}
+function puedeLeer(col){
+  if(ACCESO.modo!=='sesion')return true;
+  const l=LEE_ROL[col];return !l||l.includes(rolActual());
+}
+function puedeEscribir(col,ids){
+  if(ACCESO.modo!=='sesion')return true;
+  const r=rolActual();
+  if(col==='Config')return (ids&&ids.length?ids:['main']).every(id=>{const l=ESCRIBE_CONFIG[String(id)];return !l||l.includes(r);});
+  const l=ESCRIBE_ROL[col];return !l||l.includes(r);
+}
+// Llamado desde syncToSheet justo antes de escribir.
+function accesoEscritura(col,ids){
+  if(puedeEscribir(col,ids))return true;
+  if(!ACCESO.silencio)showToast('Tu usuario no puede modificar '+(NOMBRE_COL[col]||col));
+  return false;
+}
+// Autoría: cada documento que se escribe guarda quién lo tocó y cuándo.
+function sellarOps(ops){
+  if(ACCESO.modo!=='sesion'||!ACCESO.perfil)return;
+  const quien=ACCESO.perfil.nombre||ACCESO.perfil.correo||'',cuando=new Date().toISOString();
+  ops.forEach(o=>{o.data.modPor=quien;o.data.modEl=cuando;o.s=canon(o.data);});
+}
+
+// ── Pantalla de acceso ────────────────────────────────────────────────────────
+function estilosAcceso(){
+  if($('acceso-css'))return;
+  const s=document.createElement('style');s.id='acceso-css';
+  s.textContent=`
+#acceso{position:fixed;inset:0;z-index:9500;background:#0F1B26;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;font-family:'Instrument Sans',sans-serif}
+#acceso .acc-caja{width:100%;max-width:380px;background:#fff;border-radius:18px;padding:34px 30px 28px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+#acceso .acc-marca{font-family:var(--display);font-size:30px;font-weight:600;color:#0F1B26;line-height:1.1}
+#acceso .acc-sub{font-size:13px;color:#6B7785;margin:6px 0 24px;line-height:1.5}
+#acceso label{display:block;font-size:12px;font-weight:600;color:#3A4653;margin:14px 0 6px}
+#acceso input{width:100%;border:1px solid #D5DBE1;border-radius:10px;padding:12px 13px;font:inherit;font-size:15px;color:#0F1B26;background:#fff;outline:none}
+#acceso input:focus{border-color:#0F1B26;box-shadow:0 0 0 3px rgba(15,27,38,.1)}
+#acceso .acc-btn{width:100%;margin-top:20px;border:none;border-radius:10px;padding:13px;background:#0F1B26;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+#acceso .acc-btn:disabled{opacity:.55;cursor:default}
+#acceso .acc-link{display:block;width:100%;margin-top:14px;background:none;border:none;color:#3A4653;font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;text-align:center}
+#acceso .acc-msg{font-size:13px;line-height:1.5;border-radius:10px;padding:10px 12px;margin-top:16px}
+#acceso .acc-msg.err{background:#FBECEA;color:#8B1E1E}
+#acceso .acc-msg.ok{background:#E9F4EE;color:#1F5B3F}
+#acceso .acc-cargando{color:#AEB8C2;font-size:14px;text-align:center}
+#acceso .acc-cargando b{display:block;font-family:var(--display);font-size:30px;font-weight:600;color:#D9B36A;margin-bottom:10px}
+.usr-fila{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.usr-fila:last-child{border-bottom:none}
+.usr-fila:hover{background:var(--bg3)}
+.usr-ini{width:38px;height:38px;border-radius:50%;background:var(--ink,#0F1B26);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex:none}
+.usr-fila.inactivo{opacity:.55}
+.usr-nom{font-weight:600;font-size:14px}
+.usr-cor{font-size:12px;color:var(--text3);margin-top:2px;word-break:break-all}
+.rol-ops{display:grid;gap:8px}
+.rol-op{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:11px 12px;cursor:pointer}
+.rol-op input{margin-top:3px}
+.rol-op b{display:block;font-size:13.5px}
+.rol-op span{font-size:12px;color:var(--text3);line-height:1.4}
+.sesion-btn{margin-top:10px;width:100%;background:none;border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:8px;padding:7px;font:inherit;font-size:12px;cursor:pointer}
+.sesion-btn:hover{background:rgba(255,255,255,.08)}
+.sin-clinica .hc-panel .tab[onclick*="antecedentes"],.sin-clinica .hc-panel .tab[onclick*="'consultas'"],.sin-clinica .hc-panel .tab[onclick*="consentimientos"],.sin-clinica [onclick^="openNewConsulta"]{display:none!important}
+`;
+  document.head.appendChild(s);
+}
+function capaAcceso(html){
+  estilosAcceso();
+  let c=$('acceso');
+  if(!c){c=document.createElement('div');c.id='acceso';document.body.appendChild(c);}
+  c.innerHTML=html;return c;
+}
+function quitarCapaAcceso(){const c=$('acceso');if(c)c.remove();}
+function pantallaCargandoAcceso(){capaAcceso('<div class="acc-cargando"><b>Elite Plastic Center</b>Comprobando acceso…</div>');}
+function pantallaLogin(msg,tipo,correo){
+  capaAcceso(`<form class="acc-caja" onsubmit="entrarConClave(event)">
+    <div class="acc-marca">Elite Plastic Center</div>
+    <div class="acc-sub">Entra con tu correo y tu contraseña.</div>
+    <label for="acc-correo">Correo</label>
+    <input id="acc-correo" type="email" autocomplete="username" inputmode="email" value="${esc(correo||'')}" required>
+    <label for="acc-clave">Contraseña</label>
+    <input id="acc-clave" type="password" autocomplete="current-password" required>
+    ${msg?`<div class="acc-msg ${tipo||'err'}">${msg}</div>`:''}
+    <button class="acc-btn" id="acc-entrar" type="submit">Entrar</button>
+    <button class="acc-link" type="button" onclick="recuperarClave()">Olvidé mi contraseña o es mi primera vez</button>
+  </form>`);
+  const f=$(correo?'acc-clave':'acc-correo');if(f){try{f.focus();}catch(e){}}
+}
+function pantallaAviso(titulo,texto){
+  capaAcceso(`<div class="acc-caja">
+    <div class="acc-marca">${titulo}</div>
+    <div class="acc-sub" style="margin-bottom:0">${texto}</div>
+    <button class="acc-btn" onclick="cerrarSesion()">Cerrar sesión</button>
+  </div>`);
+}
+function textoErrorAuth(e){
+  const c=(e&&e.code)||'';
+  if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found','auth/invalid-login-credentials'].includes(c))return 'El correo o la contraseña no coinciden.';
+  if(c==='auth/invalid-email')return 'Ese correo no está bien escrito.';
+  if(c==='auth/missing-email')return 'Escribe tu correo.';
+  if(c==='auth/too-many-requests')return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
+  if(c==='auth/network-request-failed')return 'No hay conexión a internet.';
+  if(c==='auth/user-disabled')return 'Esta cuenta está desactivada. Habla con Dirección.';
+  if(c==='auth/email-already-in-use')return 'Ese correo ya tiene una cuenta.';
+  if(c==='auth/operation-not-allowed'||c==='auth/configuration-not-found'||c==='auth/admin-restricted-operation')return 'Falta activar el acceso con correo y contraseña en la consola de Firebase (Authentication → Método de acceso).';
+  return 'No se pudo completar ('+(c||'error desconocido')+').';
+}
+async function entrarConClave(ev){
+  if(ev)ev.preventDefault();
+  const correo=$('acc-correo').value.trim(),clave=$('acc-clave').value;
+  const b=$('acc-entrar');b.disabled=true;b.textContent='Entrando…';
+  try{await firebase.auth().signInWithEmailAndPassword(correo,clave);}
+  catch(e){pantallaLogin(textoErrorAuth(e),'err',correo);}
+}
+async function recuperarClave(){
+  const correo=($('acc-correo').value||'').trim();
+  if(!correo){pantallaLogin('Escribe tu correo arriba y vuelve a pulsar el enlace.','err','');return;}
+  try{
+    firebase.auth().languageCode='es';
+    await firebase.auth().sendPasswordResetEmail(correo);
+    pantallaLogin('Te enviamos un correo a <strong>'+esc(correo)+'</strong> con un enlace para crear tu contraseña. Revisa también la carpeta de spam.','ok',correo);
+  }catch(e){
+    // No se revela si el correo existe o no.
+    if((e&&e.code)==='auth/user-not-found')pantallaLogin('Si ese correo tiene cuenta, recibirá un enlace para crear la contraseña.','ok',correo);
+    else pantallaLogin(textoErrorAuth(e),'err',correo);
+  }
+}
+function cerrarSesion(){
+  ACCESO.saliendo=true;
+  try{firebase.auth().signOut().then(()=>location.reload(),()=>location.reload());}catch(e){location.reload();}
+}
+
+// ── Arranque ──────────────────────────────────────────────────────────────────
+function recordarRequerido(v){try{localStorage.setItem('epc_acceso_req',v?'1':'0');}catch(e){}}
+async function accesoRequerido(){
+  try{
+    const s=await db.collection('Usuarios').limit(1).get();
+    if(s.metadata&&s.metadata.fromCache&&s.empty){let r='0';try{r=localStorage.getItem('epc_acceso_req')||'0';}catch(e){}return r==='1';}
+    recordarRequerido(!s.empty);return !s.empty;
+  }catch(e){
+    if((e&&e.code)==='permission-denied'){
+      // Si los datos de la clínica aún se leen sin sesión, las reglas siguen abiertas:
+      // no se bloquea a nadie por no poder leer la lista de usuarios.
+      try{await db.collection('Config').doc('main').get();recordarRequerido(false);return false;}
+      catch(_){recordarRequerido(true);return true;}
+    }
+    let r='0';try{r=localStorage.getItem('epc_acceso_req')||'0';}catch(_){}
+    return r==='1';
+  }
+}
+function entrarApp(){
+  if(ACCESO.dentro){aplicarAccesoUI();return;}
+  ACCESO.dentro=true;
+  quitarCapaAcceso();
+  aplicarAccesoUI();
+  loadAllData();
+  if(esDireccion())escucharUsuarios();
+}
+function iniciarAcceso(){
+  if(!firebase.auth){ACCESO.modo='abierto';entrarApp();return;}
+  pantallaCargandoAcceso();
+  let auth;
+  try{auth=firebase.auth();auth.languageCode='es';}catch(e){ACCESO.modo='abierto';entrarApp();return;}
+  let respondio=false;
+  const alCambiar=async u=>{
+    respondio=true;
+    if(ACCESO.activando||ACCESO.saliendo)return;
+    if(!u){
+      if(ACCESO.dentro&&ACCESO.modo==='sesion'){location.reload();return;}
+      if(ACCESO.dentro)return;
+      if(await accesoRequerido())pantallaLogin();
+      else{ACCESO.modo='abierto';entrarApp();}
+      return;
+    }
+    ACCESO.user=u;
+    let snap=null;
+    try{snap=await db.collection('Usuarios').doc(u.uid).get();}
+    catch(e){
+      capaAcceso('<div class="acc-caja"><div class="acc-marca">Sin conexión</div><div class="acc-sub" style="margin-bottom:0">No se pudo comprobar tu usuario. Revisa el internet y vuelve a intentarlo.</div><button class="acc-btn" onclick="location.reload()">Reintentar</button><button class="acc-link" onclick="cerrarSesion()">Cerrar sesión</button></div>');
+      return;
+    }
+    const p=snap&&snap.exists?snap.data():null;
+    if(p&&p.activo!==false){
+      ACCESO.modo='sesion';ACCESO.perfil=Object.assign({id:u.uid},p);recordarRequerido(true);
+      entrarApp();vigilarPerfil(u.uid);return;
+    }
+    if(p){pantallaAviso('Cuenta desactivada','Tu usuario <strong>'+esc(u.email||'')+'</strong> ya no tiene acceso al sistema. Habla con Dirección.');return;}
+    if(!(await accesoRequerido())){ACCESO.modo='abierto';entrarApp();return;}
+    try{await db.collection('Solicitudes').doc(u.uid).set({id:u.uid,correo:u.email||'',fecha:new Date().toISOString()},{merge:true});}catch(e){}
+    pantallaAviso('Falta un paso','Tu cuenta <strong>'+esc(u.email||'')+'</strong> existe, pero todavía no tiene permisos. Avisa a Dirección para que te asigne un rol y vuelve a entrar.');
+  };
+  auth.onAuthStateChanged(alCambiar,()=>{if(!respondio)alCambiar(null);});
+  // Si el módulo de acceso no responde, no se deja a nadie mirando una pantalla en blanco.
+  setTimeout(()=>{if(!respondio&&!ACCESO.dentro)alCambiar(null);},8000);
+}
+function vigilarPerfil(uid){
+  try{
+    db.collection('Usuarios').doc(uid).onSnapshot(s=>{
+      if(!s.exists)return;
+      const p=s.data();
+      if(p.activo===false){pantallaAviso('Cuenta desactivada','Tu usuario ya no tiene acceso al sistema. Habla con Dirección.');return;}
+      const cambio=ACCESO.perfil&&p.rol!==ACCESO.perfil.rol;
+      ACCESO.perfil=Object.assign({id:uid},p);
+      // Un cambio de rol cambia qué datos se pueden leer: se recarga para aplicarlo limpio.
+      if(cambio){location.reload();return;}
+      aplicarAccesoUI();
+    },()=>{});
+  }catch(e){}
+}
+
+// ── Interfaz según el rol ─────────────────────────────────────────────────────
+function vistaDeNav(el){const m=(el.getAttribute('onclick')||'').match(/showView\('(\w+)'\)/);return m?m[1]:null;}
+function aplicarAccesoUI(){
+  estilosAcceso();
+  document.body.classList.toggle('sin-clinica',sinClinica());
+  const nav=document.querySelector('#sidebar nav');
+  if(nav&&!$('nav-usuarios')){
+    const d=document.createElement('div');d.className='nav-item';d.id='nav-usuarios';d.setAttribute('onclick',"showView('usuarios')");
+    d.innerHTML='<span class="nav-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.3a3.5 3.5 0 0 1 0 6.4"/><path d="M18.5 14.8c1.7.8 2.8 2.6 3 5.2"/></svg></span>Usuarios';
+    nav.appendChild(d);
+  }
+  if(nav){
+    let seccion=null,visibles=0;
+    Array.from(nav.children).forEach(el=>{
+      if(el.classList.contains('nav-section')){if(seccion)seccion.style.display=visibles?'':'none';seccion=el;visibles=0;return;}
+      const v=vistaDeNav(el);const ok=!v||enMenu(v);
+      el.style.display=ok?'':'none';if(ok)visibles++;
+    });
+    if(seccion)seccion.style.display=visibles?'':'none';
+  }
+  document.querySelectorAll('#tabbar button').forEach(b=>{const v=b.dataset.v;b.style.display=(v==='mas'||puedeVer(v))?'':'none';});
+  const chip=document.querySelector('.sidebar-footer');
+  if(chip&&ACCESO.modo==='sesion'&&ACCESO.perfil){
+    const p=ACCESO.perfil,nom=p.nombre||p.correo||'';
+    chip.innerHTML=`<div class="user-chip"><div class="user-avatar">${esc(iniciales(nom))}</div><div><div class="user-name">${esc(nom)}</div><div class="user-role">${esc((ROLES[p.rol]||{}).n||p.rol||'')}</div></div></div><button class="sesion-btn" onclick="cerrarSesion()">Cerrar sesión</button>`;
+  }
+}
+function iniciales(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();}
+
+const _showViewBase=showView;
+showView=function(v){
+  if(!puedeVer(v)){
+    if(ACCESO.dentro&&SYNC.inicioHecho)showToast('Tu usuario no tiene acceso a '+(NOMBRE_VISTA[v]||v));
+    v='dashboard';
+  }
+  if(v!=='usuarios'){
+    if(v==='hc'&&sinClinica()&&!['timeline','cuenta'].includes(STATE.activeHCTab))STATE.activeHCTab='timeline';
+    const r=_showViewBase(v);
+    if(v==='hc'&&sinClinica()){$('page-title').textContent='Ficha del paciente';$('btn-top').textContent='+ Paciente';}
+    return r;
+  }
+  STATE.view='usuarios';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.id==='nav-usuarios'));
+  document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('active',b.dataset.v==='mas'));
+  $('page-title').textContent='Usuarios';$('btn-top').textContent='+ Usuario';
+  Object.keys(chartsInstances).forEach(destroyChart);
+  renderUsuarios();
+};
+const _openNewModalBase=openNewModal;
+openNewModal=function(){
+  if(STATE.view==='usuarios')return openUsuario();
+  if(STATE.view==='hc'&&sinClinica())return openNewPatient();
+  return _openNewModalBase();
+};
+const _switchHCTabBase=switchHCTab;
+switchHCTab=function(tab){if(sinClinica()&&!['timeline','cuenta'].includes(tab))tab='timeline';return _switchHCTabBase(tab);};
+
+function menuMas(){
+  STATE._citaAbierta=null;
+  const it=[['cirugias','Cirugías'],['formaciones','Formaciones'],['obligaciones','Impuestos y pagos'],['presupuestos','Presupuestos'],['hc','Historia clínica'],['productos','Productos y lotes'],['marketing','Marketing'],['tratamientos','Precios'],['reportes','Reportes'],['archivados','Archivados'],['usuarios','Usuarios']].filter(([v])=>enMenu(v));
+  const sesion=ACCESO.modo==='sesion'&&ACCESO.perfil;
+  openModal(`<div class="modal-title">Más</div>
+  ${sesion?`<div style="font-size:12.5px;color:var(--text3);margin:-6px 0 12px">${esc(ACCESO.perfil.nombre||ACCESO.perfil.correo||'')} · ${esc((ROLES[ACCESO.perfil.rol]||{}).n||'')}</div>`:''}
+  <div class="menu-lista">${it.map(([v,l])=>`<button onclick="closeModal();showView('${v}')">${l}</button>`).join('')}${sesion?`<button onclick="cerrarSesion()">Cerrar sesión</button>`:''}</div>
+  <div class="modal-actions"><button class="btn-outline" onclick="closeModal()">Cerrar</button></div>`);
+}
+
+// Acciones que escriben en caja o en historia clínica: se frenan antes de abrir el formulario.
+function protegerAccion(nombre,permitido,mensaje){
+  const f=window[nombre];if(typeof f!=='function')return;
+  window[nombre]=function(){
+    if(!permitido()){if(!ACCESO.silencio)showToast(mensaje);return;}
+    return f.apply(this,arguments);
+  };
+}
+['openNewMovimiento','saveMovimiento','eliminarMovimiento','openCobroCita','registrarPagoPresupuesto','cobrarAlumno','pagarTercero','pagarObligacion','registrarPagoObligacion','openCierreCaja','guardarCierreCaja','openVenderBono']
+  .forEach(n=>protegerAccion(n,()=>puedeEscribir('Movimientos'),'Tu usuario no puede registrar cobros ni pagos'));
+['openNewConsulta','saveConsulta','openEditAntecedentes','saveAntecedentes','openAddConsentimiento','saveConsentimiento','agregarFotoConsulta'].forEach(n=>protegerAccion(n,()=>puedeEscribir('HistoriaClinica'),'Tu usuario no puede escribir en la historia clínica'));
+['restaurarArchivado','editPrice','savePrice','openNuevoServicio','retirarServicio','activarServicio']
+  .forEach(n=>protegerAccion(n,()=>esDireccion(),'Solo Dirección puede hacer esto'));
+// Al atender una cita: sin acceso a historia clínica no se abre la nota, y sin acceso
+// a caja no se salta al cobro (queda "por cobrar" para quien sí cobra).
+(function(){
+  const f=window.finalizarCita;if(typeof f!=='function')return;
+  window.finalizarCita=function(id,conNota){
+    ACCESO.silencio=true;
+    try{return f.call(this,id,conNota&&puedeEscribir('HistoriaClinica'));}
+    finally{ACCESO.silencio=false;}
+  };
+})();
+
+// ── Usuarios (solo Dirección) ─────────────────────────────────────────────────
+let _usrEscucha=false;
+function escucharUsuarios(){
+  if(_usrEscucha)return;_usrEscucha=true;
+  const orden=(a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''));
+  db.collection('Usuarios').onSnapshot({includeMetadataChanges:false},s=>{
+    STATE.usuarios=s.docs.map(d=>Object.assign({},d.data(),{id:d.id})).sort(orden);
+    if(STATE.view==='usuarios'&&SYNC.inicioHecho&&$('modal-overlay').classList.contains('hidden'))renderUsuarios();
+  },()=>{_usrEscucha=false;});
+  db.collection('Solicitudes').onSnapshot({includeMetadataChanges:false},s=>{
+    STATE.solicitudes=s.docs.map(d=>Object.assign({},d.data(),{id:d.id}));
+    if(STATE.view==='usuarios'&&SYNC.inicioHecho&&$('modal-overlay').classList.contains('hidden'))renderUsuarios();
+  },()=>{});
+}
+function solicitudesPendientes(){
+  const con=new Set(STATE.usuarios.map(u=>u.id));
+  return STATE.solicitudes.filter(s=>!con.has(s.id)&&!s.atendida);
+}
+function renderUsuarios(){
+  const us=STATE.usuarios,pend=solicitudesPendientes(),abierto=ACCESO.modo!=='sesion';
+  const fila=u=>`<div class="usr-fila${u.activo===false?' inactivo':''}" onclick="openUsuario('${jsq(u.id)}')">
+    <div class="usr-ini">${esc(iniciales(u.nombre||u.correo))}</div>
+    <div style="flex:1;min-width:0"><div class="usr-nom">${esc(u.nombre||'(sin nombre)')}${ACCESO.user&&u.id===ACCESO.user.uid?' <span style="font-weight:400;color:var(--text3)">· tú</span>':''}</div><div class="usr-cor">${esc(u.correo||'')}</div></div>
+    <span class="badge badge-gray">${esc((ROLES[u.rol]||{}).n||u.rol||'')}</span>
+    ${u.activo===false?'<span class="badge badge-red">Desactivado</span>':''}
+  </div>`;
+  $('content-area').innerHTML=`
+  ${abierto?`<div class="card" style="margin-bottom:16px;border-left:3px solid var(--gold)">
+    <div class="card-title">${us.length?'El inicio de sesión ya está activado':'El inicio de sesión todavía no está activado'}</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.6">${us.length
+      ?'Termina de crear al equipo. Cada persona recibe un correo para crear su contraseña. Cuando recargues la página, la app te pedirá entrar con tu cuenta.'
+      :'Hoy cualquiera con el enlace puede entrar. Al crear el primer usuario de Dirección, la app empezará a pedir correo y contraseña a todo el mundo. Créate primero a ti y, sin salir de esta pantalla, al resto del equipo.'}</div>
+  </div>`:''}
+  ${pend.length?`<div class="card" style="margin-bottom:16px">
+    <div class="card-title">Cuentas esperando permiso</div>
+    ${pend.map(s=>`<div class="usr-fila" onclick="openUsuario(null,'${jsq(s.id)}')"><div class="usr-ini">?</div><div style="flex:1;min-width:0"><div class="usr-nom">${esc(s.correo||s.id)}</div><div class="usr-cor">Entró con su cuenta y aún no tiene rol</div></div><span class="badge badge-gray">Dar acceso</span></div>`).join('')}
+  </div>`:''}
+  <div class="section-header"><div class="section-title">Equipo</div><button class="btn btn-gold btn-sm" onclick="openUsuario()">+ Usuario</button></div>
+  <div class="card" style="padding:0;overflow:hidden">${us.length?us.map(fila).join(''):`<div style="padding:28px 20px;text-align:center;color:var(--text3);font-size:13px">Aún no hay usuarios. Crea el primero con «+ Usuario».</div>`}</div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Qué puede hacer cada rol</div>
+    ${Object.keys(ROLES).map(k=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><strong>${ROLES[k].n}</strong><div style="color:var(--text3);font-size:12.5px;margin-top:2px">${ROLES[k].d}</div></div>`).join('')}
+    <div style="font-size:12px;color:var(--text3);margin-top:10px;line-height:1.5">Nadie puede borrar datos: todo se archiva y solo Dirección restaura. Un usuario que sale de la clínica se desactiva; su historial queda.</div>
+  </div>`;
+}
+function direccionActivas(){return STATE.usuarios.filter(u=>u.rol==='direccion'&&u.activo!==false);}
+function openUsuario(id,solicitudId){
+  if(!esDireccion()){showToast('Solo Dirección gestiona los usuarios');return;}
+  const u=id?STATE.usuarios.find(x=>x.id===id):null;
+  const sol=solicitudId?STATE.solicitudes.find(x=>x.id===solicitudId):null;
+  const primero=!STATE.usuarios.length&&ACCESO.modo!=='sesion';
+  const rolSel=u?u.rol:(primero?'direccion':'recepcion');
+  const soyYo=u&&ACCESO.user&&u.id===ACCESO.user.uid;
+  openModal(`<div class="modal-title">${u?'Usuario':(sol?'Dar acceso':'Nuevo usuario')}</div>
+  <div class="form-group"><label class="form-label">Nombre y apellido</label><input class="form-input" id="us-nombre" value="${esc(u?u.nombre:'')}" placeholder="Como aparecerá en los registros"></div>
+  <div class="form-group"><label class="form-label">Correo</label><input class="form-input" id="us-correo" type="email" value="${esc(u?u.correo:(sol?sol.correo:''))}" ${u||sol?'disabled':''} placeholder="correo@ejemplo.com">
+    ${u||sol?'':'<div style="font-size:12px;color:var(--text3);margin-top:6px">Le llegará un enlace para crear su contraseña. Nadie más la ve.</div>'}</div>
+  <div class="form-group"><label class="form-label">Rol</label><div class="rol-ops">
+    ${Object.keys(ROLES).map(k=>`<label class="rol-op"><input type="radio" name="us-rol" value="${k}"${k===rolSel?' checked':''}${primero&&k!=='direccion'?' disabled':''}><div><b>${ROLES[k].n}</b><span>${ROLES[k].d}</span></div></label>`).join('')}
+  </div>${primero?'<div style="font-size:12px;color:var(--text3);margin-top:8px">El primer usuario tiene que ser de Dirección.</div>':''}</div>
+  <div id="us-error" style="display:none;font-size:13px;color:var(--red);margin-bottom:12px;line-height:1.5"></div>
+  <div class="modal-actions">
+    ${u?`<button class="btn-outline" onclick="enviarEnlaceClave('${jsq(u.correo)}')">Enviar enlace de contraseña</button>`:''}
+    ${u&&!soyYo?`<button class="btn-outline" onclick="alternarUsuario('${jsq(u.id)}')">${u.activo===false?'Reactivar':'Desactivar'}</button>`:''}
+    <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-gold" id="us-guardar" onclick="guardarUsuario(${u?`'${jsq(u.id)}'`:'null'},${sol?`'${jsq(sol.id)}'`:'null'})">${u?'Guardar':(primero?'Crear y activar inicio de sesión':(sol?'Dar acceso':'Crear usuario'))}</button>
+  </div>`);
+}
+function errorUsuario(t){const e=$('us-error');if(e){e.innerHTML=t;e.style.display='block';}const b=$('us-guardar');if(b)b.disabled=false;}
+function autorAcceso(){return ACCESO.perfil?(ACCESO.perfil.nombre||ACCESO.perfil.correo||''):'';}
+// La cuenta se crea en una instancia aparte para no cambiar la sesión de quien está dentro.
+async function crearCuentaAuth(correo){
+  let app2;try{app2=firebase.app('alta');}catch(e){app2=firebase.initializeApp(firebaseConfig,'alta');}
+  const a2=app2.auth();
+  try{await a2.setPersistence(firebase.auth.Auth.Persistence.NONE);}catch(e){}
+  const azar=new Uint8Array(24);crypto.getRandomValues(azar);
+  const clave='Epc!'+Array.from(azar).map(b=>b.toString(36)).join('').slice(0,28)+'9a';
+  const cred=await a2.createUserWithEmailAndPassword(correo,clave);
+  const uid=cred.user.uid;
+  try{await a2.signOut();}catch(e){}
+  return uid;
+}
+async function guardarUsuario(id,solicitudId){
+  const nombre=$('us-nombre').value.trim(),correo=$('us-correo').value.trim().toLowerCase();
+  const r=document.querySelector('input[name="us-rol"]:checked');const rol=r?r.value:'';
+  if(nombre.split(/\s+/).filter(Boolean).length<2)return errorUsuario('Escribe nombre y apellido.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo))return errorUsuario('Ese correo no está bien escrito.');
+  if(!ROLES[rol])return errorUsuario('Elige un rol.');
+  const b=$('us-guardar');if(b)b.disabled=true;
+  const ahora=new Date().toISOString();
+  try{
+    if(id){
+      const u=STATE.usuarios.find(x=>x.id===id);if(!u)return;
+      if(u.rol==='direccion'&&rol!=='direccion'&&u.activo!==false&&direccionActivas().length<=1)return errorUsuario('Tiene que quedar al menos una persona de Dirección activa.');
+      await db.collection('Usuarios').doc(id).set({nombre,rol,modEl:ahora,modPor:autorAcceso()},{merge:true});
+      closeModal();showToast('Usuario actualizado');return;
+    }
+    if(STATE.usuarios.some(u=>String(u.correo||'').toLowerCase()===correo))return errorUsuario('Ya hay un usuario con ese correo.');
+    let uid=solicitudId||null,enviado=false;
+    if(!uid){
+      if(!firebase.auth)return errorUsuario('No se pudo cargar el módulo de acceso. Revisa la conexión y recarga.');
+      ACCESO.activando=true;
+      try{uid=await crearCuentaAuth(correo);}
+      catch(e){
+        if((e&&e.code)==='auth/email-already-in-use')return errorUsuario('Ese correo ya tiene una cuenta. Pídele que entre con ella: aparecerá aquí en «Cuentas esperando permiso» y podrás darle su rol.');
+        return errorUsuario(textoErrorAuth(e));
+      }finally{ACCESO.activando=false;}
+    }
+    await db.collection('Usuarios').doc(uid).set({id:uid,nombre,correo,rol,activo:true,creadoEl:ahora,creadoPor:autorAcceso()},{merge:true});
+    if(solicitudId){try{await db.collection('Solicitudes').doc(solicitudId).set({atendida:true,atendidaEl:ahora},{merge:true});}catch(e){}}
+    else{try{firebase.auth().languageCode='es';await firebase.auth().sendPasswordResetEmail(correo);enviado=true;}catch(e){}}
+    recordarRequerido(true);
+    if(!_usrEscucha)escucharUsuarios();
+    closeModal();
+    if(solicitudId)showToast('Acceso concedido');
+    else openModal(`<div class="modal-title">Usuario creado</div>
+      <div style="font-size:13.5px;color:var(--text2);line-height:1.6;margin-bottom:18px">${enviado
+        ?`Enviamos un correo a <strong>${esc(correo)}</strong> con un enlace para crear su contraseña. Si no lo ve, que revise la carpeta de spam.`
+        :`La cuenta de <strong>${esc(correo)}</strong> está creada, pero el correo no salió. Ábrelo de nuevo y pulsa «Enviar enlace de contraseña».`}</div>
+      <div class="modal-actions"><button class="btn btn-gold" onclick="closeModal();renderUsuarios()">Entendido</button></div>`);
+    if(STATE.view==='usuarios'&&solicitudId)renderUsuarios();
+  }catch(e){
+    errorUsuario((e&&e.code)==='permission-denied'?'Tu usuario no tiene permiso para gestionar usuarios.':'No se pudo guardar ('+esc((e&&e.code)||'error')+').');
+  }
+}
+async function alternarUsuario(id){
+  const u=STATE.usuarios.find(x=>x.id===id);if(!u)return;
+  const activar=u.activo===false;
+  if(!activar&&u.rol==='direccion'&&direccionActivas().length<=1)return errorUsuario('Tiene que quedar al menos una persona de Dirección activa.');
+  try{
+    await db.collection('Usuarios').doc(id).set({activo:activar,modEl:new Date().toISOString(),modPor:autorAcceso()},{merge:true});
+    closeModal();showToast(activar?'Usuario reactivado':'Usuario desactivado');
+  }catch(e){errorUsuario('No se pudo guardar.');}
+}
+async function enviarEnlaceClave(correo){
+  try{firebase.auth().languageCode='es';await firebase.auth().sendPasswordResetEmail(correo);closeModal();showToast('Enlace enviado a '+correo);}
+  catch(e){errorUsuario(textoErrorAuth(e));}
+}
+
 updateClock();
 setInterval(updateClock,60000);
-loadAllData();
+iniciarAcceso();
 </script>
 </body>
 </html>
